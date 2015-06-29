@@ -31,13 +31,11 @@ class MathVector(val coords: Seq[Double]) {
   def normalize: MathVector = MathVector(coords.map(x => x / length): _*)
 }
 
-object MathVector
-{
+object MathVector {
   def apply(coords: Double*) = new MathVector(coords)
   implicit def doubleToMathVectorAsScalar(i: Double): MathVectorAsScalar = new MathVectorAsScalar(i)
 }
 
-class MathVectorAsScalar(i: Double)
-{
+class MathVectorAsScalar(i: Double) {
   def *(v: MathVector) = v * i
 }

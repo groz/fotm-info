@@ -34,7 +34,7 @@ object ClusteringEvaluator extends App {
   type LadderSnapshot = Map[CharacterId, CharacterInfo]
 
   val clusterer: Clusterer = new HTClusterer()
-  val ladderSize = 10
+  val ladderSize = 100
   val teamSize = 3
   val matchesPerTurn = 2
 
@@ -59,45 +59,54 @@ object ClusteringEvaluator extends App {
     (player.id, player)
   }).toMap
 
-  def prepareData() = {
-    val ladder: LadderSnapshot = genLadder(ladderSize)
+  type Match = (Team, Team)
 
-    val teams: Seq[Team] = {
+  def evaluate(data: Seq[(LadderSnapshot, LadderSnapshot, Set[Match])]): Double = {
+    (for {
+      (ladder, nextLadder, matches) <- data
+    } yield {
+      val teamsPlayed: Set[Team] = matches.map(m => m).flatten.toSet
+      val playersPlayed: Set[CharacterId] = teamsPlayed.flatMap(_.members)
+
+      // TODO: ATTENTION! Works only as long as MathVector is compared by ref
+      // algo input: ladder diffs for playersPlayed
+      val diffs: List[CharFeatures] = playersPlayed.toList.map { p => CharFeatures(ladder(p), nextLadder(p)) }
+      val featurizedDiffs: List[MathVector] = diffs.map(featurize)
+      val featureMap: Map[MathVector, CharacterId] = featurizedDiffs.zip(diffs.map(_.prevInfo.id)).toMap
+
+      // algo output: players grouped into teams
+      val algoOutputClusters: Set[clusterer.Cluster] = clusterer.clusterize(featurizedDiffs, teamSize)
+      val algoOutputTeams: Set[Team] = algoOutputClusters.map(cluster => Team(cluster.map(featureMap).toSet))
+
+      // algo evaluation: match output against teamsPlayed
+      val guessed: Set[Team] = teamsPlayed.intersect(algoOutputTeams)
+      val misguessed: Set[Team] = algoOutputTeams -- teamsPlayed
+      val missed: Set[Team] = teamsPlayed -- algoOutputTeams
+      guessed.size
+    }).sum
+  }
+
+  def prepareData(ladderOpt: Option[LadderSnapshot] = None, teamsOpt: Option[Seq[Team]] = None)
+    : Stream[(LadderSnapshot, LadderSnapshot, Set[Match])] = {
+    val ladder: LadderSnapshot = ladderOpt.getOrElse( genLadder(ladderSize) )
+
+    val teams: Seq[Team] = teamsOpt.getOrElse {
       val ids = ladder.keys.toSeq
       val result = ids.sliding(teamSize, teamSize).map(p => Team(p.toSet)).toSeq
       if (result.last.members.size == teamSize) result else result.init
     }
 
-    val memberships: Map[CharacterId, Team] = {
-      for {
-        t <- teams
-        c <- t.members
-      } yield (c, t)
-    }.toMap
+    // TODO: team hopping
 
-    val shuffledTeams: Seq[Team] = new Random().shuffle(memberships.values.toSeq)
+    val shuffledTeams: Seq[Team] = new Random().shuffle(teams)
 
-    val matches: Iterator[Seq[Team]] = shuffledTeams.sliding(2, 2).take(matchesPerTurn)
+    // TODO: give higher ranked team higher chance of winning
 
-    val nextLadder: LadderSnapshot = matches.foldLeft(ladder) { (l, teams) => play(l, teams.head, teams.last) }
+    val matches = shuffledTeams.sliding(2, 2).map{ s => (s(0), s(1)) }.take(matchesPerTurn)
 
-    val teamsPlayed: List[Team] = matches.flatten.toList
-    val playersPlayed: List[CharacterId] = teamsPlayed.flatMap(_.members)
+    val nextLadder: LadderSnapshot = matches.foldLeft(ladder) { (l, teams) => play(l, teams._1, teams._2) }
 
-    // TODO: ATTENTION! Works only as long as MathVector is compared by ref
-    // algo input: ladder diffs for playersPlayed
-    val diffs: List[CharFeatures] = playersPlayed.map { p => CharFeatures(ladder(p), nextLadder(p)) }
-    val featurizedDiffs: List[MathVector] = diffs.map(featurize)
-    val featureMap: Map[MathVector, CharFeatures] = featurizedDiffs.zip(diffs).toMap
-
-    // algo output: players grouped into teams
-    val algoOutputClusters: Set[clusterer.Cluster] = clusterer.clusterize(featurizedDiffs, teamSize)
-    val algoOutputTeams = algoOutputClusters.map { cluster =>
-      cluster
-    }
-
-    // algo evaluation: match output against teamsPlayed
-
+    (ladder, nextLadder, matches.toSet) #:: prepareData(Some(nextLadder), Some(teams))
   }
 
   def calcRating(charId: CharacterId, team: Team, won: Boolean)(ladder: LadderSnapshot): Int = {
