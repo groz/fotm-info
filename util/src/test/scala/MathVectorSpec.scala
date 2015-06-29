@@ -17,7 +17,7 @@ class MathVectorSpec extends FlatSpec with Matchers {
     (MathVector(1.0, 1.0) - MathVector(2.0, 2.0)) should be (MathVector(-1.0, -1.0))
   }
 
-  it should "calc dist between vectors" in {
+  it should "calc dist between vectors correctly" in {
     (MathVector(1.0, 1.0) distTo MathVector(2.0, 2.0)) should be (Math.sqrt(2))
   }
 

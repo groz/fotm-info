@@ -1,8 +1,8 @@
 import info.fotm.clustering._
-import FotmClusteringEvaluator._
+import ClusteringEvaluator._
 import org.scalatest._
 
-class ClustererEvaluatorSpec extends FlatSpec with Matchers {
+class ClusteringEvaluatorSpec extends FlatSpec with Matchers {
   val players1500 = (1 to 3).map(i => genPlayer)
   val players1580 = (1 to 3).map(i => genPlayer.copy(rating = 1580))
   val player1500 = players1500.head

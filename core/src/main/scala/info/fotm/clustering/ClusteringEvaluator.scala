@@ -1,6 +1,6 @@
 package info.fotm.clustering
 
-import FotmClusteringEvaluator.LadderSnapshot
+import ClusteringEvaluator.LadderSnapshot
 import scala.util.Random
 
 case class CharacterId(uid: String)
@@ -26,7 +26,7 @@ case class Team(members: Set[CharacterId]) {
   }
 }
 
-object FotmClusteringEvaluator extends App {
+object ClusteringEvaluator extends App {
 
   type LadderSnapshot = Map[CharacterId, CharacterInfo]
 
@@ -72,7 +72,7 @@ object FotmClusteringEvaluator extends App {
     val playersPlayed: List[CharacterId] = teamsPlayed.flatMap(_.members)
 
     // algo input: ladder diffs for playersPlayed
-    val diffs = playersPlayed.map { p => CharFeatures(ladder(p), nextLadder(p)) }
+    val diffs: List[CharFeatures] = playersPlayed.map { p => CharFeatures(ladder(p), nextLadder(p)) }
 
     // algo output: players grouped into teams
 
