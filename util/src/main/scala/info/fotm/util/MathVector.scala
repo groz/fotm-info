@@ -1,6 +1,6 @@
 package info.fotm.util
 
-case class MathVector(coords: Double*) {
+class MathVector(val coords: Seq[Double]) {
   private def operation(that: MathVector, coordsOp: (Double, Double) => Double) = {
     require(this.dimension == that.dimension)
     MathVector(coords.zip(that.coords).map(c => coordsOp(c._1, c._2)): _*)
@@ -33,6 +33,7 @@ case class MathVector(coords: Double*) {
 
 object MathVector
 {
+  def apply(coords: Double*) = new MathVector(coords)
   implicit def doubleToMathVectorAsScalar(i: Double): MathVectorAsScalar = new MathVectorAsScalar(i)
 }
 

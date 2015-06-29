@@ -1,6 +1,7 @@
 package info.fotm.clustering
 
 import ClusteringEvaluator.LadderSnapshot
+import info.fotm.util.MathVector
 import scala.util.Random
 
 case class CharacterId(uid: String)
@@ -15,7 +16,9 @@ case class CharacterInfo(
 
 case class CharFeatures(
                          prevInfo: CharacterInfo,
-                         nextInfo: CharacterInfo)
+                         nextInfo: CharacterInfo) {
+  require(prevInfo.id == nextInfo.id)
+}
 
 case class Team(members: Set[CharacterId]) {
   def rating(ladder: LadderSnapshot): Int = {
@@ -30,9 +33,19 @@ object ClusteringEvaluator extends App {
 
   type LadderSnapshot = Map[CharacterId, CharacterInfo]
 
+  val clusterer: Clusterer = new HTClusterer()
   val ladderSize = 10
   val teamSize = 3
   val matchesPerTurn = 2
+
+  def featurize(ci: CharFeatures): MathVector = MathVector(
+    ci.nextInfo.rating - ci.prevInfo.rating,
+    ci.nextInfo.rating,
+    ci.nextInfo.seasonWins,
+    ci.nextInfo.seasonLosses,
+    ci.nextInfo.weeklyWins,
+    ci.nextInfo.weeklyLosses
+  ).normalize
 
   lazy val rng = new Random()
 
@@ -71,12 +84,20 @@ object ClusteringEvaluator extends App {
     val teamsPlayed: List[Team] = matches.flatten.toList
     val playersPlayed: List[CharacterId] = teamsPlayed.flatMap(_.members)
 
+    // TODO: ATTENTION! Works only as long as MathVector is compared by ref
     // algo input: ladder diffs for playersPlayed
     val diffs: List[CharFeatures] = playersPlayed.map { p => CharFeatures(ladder(p), nextLadder(p)) }
+    val featurizedDiffs: List[MathVector] = diffs.map(featurize)
+    val featureMap: Map[MathVector, CharFeatures] = featurizedDiffs.zip(diffs).toMap
 
     // algo output: players grouped into teams
+    val algoOutputClusters: Set[clusterer.Cluster] = clusterer.clusterize(featurizedDiffs, teamSize)
+    val algoOutputTeams = algoOutputClusters.map { cluster =>
+      cluster
+    }
 
     // algo evaluation: match output against teamsPlayed
+
   }
 
   def calcRating(charId: CharacterId, team: Team, won: Boolean)(ladder: LadderSnapshot): Int = {
