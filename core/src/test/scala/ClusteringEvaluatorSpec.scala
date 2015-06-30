@@ -1,5 +1,7 @@
 import info.fotm.clustering._
 import ClusteringEvaluator._
+import info.fotm.domain.Domain.LadderSnapshot
+import info.fotm.domain.Team
 import org.scalatest._
 
 class ClusteringEvaluatorSpec extends FlatSpec with Matchers {

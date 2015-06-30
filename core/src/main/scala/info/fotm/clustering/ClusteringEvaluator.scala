@@ -1,37 +1,11 @@
 package info.fotm.clustering
 
-import ClusteringEvaluator.LadderSnapshot
+import info.fotm.domain.Domain.LadderSnapshot
+import info.fotm.domain.{Team, CharacterInfo, CharacterId}
 import info.fotm.util.MathVector
 import scala.util.Random
 
-case class CharacterId(uid: String)
-
-case class CharacterInfo(
-                          id: CharacterId,
-                          rating: Int,
-                          weeklyWins: Int,
-                          weeklyLosses: Int,
-                          seasonWins: Int,
-                          seasonLosses: Int)
-
-case class CharFeatures(
-                         prevInfo: CharacterInfo,
-                         nextInfo: CharacterInfo) {
-  require(prevInfo.id == nextInfo.id)
-}
-
-case class Team(members: Set[CharacterId]) {
-  def rating(ladder: LadderSnapshot): Int = {
-    val charInfos: Set[CharacterInfo] = members.map(ladder)
-    val totalRating = charInfos.toSeq.map(_.rating).sum
-    val result = totalRating / members.size.toDouble
-    result.toInt
-  }
-}
-
 object ClusteringEvaluator extends App {
-
-  type LadderSnapshot = Map[CharacterId, CharacterInfo]
 
   lazy val clusterer: Clusterer = new HTClusterer()
   lazy val ladderSize = 100
