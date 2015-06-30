@@ -6,8 +6,4 @@ class MyMath(i: Int) {
   def hello = i * 2
 }
 
-val x = new MyMath(5)
-
-import x._
-
-hello
+winChance(1800, 2040)

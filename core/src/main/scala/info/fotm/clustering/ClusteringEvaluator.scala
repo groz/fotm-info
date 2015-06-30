@@ -1,7 +1,7 @@
 package info.fotm.clustering
 
 import info.fotm.domain.Domain.LadderSnapshot
-import info.fotm.domain.{Team, CharacterInfo, CharacterId}
+import info.fotm.domain.{Team, CharacterStats, CharacterId}
 import info.fotm.util.MathVector
 import scala.util.Random
 
@@ -10,7 +10,7 @@ object ClusteringEvaluator extends App {
   lazy val clusterer: Clusterer = new HTClusterer()
   lazy val ladderSize = 100
   lazy val teamSize = 3
-  lazy val matchesPerTurn = 2
+  lazy val matchesPerTurn = 10
 
   def featurize(ci: CharFeatures): MathVector = MathVector(
     ci.nextInfo.rating - ci.prevInfo.rating,
@@ -25,7 +25,7 @@ object ClusteringEvaluator extends App {
 
   def genPlayer = {
     val id = java.util.UUID.randomUUID().toString
-    CharacterInfo(CharacterId(id), 1500, 0, 0, 0, 0)
+    CharacterStats(CharacterId(id), 1500, 0, 0, 0, 0)
   }
 
   def genLadder(nPlayers: Int): LadderSnapshot = (0 until nPlayers).map(i => {
@@ -60,19 +60,26 @@ object ClusteringEvaluator extends App {
     }).sum
   }
 
-  def pickTeamsRandomly(teams: Seq[Team]): Seq[(Team, Team)] = {
+  // selects pairs of (winner, loser) from teams
+  def pickGamesRandomly(ladder: LadderSnapshot, teams: Seq[Team]): Seq[(Team, Team)] = {
     val shuffledTeams: Seq[Team] = new Random().shuffle(teams)
-    // TODO: give higher ranked team higher chance of winning
     shuffledTeams
       .sliding(2, 2)
-      .map{ s => (s(0), s(1)) }
+      .map { s =>
+        val team1 = s(0)
+        val team2 = s(1)
+        if (rng.nextDouble() < winChance(team1.rating(ladder), team2.rating(ladder)))
+          (team1, team2)
+        else
+          (team2, team1)
+      }
       .take(matchesPerTurn)
       .toSeq
   }
 
   def prepareData(ladderOpt: Option[LadderSnapshot] = None,
                   teamsOpt: Option[Seq[Team]] = None,
-                  pickTeams: Seq[Team] => Seq[(Team, Team)] = pickTeamsRandomly)
+                  pickGames: (LadderSnapshot, Seq[Team]) => Seq[(Team, Team)] = pickGamesRandomly)
                   : Stream[(LadderSnapshot, LadderSnapshot, Set[Match])] = {
     val ladder: LadderSnapshot = ladderOpt.getOrElse( genLadder(ladderSize) )
 
@@ -84,11 +91,11 @@ object ClusteringEvaluator extends App {
 
     // TODO: team hopping
 
-    val matches: Seq[(Team, Team)] = pickTeams(teams)
+    val matches: Seq[(Team, Team)] = pickGames(ladder, teams)
 
     val nextLadder: LadderSnapshot = matches.foldLeft(ladder) { (l, teams) => play(l, teams._1, teams._2) }
 
-    (ladder, nextLadder, matches.toSet) #:: prepareData(Some(nextLadder), Some(teams), pickTeams)
+    (ladder, nextLadder, matches.toSet) #:: prepareData(Some(nextLadder), Some(teams), pickGames)
   }
 
   def calcRating(charId: CharacterId, team: Team, won: Boolean)(ladder: LadderSnapshot): Int = {
@@ -101,8 +108,11 @@ object ClusteringEvaluator extends App {
     }
   }
 
+  def winChance(winnerRating: Double, loserRating: Double): Double =
+    1.0 / (1.0 + Math.pow(10, (loserRating - winnerRating)/400.0))
+
   def calcRatingChange(winnerRating: Double, loserRating: Double): Int = {
-    val chance = 1.0 / (1.0 + Math.pow(10, (loserRating - winnerRating)/400.0))
+    val chance = winChance(winnerRating, loserRating)
     val k = 32
     Math.round(k * (1 - chance)).toInt
   }
@@ -137,5 +147,6 @@ object ClusteringEvaluator extends App {
     result
   }
 
-  genLadder(ladderSize).foreach(println)
+  val (prev, current, games) = prepareData().take(500).last
+  println(current.toList.sortBy(- _._2.rating))
 }

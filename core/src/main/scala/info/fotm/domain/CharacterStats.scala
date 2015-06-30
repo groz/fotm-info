@@ -1,6 +1,6 @@
 package info.fotm.domain
 
-case class CharacterInfo(
+case class CharacterStats(
                           id: CharacterId,
                           rating: Int,
                           weeklyWins: Int,
