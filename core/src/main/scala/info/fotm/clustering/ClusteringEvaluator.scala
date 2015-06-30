@@ -2,15 +2,15 @@ package info.fotm.clustering
 
 import info.fotm.domain.Domain.LadderSnapshot
 import info.fotm.domain.{Team, CharacterStats, CharacterId}
-import info.fotm.util.MathVector
+import info.fotm.util.{Statistics, MathVector}
 import scala.util.Random
 
 object ClusteringEvaluator extends App {
 
-  lazy val clusterer: Clusterer = new HTClusterer()
-  lazy val ladderSize = 100
+  lazy val ladderSize = 500
   lazy val teamSize = 3
-  lazy val matchesPerTurn = 10
+  lazy val matchesPerTurn = 20
+  lazy val rng = new Random()
 
   def featurize(ci: CharFeatures): MathVector = MathVector(
     ci.nextInfo.rating - ci.prevInfo.rating,
@@ -20,8 +20,6 @@ object ClusteringEvaluator extends App {
     ci.nextInfo.weeklyWins,
     ci.nextInfo.weeklyLosses
   ).normalize
-
-  lazy val rng = new Random()
 
   def genPlayer = {
     val id = java.util.UUID.randomUUID().toString
@@ -33,10 +31,11 @@ object ClusteringEvaluator extends App {
     (player.id, player)
   }).toMap
 
-  type Match = (Team, Team)
+  type Game = (Team, Team)
 
-  def evaluate(data: Seq[(LadderSnapshot, LadderSnapshot, Set[Match])]): Double = {
-    (for {
+  def evaluate(clusterize: Seq[MathVector] => Set[Seq[MathVector]],
+               data: Seq[(LadderSnapshot, LadderSnapshot, Set[Game])]): Double = {
+    val stats = for {
       (ladder, nextLadder, matches) <- data
     } yield {
       val teamsPlayed: Set[Team] = matches.map(m => Seq(m._1, m._2)).flatten
@@ -49,15 +48,20 @@ object ClusteringEvaluator extends App {
       val featureMap: Map[MathVector, CharacterId] = featurizedDiffs.zip(diffs.map(_.prevInfo.id)).toMap
 
       // algo output: players grouped into teams
-      val algoOutputClusters: Set[clusterer.Cluster] = clusterer.clusterize(featurizedDiffs, teamSize)
+      val algoOutputClusters: Set[Seq[MathVector]] = clusterize(featurizedDiffs)
       val algoOutputTeams: Set[Team] = algoOutputClusters.map(cluster => Team(cluster.map(featureMap).toSet))
 
       // algo evaluation: match output against teamsPlayed
-      val guessed: Set[Team] = teamsPlayed.intersect(algoOutputTeams)
-      val misguessed: Set[Team] = algoOutputTeams -- teamsPlayed
-      val missed: Set[Team] = teamsPlayed -- algoOutputTeams
-      guessed.size
-    }).sum
+      val guessed: Set[Team] = teamsPlayed.intersect(algoOutputTeams)   // true positive
+      val misguessed: Set[Team] = algoOutputTeams -- teamsPlayed        // false positive
+      val missed: Set[Team] = teamsPlayed -- algoOutputTeams            // false negative
+      val result = (guessed.size, misguessed.size, missed.size)
+      println(result)
+      result
+    }
+
+    val (tp, fp, fn) = stats.foldLeft((0, 0, 0)) { (acc, s) => (acc._1 + s._1, acc._2 + s._2, acc._3 + s._3) }
+    Statistics.f1Score(tp, fp, fn)
   }
 
   // selects pairs of (winner, loser) from teams
@@ -80,7 +84,7 @@ object ClusteringEvaluator extends App {
   def prepareData(ladderOpt: Option[LadderSnapshot] = None,
                   teamsOpt: Option[Seq[Team]] = None,
                   pickGames: (LadderSnapshot, Seq[Team]) => Seq[(Team, Team)] = pickGamesRandomly)
-                  : Stream[(LadderSnapshot, LadderSnapshot, Set[Match])] = {
+                  : Stream[(LadderSnapshot, LadderSnapshot, Set[Game])] = {
     val ladder: LadderSnapshot = ladderOpt.getOrElse( genLadder(ladderSize) )
 
     val teams: Seq[Team] = teamsOpt.getOrElse {
@@ -147,6 +151,16 @@ object ClusteringEvaluator extends App {
     result
   }
 
-  val (prev, current, games) = prepareData().take(500).last
-  println(current.toList.sortBy(- _._2.rating))
+  val data = prepareData().drop(200).take(500).toList
+  val clusterer = new HTClusterer
+
+  var i = 0
+  val htClusterize = { (ps: Seq[MathVector]) =>
+    println(i)
+    i += 1
+    clusterer.clusterize(ps, teamSize)
+  }
+
+  val htResult = evaluate(htClusterize, data)
+  println(s"HT result: $htResult")
 }
