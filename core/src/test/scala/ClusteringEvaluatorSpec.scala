@@ -63,12 +63,36 @@ class ClusteringEvaluatorSpec extends FlatSpec with Matchers {
   }
 
   "play" should "change ratings for all players accordingly" in {
-    val losers = (0 to 3).map(i => genPlayer)
-    val winners = (0 to 3).map(i => genPlayer.copy(rating = 1580))
-    val seedLadder = (losers ++ winners).map(c => (c.id, c)).toMap
-    val nextLadder = play(seedLadder, Team(winners.map(_.id).toSet), Team(losers.map(_.id).toSet))
+    val nextLadder = play(ladder, team1580, team1500)
+    team1500.members.map(nextLadder).foreach { _.rating should be(1488) } // zieg
+    team1580.members.map(nextLadder).foreach { _.rating should be(1592) }
+  }
 
-    losers.foreach { c => nextLadder(c.id).rating should be(1488) }
-    winners.foreach { c => nextLadder(c.id).rating should be(1592) }
+  "prepare data" should "return correct first ladder" in {
+    val firstMatches = (team1580, team1500)
+    val data: Stream[(LadderSnapshot, LadderSnapshot, Set[(Team, Team)])] =
+      prepareData(Some(ladder), Some(Seq(team1500, team1580)), _ => Seq(firstMatches))
+
+    val (prevLadder, currentLadder, matchesPlayed) = data.head
+    prevLadder should contain theSameElementsAs ladder
+
+    team1500.members.map(currentLadder).foreach { _.rating should be(1488) }
+    team1580.members.map(currentLadder).foreach { _.rating should be(1592) }
+    matchesPlayed should contain theSameElementsAs Seq(firstMatches)
+  }
+
+  it should "make correct transition to second ladder" in {
+    val matches = (team1580, team1500)
+    val data: Stream[(LadderSnapshot, LadderSnapshot, Set[(Team, Team)])] =
+      prepareData(Some(ladder), Some(Seq(team1500, team1580)), _ => Seq(matches))
+
+    val (initLadder, firstLadder, firstMatchesPlayed) = data.head
+    val (prevLadder, currentLadder, secondMatchesPlayed) = data.tail.head
+
+    prevLadder should contain theSameElementsAs firstLadder
+
+    team1500.members.map(currentLadder).foreach { _.rating should be(1477) }
+    team1580.members.map(currentLadder).foreach { _.rating should be(1603) }
+    secondMatchesPlayed should contain theSameElementsAs Seq(matches)
   }
 }

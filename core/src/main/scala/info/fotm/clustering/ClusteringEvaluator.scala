@@ -33,10 +33,10 @@ object ClusteringEvaluator extends App {
 
   type LadderSnapshot = Map[CharacterId, CharacterInfo]
 
-  val clusterer: Clusterer = new HTClusterer()
-  val ladderSize = 100
-  val teamSize = 3
-  val matchesPerTurn = 2
+  lazy val clusterer: Clusterer = new HTClusterer()
+  lazy val ladderSize = 100
+  lazy val teamSize = 3
+  lazy val matchesPerTurn = 2
 
   def featurize(ci: CharFeatures): MathVector = MathVector(
     ci.nextInfo.rating - ci.prevInfo.rating,
@@ -65,7 +65,7 @@ object ClusteringEvaluator extends App {
     (for {
       (ladder, nextLadder, matches) <- data
     } yield {
-      val teamsPlayed: Set[Team] = matches.map(m => m).flatten.toSet
+      val teamsPlayed: Set[Team] = matches.map(m => Seq(m._1, m._2)).flatten
       val playersPlayed: Set[CharacterId] = teamsPlayed.flatMap(_.members)
 
       // TODO: ATTENTION! Works only as long as MathVector is compared by ref
@@ -86,8 +86,20 @@ object ClusteringEvaluator extends App {
     }).sum
   }
 
-  def prepareData(ladderOpt: Option[LadderSnapshot] = None, teamsOpt: Option[Seq[Team]] = None)
-    : Stream[(LadderSnapshot, LadderSnapshot, Set[Match])] = {
+  def pickTeamsRandomly(teams: Seq[Team]): Seq[(Team, Team)] = {
+    val shuffledTeams: Seq[Team] = new Random().shuffle(teams)
+    // TODO: give higher ranked team higher chance of winning
+    shuffledTeams
+      .sliding(2, 2)
+      .map{ s => (s(0), s(1)) }
+      .take(matchesPerTurn)
+      .toSeq
+  }
+
+  def prepareData(ladderOpt: Option[LadderSnapshot] = None,
+                  teamsOpt: Option[Seq[Team]] = None,
+                  pickTeams: Seq[Team] => Seq[(Team, Team)] = pickTeamsRandomly)
+                  : Stream[(LadderSnapshot, LadderSnapshot, Set[Match])] = {
     val ladder: LadderSnapshot = ladderOpt.getOrElse( genLadder(ladderSize) )
 
     val teams: Seq[Team] = teamsOpt.getOrElse {
@@ -98,15 +110,11 @@ object ClusteringEvaluator extends App {
 
     // TODO: team hopping
 
-    val shuffledTeams: Seq[Team] = new Random().shuffle(teams)
-
-    // TODO: give higher ranked team higher chance of winning
-
-    val matches = shuffledTeams.sliding(2, 2).map{ s => (s(0), s(1)) }.take(matchesPerTurn)
+    val matches: Seq[(Team, Team)] = pickTeams(teams)
 
     val nextLadder: LadderSnapshot = matches.foldLeft(ladder) { (l, teams) => play(l, teams._1, teams._2) }
 
-    (ladder, nextLadder, matches.toSet) #:: prepareData(Some(nextLadder), Some(teams))
+    (ladder, nextLadder, matches.toSet) #:: prepareData(Some(nextLadder), Some(teams), pickTeams)
   }
 
   def calcRating(charId: CharacterId, team: Team, won: Boolean)(ladder: LadderSnapshot): Int = {
