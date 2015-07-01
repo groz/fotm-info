@@ -1,5 +1,6 @@
 package info.fotm.clustering
 
+import info.fotm.clustering.RMClustering.EqClusterer
 import info.fotm.domain.Domain._
 import info.fotm.domain._
 import info.fotm.util.Statistics.Metrics
@@ -68,7 +69,8 @@ object ClusteringEvaluator extends App {
   val clusterers = Map(
     "Random" -> new RandomClusterer,
     "HTClusterer" -> new HTClusterer,
-    "ClosestClusterer" -> new ClosestClusterer
+    "ClosestClusterer" -> new ClosestClusterer,
+    "RMClusterer" -> new EqClusterer
   )
 
   val finders: Map[String, TeamFinder] = clusterers.map { kv =>

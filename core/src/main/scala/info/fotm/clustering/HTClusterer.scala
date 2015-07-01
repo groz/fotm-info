@@ -1,6 +1,7 @@
 package info.fotm.clustering
 
 import info.fotm.util.MathVector
+import info.fotm.clustering.Clusterer._
 
 /*
 Hasan-Timur clusterer

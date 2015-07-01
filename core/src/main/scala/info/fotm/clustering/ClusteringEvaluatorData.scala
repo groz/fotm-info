@@ -96,6 +96,8 @@ object ClusteringEvaluatorData {
 
   def hopTeamsByPlayer(teams: Seq[Team], ladder: LadderSnapshot): Seq[Team] = {
     val ratio = hopRatio //hopRatioOpt.getOrElse(hopRatio)
+    //val players: Array[CharacterId] = rng.shuffle(teams).map(_.members).flatten.toArray
+    // TODO: shuffle
     val players: Array[CharacterId] = teams.map(_.members).flatten.toArray
     for (i <- 0 to players.length / 2) {
       if (rng.nextDouble() < ratio) {
