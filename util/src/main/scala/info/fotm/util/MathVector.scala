@@ -8,11 +8,13 @@ class MathVector(val coords: Seq[Double]) {
 
   lazy val dimension = coords.length
 
-  lazy val length: Double = Math.sqrt(coords.map(Math.pow(_, 2)).sum)
+  lazy val length: Double = Math.sqrt(sqrlength)
+
+  lazy val sqrlength: Double = coords.map(Math.pow(_, 2)).sum
 
   lazy val unary_- = MathVector(coords.map(-1 * _): _*)
 
-  override lazy val toString = coords.mkString("(", ",", ")")
+  override lazy val toString = "MathVector"+coords.mkString("(", ",", ")")
 
   def unary_+ = this
 
@@ -27,6 +29,8 @@ class MathVector(val coords: Seq[Double]) {
   def /(x: Double) = this * (1.0 / x)
 
   def distTo(that: MathVector) = (this - that).length
+
+  def sqrDistTo(that: MathVector) = (this - that).sqrlength
 
   def normalize: MathVector = MathVector(coords.map(x => x / length): _*)
 }

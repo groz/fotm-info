@@ -3,9 +3,11 @@ package info.fotm.clustering.RMClustering
 import info.fotm.clustering.Clusterer
 import info.fotm.clustering.Clusterer.{V, Cluster}
 
-import scala.util.Random
+//import scala.util.Random
 // https://en.wikipedia.org/wiki/K-means_clustering
 class KMeansClusterer extends Clusterer {
+
+  val rng = new scala.util.Random(100)
 
   def clusterize(input: Cluster, clustersCount: Int): Set[Cluster] =
   {
@@ -27,9 +29,10 @@ class KMeansClusterer extends Clusterer {
     {
       val newMeans = update(newClusters)
       //println(newMeans)
-      return process(newClusters,newMeans)
+      process(newClusters,newMeans)
     }
-    newClusters
+    else
+      newClusters
   }
 
   /** *
@@ -40,13 +43,13 @@ class KMeansClusterer extends Clusterer {
     */
   def initialize(input: Cluster, clustersCount: Int): Seq[V] =
   {
-    Random.shuffle(input).take(clustersCount)
+    rng.shuffle(input).take(clustersCount)
   }
 
   //=====================Plus Plus section=======================
   def initialize_plusplus(input: Cluster, clustersCount: Int): Seq[V] =
   {
-    val firstCenterIndex = Random.nextInt(input.length)
+    val firstCenterIndex = rng.nextInt(input.length)
     val centers = input(firstCenterIndex) :: Nil
     findCenters(input.filterNot(x => x == centers(0)), centers, clustersCount)
   }
@@ -86,7 +89,7 @@ class KMeansClusterer extends Clusterer {
     }.init.reverse
 
     val randomInterval = distribution.last
-    val rand = Random.nextDouble() * randomInterval
+    val rand = rng.nextDouble() * randomInterval
 
     // getting index corresponding to rand and return element from input with this index
     input(distribution.span(x => x < rand)._1.length)
@@ -104,9 +107,9 @@ class KMeansClusterer extends Clusterer {
     clusters.map(c=> div(c.reduce(sumOf),c.length)).toSeq
   }
 
-  def distance(v1: V, v2: V): Double = v1.distTo(v2)
+  def distance(v1: V, v2: V): Double = v1.sqrDistTo(v2) //v1.zip(v2).map(x=>Math.pow(x._1-x._2,2)).sum
 
-  def sumOf(v1: V, v2: V): V = v1 + v2
+  def sumOf(v1: V, v2: V): V = v1 + v2 //v1.zip(v2).map({case(x1,x2)=>x1+x2})
 
-  def div(v: V, byValue: Double): V = v / byValue
+  def div(v: V, byValue: Double): V = v/ byValue // v.map(x=>x/byValue)
 }

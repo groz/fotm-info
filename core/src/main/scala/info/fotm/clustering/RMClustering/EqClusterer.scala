@@ -16,6 +16,7 @@ class EqClusterer extends Clusterer
 
   def clusterize(input: Cluster, groupSize: Int): Set[Cluster] =
   {
+    //println(input.length, input)
     // moves one point from one cluster to another
     def movePoint(clusters: List[Cluster]): List[Cluster] =
     {

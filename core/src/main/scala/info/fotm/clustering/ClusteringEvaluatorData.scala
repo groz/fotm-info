@@ -142,7 +142,7 @@ object ClusteringEvaluatorData {
 
   def prepareData(ladderOpt: Option[LadderSnapshot] = None,
                   teamsOpt: Option[Seq[Team]] = None,
-                  hopTeams: (Seq[Team], LadderSnapshot) => Seq[Team] = hopTeamsByPlayer,
+                  hopTeams: (Seq[Team], LadderSnapshot) => Seq[Team] = hopTeamsDef,
                   pickGames: (LadderSnapshot, Seq[Team]) => Seq[(Team, Team)] = pickGamesRandomly,
                   i: Int = 0)
   : Stream[(LadderSnapshot, LadderSnapshot, Set[Game])] = {
