@@ -11,7 +11,7 @@ object ClusteringEvaluatorData {
   lazy val ladderSize = 100
   lazy val teamSize = 3
   lazy val gamesPerWeek = 50
-  lazy val hopRatio = 0.2
+  lazy val hopRatio = 0.1
 
   def genPlayer = {
     val id = java.util.UUID.randomUUID().toString
@@ -94,6 +94,20 @@ object ClusteringEvaluatorData {
     (replacePlayer(team1, p1, p2), replacePlayer(team2, p2, p1))
   }
 
+  def hopTeamsByPlayer(teams: Seq[Team], ladder: LadderSnapshot): Seq[Team] = {
+    val ratio = hopRatio //hopRatioOpt.getOrElse(hopRatio)
+    val players: Array[CharacterId] = teams.map(_.members).flatten.toArray
+    for (i <- 0 to players.length / 2) {
+      if (rng.nextDouble() < ratio) {
+        val idx = players.length - i - 1
+        val tmp = players(i)
+        players(i) = players(idx)
+        players(idx) = tmp
+      }
+    }
+    players.sliding(teamSize, teamSize).map(_.toSet).map(Team).toSeq
+  }
+
   def hopTeamsRandomly(teams: Seq[Team], ladder: LadderSnapshot, hopRatioOpt: Option[Double] = None): Seq[Team] = {
     val nHopTeams: Int = (teams.size * hopRatioOpt.getOrElse(hopRatio)).toInt
 
@@ -105,7 +119,7 @@ object ClusteringEvaluatorData {
         each bucket should have 1 random transfer
        */
       val bucketSize = teams.size / nHopTeams
-      val buckets = teams.sortBy(_.rating(ladder)).sliding(bucketSize, bucketSize).toList
+      val buckets = teams.sliding(bucketSize, bucketSize).toList
 
       val hopped = for {
         teamBucket: Seq[Team] <- buckets
@@ -126,7 +140,7 @@ object ClusteringEvaluatorData {
 
   def prepareData(ladderOpt: Option[LadderSnapshot] = None,
                   teamsOpt: Option[Seq[Team]] = None,
-                  hopTeams: (Seq[Team], LadderSnapshot) => Seq[Team] = hopTeamsDef,
+                  hopTeams: (Seq[Team], LadderSnapshot) => Seq[Team] = hopTeamsByPlayer,
                   pickGames: (LadderSnapshot, Seq[Team]) => Seq[(Team, Team)] = pickGamesRandomly,
                   i: Int = 0)
   : Stream[(LadderSnapshot, LadderSnapshot, Set[Game])] = {
@@ -145,6 +159,8 @@ object ClusteringEvaluatorData {
     }
 
     val teams = hopTeams(prevTeams, ladder)
+
+    println(s"Same teams: ${teams.intersect(prevTeams).size} / ${teams.size}")
 
     val matches: Seq[(Team, Team)] = pickGames(ladder, teams)
 
