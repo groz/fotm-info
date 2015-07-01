@@ -33,6 +33,7 @@ class MathVector(val coords: Seq[Double]) {
 
 object MathVector {
   def apply(coords: Double*) = new MathVector(coords)
+  def avg(vectors: Iterable[MathVector]) = vectors.reduce(_ + _) / vectors.size
   implicit def doubleToMathVectorAsScalar(i: Double): MathVectorAsScalar = new MathVectorAsScalar(i)
 }
 
