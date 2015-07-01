@@ -6,12 +6,12 @@ import info.fotm.domain._
 import scala.util.Random
 
 object ClusteringEvaluatorData {
-  lazy val matchesPerTurn = 4
+  lazy val matchesPerTurn = 5
   lazy val rng = new Random()
   lazy val ladderSize = 100
   lazy val teamSize = 3
   lazy val gamesPerWeek = 50
-  lazy val hopRatio = 0.05
+  lazy val hopRatio = 0.2
 
   def genPlayer = {
     val id = java.util.UUID.randomUUID().toString
@@ -94,27 +94,39 @@ object ClusteringEvaluatorData {
     (replacePlayer(team1, p1, p2), replacePlayer(team2, p2, p1))
   }
 
-  def hopTeamsRandomly(teams: Seq[Team]): Seq[Team] = {
-    val nHopTeams: Int = (teams.size * hopRatio).toInt
+  def hopTeamsRandomly(teams: Seq[Team], ladder: LadderSnapshot, hopRatioOpt: Option[Double] = None): Seq[Team] = {
+    val nHopTeams: Int = (teams.size * hopRatioOpt.getOrElse(hopRatio)).toInt
 
-    val shuffledTeams = rng.shuffle(teams.toList)
-    val teams1 = shuffledTeams.take(nHopTeams)
-    val teams2 = shuffledTeams.drop(nHopTeams).take(nHopTeams)
-    val rest = shuffledTeams.drop(2 * nHopTeams)
+    if (nHopTeams == 0) teams
+    else {
+      /*
+        group players into buckets by rating
+        to swap players between teams with similar ratings
+        each bucket should have 1 random transfer
+       */
+      val bucketSize = teams.size / nHopTeams
+      val buckets = teams.sortBy(_.rating(ladder)).sliding(bucketSize, bucketSize).toList
 
-    val hopped = for {
-      (t1, t2) <- teams1.zip(teams2)
-    } yield {
-      val (r1, r2) = hopTeams(t1, t2)
-      Seq(r1, r2)
+      val hopped = for {
+        teamBucket: Seq[Team] <- buckets
+        shuffled = rng.shuffle(teamBucket)
+      } yield {
+          val t1: Team = shuffled.head
+          val t2: Team = shuffled.tail.head
+          val (r1, r2) = hopTeams(t1, t2)
+          (teamBucket diff Seq(t1, t2)) ++ Seq(r1, r2)
+        }
+
+      hopped.flatten.toSeq
     }
-
-    hopped.flatten ++ rest
   }
+
+  def hopTeamsDef(teams: Seq[Team], ladder: LadderSnapshot): Seq[Team] =
+    hopTeamsRandomly(teams, ladder)
 
   def prepareData(ladderOpt: Option[LadderSnapshot] = None,
                   teamsOpt: Option[Seq[Team]] = None,
-                  hopTeams: Seq[Team] => Seq[Team] = hopTeamsRandomly,
+                  hopTeams: (Seq[Team], LadderSnapshot) => Seq[Team] = hopTeamsDef,
                   pickGames: (LadderSnapshot, Seq[Team]) => Seq[(Team, Team)] = pickGamesRandomly,
                   i: Int = 0)
   : Stream[(LadderSnapshot, LadderSnapshot, Set[Game])] = {
@@ -132,11 +144,11 @@ object ClusteringEvaluatorData {
       if (result.last.members.size == teamSize) result else result.init
     }
 
-    val teams = hopTeams(prevTeams)
+    val teams = hopTeams(prevTeams, ladder)
 
     val matches: Seq[(Team, Team)] = pickGames(ladder, teams)
 
-    val nextLadder: LadderSnapshot = matches.foldLeft(ladder) { (l, teams) => play(l, teams._1, teams._2) }
+    val nextLadder: LadderSnapshot = matches.foldLeft(ladder) { (l, t) => play(l, t._1, t._2) }
 
     (ladder, nextLadder, matches.toSet) #:: prepareData(Some(nextLadder), Some(teams), hopTeams, pickGames, i + 1)
   }

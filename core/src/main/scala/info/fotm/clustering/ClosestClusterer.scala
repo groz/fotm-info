@@ -21,8 +21,12 @@ class ClosestClusterer extends Clusterer {
             (result + cluster, Seq(), left)
         case _ =>
           val avg = MathVector.avg(cluster)
-          val nearest = left.minBy(_.distTo(avg))
-          (result, cluster :+ nearest, left diff Seq(nearest))
+          if (left.size != 0) {
+            val nearest = left.minBy(_.distTo(avg))
+            (result, cluster :+ nearest, left diff Seq(nearest))
+          } else {
+            (result, cluster, left)
+          }
       }
     }._1
   }

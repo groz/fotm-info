@@ -2,7 +2,7 @@ import info.fotm.clustering.ClusteringEvaluator._
 import info.fotm.clustering.ClusteringEvaluatorData._
 import info.fotm.clustering._
 import info.fotm.domain.Domain.LadderSnapshot
-import info.fotm.domain.Team
+import info.fotm.domain.{CharacterStats, Team}
 import info.fotm.util.MathVector
 import org.scalatest._
 
@@ -68,7 +68,7 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
   "prepare data" should "return correct first ladder" in {
     val firstMatches = (team1580, team1500)
     val data: Stream[(LadderSnapshot, LadderSnapshot, Set[(Team, Team)])] =
-      prepareData(Some(ladder), Some(Seq(team1500, team1580)), identity, (_, _) => Seq(firstMatches))
+      prepareData(Some(ladder), Some(Seq(team1500, team1580)), (ts, _) => ts, (_, _) => Seq(firstMatches))
 
     val (prevLadder, currentLadder, matchesPlayed) = data.head
     prevLadder should contain theSameElementsAs ladder
@@ -81,7 +81,7 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
   it should "make correct transition to second ladder" in {
     val matches = (team1580, team1500)
     val data: Stream[(LadderSnapshot, LadderSnapshot, Set[(Team, Team)])] =
-      prepareData(Some(ladder), Some(Seq(team1500, team1580)), identity, (_, _) => Seq(matches))
+      prepareData(Some(ladder), Some(Seq(team1500, team1580)), (ts, _) => ts, (_, _) => Seq(matches))
 
     val (initLadder, firstLadder, firstMatchesPlayed) = data.head
     val (prevLadder, currentLadder, secondMatchesPlayed) = data.tail.head
@@ -106,8 +106,41 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
   }
 
   "hopTeamsRandomly" should "preserve the number of teams" in {
-    hopTeamsRandomly(Seq(team1500, team1580)).size should be(2)
-    // TODO: expand this test
+    hopTeamsRandomly(Seq(team1500, team1580), ladder).size should be(2)
+  }
+
+  it should "correctly swap players between teams" in {
+    val players1400 = (1 to teamSize).map(i => genPlayer.copy(rating = 1400))
+    val players1600 = (1 to teamSize).map(i => genPlayer.copy(rating = 1600))
+    val team1400 = Team(players1400.map(_.id).toSet)
+    val team1600 = Team(players1600.map(_.id).toSet)
+
+    val newLadder: LadderSnapshot = ladder ++ (players1400 ++ players1600).map(p => (p.id, p))
+    val teams = hopTeamsRandomly(Seq(team1400, team1500, team1580, team1600), newLadder, Some(0.5))
+
+    teams.size should be(4)
+
+    def int[T](i1: Iterable[T], i2: Iterable[T]) = i1.toList.intersect(i2.toList)
+
+    val t = teams.find(t =>
+      int(t.members, players1400.map(_.id)).size == 1 &&
+      int(t.members, players1500.map(_.id)).size == 2
+    ) should not be None
+
+    teams.find(t =>
+      int(t.members, players1400.map(_.id)).size == 2 &&
+      int(t.members, players1500.map(_.id)).size == 1
+    ) should not be None
+
+    teams.find(t =>
+      int(t.members, players1580.map(_.id)).size == 1 &&
+      int(t.members, players1600.map(_.id)).size == 2
+    ) should not be None
+
+    teams.find(t =>
+      int(t.members, players1580.map(_.id)).size == 2 &&
+      int(t.members, players1600.map(_.id)).size == 1
+    ) should not be None
   }
 
 }

@@ -11,8 +11,7 @@ object ClusteringEvaluator extends App {
 
   def featurize(ci: CharFeatures): MathVector = MathVector(
     ci.nextInfo.rating - ci.prevInfo.rating,
-    sqr(ci.nextInfo.rating - ci.prevInfo.rating),
-    sqr(ci.nextInfo.rating - ci.prevInfo.rating) / ci.prevInfo.rating,
+    sqr(ci.nextInfo.rating - ci.prevInfo.rating) / ci.prevInfo.rating.toDouble,
     ci.nextInfo.rating,
     ci.nextInfo.seasonWins,
     ci.nextInfo.seasonLosses,
@@ -56,7 +55,7 @@ object ClusteringEvaluator extends App {
     val combinedMetrics: Metrics = stats.reduce(_ + _)
     println(s"\n$combinedMetrics")
 
-    Statistics.f1Score(combinedMetrics)
+    Statistics.fScore(0.5)(combinedMetrics)
   }
 
   // Runner
@@ -67,6 +66,7 @@ object ClusteringEvaluator extends App {
   lastladder.values.toList.sortBy(-_.rating).map(i => (i.rating, i.seasonWins, i.seasonLosses, i.weeklyWins, i.weeklyLosses)).foreach(println)
 
   val clusterers = Map(
+    "Random" -> new RandomClusterer,
     "HTClusterer" -> new HTClusterer,
     "ClosestClusterer" -> new ClosestClusterer
   )
