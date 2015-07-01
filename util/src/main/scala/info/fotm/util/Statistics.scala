@@ -32,7 +32,12 @@ object Statistics {
 
     val scaled = for {
       (column, (min, max)) <- mt.zip(minmax)
-    } yield column.map { v => (v - min) / (max - min) }
+    } yield column.map { v =>
+        if (max - min != 0)
+          (v - min) / (max - min)
+        else
+          0.0
+      }
 
     scaled.transpose.map(row => MathVector(row: _*))
   }

@@ -43,15 +43,15 @@ class StatisticsSpec extends FlatSpec with Matchers {
     }
 
     val input = Seq(
-      MathVector(10, 30),
-      MathVector(15, 50),
-      MathVector(20, 60)
+      MathVector(10, 30, 1),
+      MathVector(15, 50, 1),
+      MathVector(20, 60, 1)
     )
 
     val expected = Seq(
-      MathVector(0, 0),
-      MathVector(0.5, 2.0/3),
-      MathVector(1, 1)
+      MathVector(0, 0, 0),
+      MathVector(0.5, 2.0/3, 0),
+      MathVector(1, 1, 0)
     )
 
     val normalized = normalize(input)

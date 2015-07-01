@@ -54,7 +54,7 @@ object ClusteringEvaluator extends App {
       yield evaluateStep(findTeams, ladder, nextLadder, games)
 
     val combinedMetrics: Metrics = stats.reduce(_ + _)
-    println(combinedMetrics)
+    println(s"\n$combinedMetrics")
 
     Statistics.f1Score(combinedMetrics)
   }
@@ -62,9 +62,9 @@ object ClusteringEvaluator extends App {
   // Runner
   import ClusteringEvaluatorData._
 
-  val data = prepareData().drop(200).take(100).toList
-  //val (prevLadder, lastladder, _) = data.last
-  //lastladder.values.toList.sortBy(-_.rating).map(i => (i.rating, i.seasonWins, i.seasonLosses)).foreach(println)
+  val data = prepareData().drop(500).take(1000).toList
+  val (prevLadder, lastladder, _) = data.last
+  lastladder.values.toList.sortBy(-_.rating).map(i => (i.rating, i.seasonWins, i.seasonLosses, i.weeklyWins, i.weeklyLosses)).foreach(println)
 
   val clusterers = Map(
     "HTClusterer" -> new HTClusterer,
@@ -74,8 +74,10 @@ object ClusteringEvaluator extends App {
   val finders: Map[String, TeamFinder] = clusterers.map { kv =>
     val (name, clusterer) = kv
 
-    def teamFinder(diffs: Seq[CharFeatures]): Set[Team] =
+    def teamFinder(diffs: Seq[CharFeatures]): Set[Team] = {
+      print('.')
       findTeams(ps => clusterer.clusterize(ps, teamSize), diffs)
+    }
 
     (name, teamFinder _)
   }

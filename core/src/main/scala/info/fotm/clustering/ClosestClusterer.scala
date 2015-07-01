@@ -12,17 +12,17 @@ class ClosestClusterer extends Clusterer {
     (0 to input.length).foldLeft((seedResult, seedCluster, input)) { (acc, i) =>
       val (result, cluster, left) = acc
 
-      if (cluster.size == 0) { // first cluster
-        (result, Seq(left.head), left.tail)
-      } else if (cluster.size == size) { // full cluster
-        if (left.size > 0)
-          (result + cluster, Seq(left.head), left.tail)
-        else
-          (result + cluster, Seq(), left)
-      } else { // grow cluster
-        val avg = MathVector.avg(cluster)
-        val nearest = left.minBy(_.distTo(avg))
-        (result, cluster :+ nearest, left diff Seq(nearest))
+      cluster.size match {
+        case 0 => (result, Seq(left.head), left.tail)
+        case x: Int if x == size =>
+          if (left.size > 0)
+            (result + cluster, Seq(left.head), left.tail)
+          else // last one
+            (result + cluster, Seq(), left)
+        case _ =>
+          val avg = MathVector.avg(cluster)
+          val nearest = left.minBy(_.distTo(avg))
+          (result, cluster :+ nearest, left diff Seq(nearest))
       }
     }._1
   }

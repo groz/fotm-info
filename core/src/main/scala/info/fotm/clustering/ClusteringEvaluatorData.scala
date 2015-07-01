@@ -6,10 +6,12 @@ import info.fotm.domain._
 import scala.util.Random
 
 object ClusteringEvaluatorData {
-  lazy val matchesPerTurn = 5
+  lazy val matchesPerTurn = 4
   lazy val rng = new Random()
-  lazy val ladderSize = 500
+  lazy val ladderSize = 100
   lazy val teamSize = 3
+  lazy val gamesPerWeek = 50
+  lazy val hopRatio = 0.05
 
   def genPlayer = {
     val id = java.util.UUID.randomUUID().toString
@@ -93,7 +95,6 @@ object ClusteringEvaluatorData {
   }
 
   def hopTeamsRandomly(teams: Seq[Team]): Seq[Team] = {
-    val hopRatio = 0.1
     val nHopTeams: Int = (teams.size * hopRatio).toInt
 
     val shuffledTeams = rng.shuffle(teams.toList)
@@ -111,14 +112,19 @@ object ClusteringEvaluatorData {
     hopped.flatten ++ rest
   }
 
-  lazy val gamesPerWeek = 50
-
   def prepareData(ladderOpt: Option[LadderSnapshot] = None,
                   teamsOpt: Option[Seq[Team]] = None,
                   hopTeams: Seq[Team] => Seq[Team] = hopTeamsRandomly,
-                  pickGames: (LadderSnapshot, Seq[Team]) => Seq[(Team, Team)] = pickGamesRandomly)
+                  pickGames: (LadderSnapshot, Seq[Team]) => Seq[(Team, Team)] = pickGamesRandomly,
+                  i: Int = 0)
   : Stream[(LadderSnapshot, LadderSnapshot, Set[Game])] = {
-    val ladder: LadderSnapshot = ladderOpt.getOrElse( genLadder(ladderSize) )
+    val ladderInput: LadderSnapshot = ladderOpt.getOrElse( genLadder(ladderSize) )
+
+    val ladder: LadderSnapshot =
+      if (i % gamesPerWeek != 0) ladderInput
+      else
+        for { (id, stats) <- ladderInput }
+        yield (id, stats.copy(weeklyWins = 0, weeklyLosses = 0))
 
     val prevTeams: Seq[Team] = teamsOpt.getOrElse {
       val ids = ladder.keys.toSeq
@@ -132,6 +138,6 @@ object ClusteringEvaluatorData {
 
     val nextLadder: LadderSnapshot = matches.foldLeft(ladder) { (l, teams) => play(l, teams._1, teams._2) }
 
-    (ladder, nextLadder, matches.toSet) #:: prepareData(Some(nextLadder), Some(teams), hopTeams, pickGames)
+    (ladder, nextLadder, matches.toSet) #:: prepareData(Some(nextLadder), Some(teams), hopTeams, pickGames, i + 1)
   }
 }
