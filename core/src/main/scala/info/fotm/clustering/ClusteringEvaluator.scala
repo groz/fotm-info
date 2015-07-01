@@ -66,7 +66,7 @@ object ClusteringEvaluator extends App {
 
   // selects pairs of (winner, loser) from teams
   def pickGamesRandomly(ladder: LadderSnapshot, teams: Seq[Team]): Seq[(Team, Team)] = {
-    val shuffledTeams: Seq[Team] = new Random().shuffle(teams)
+    val shuffledTeams: Seq[Team] = rng.shuffle(teams)
     shuffledTeams
       .sliding(2, 2)
       .map { s =>
@@ -81,25 +81,53 @@ object ClusteringEvaluator extends App {
       .toSeq
   }
 
+  def replacePlayer(team: Team, src: CharacterId, dst: CharacterId) = team.copy(team.members - src + dst)
+
+  def hopTeams(team1: Team, team2: Team): (Team, Team) = {
+    val p1 = rng.shuffle(team1.members.toList).head
+    val p2 = rng.shuffle(team2.members.toList).head
+    (replacePlayer(team1, p1, p2), replacePlayer(team2, p2, p1))
+  }
+
+  def hopTeamsRandomly(teams: Seq[Team]): Seq[Team] = {
+    val hopRatio = 0.1
+    val nHopTeams: Int = (teams.size * hopRatio).toInt
+
+    val shuffledTeams = rng.shuffle(teams.toList)
+    val teams1 = shuffledTeams.take(nHopTeams)
+    val teams2 = shuffledTeams.drop(nHopTeams).take(nHopTeams)
+    val rest = shuffledTeams.drop(2 * nHopTeams)
+
+    val hopped = for {
+      (t1, t2) <- teams1.zip(teams2)
+    } yield {
+      val (r1, r2) = hopTeams(t1, t2)
+      Seq(r1, r2)
+    }
+
+    hopped.flatten ++ rest
+  }
+
   def prepareData(ladderOpt: Option[LadderSnapshot] = None,
                   teamsOpt: Option[Seq[Team]] = None,
+                  hopTeams: Seq[Team] => Seq[Team] = hopTeamsRandomly,
                   pickGames: (LadderSnapshot, Seq[Team]) => Seq[(Team, Team)] = pickGamesRandomly)
                   : Stream[(LadderSnapshot, LadderSnapshot, Set[Game])] = {
     val ladder: LadderSnapshot = ladderOpt.getOrElse( genLadder(ladderSize) )
 
-    val teams: Seq[Team] = teamsOpt.getOrElse {
+    val prevTeams: Seq[Team] = teamsOpt.getOrElse {
       val ids = ladder.keys.toSeq
       val result = ids.sliding(teamSize, teamSize).map(p => Team(p.toSet)).toSeq
       if (result.last.members.size == teamSize) result else result.init
     }
 
-    // TODO: team hopping
+    val teams = hopTeams(prevTeams)
 
     val matches: Seq[(Team, Team)] = pickGames(ladder, teams)
 
     val nextLadder: LadderSnapshot = matches.foldLeft(ladder) { (l, teams) => play(l, teams._1, teams._2) }
 
-    (ladder, nextLadder, matches.toSet) #:: prepareData(Some(nextLadder), Some(teams), pickGames)
+    (ladder, nextLadder, matches.toSet) #:: prepareData(Some(nextLadder), Some(teams), hopTeams, pickGames)
   }
 
   def calcRating(charId: CharacterId, team: Team, won: Boolean)(ladder: LadderSnapshot): Int = {
@@ -151,7 +179,10 @@ object ClusteringEvaluator extends App {
     result
   }
 
-  val data = prepareData().drop(200).take(500).toList
+  val data = prepareData().drop(200).take(100).toList
+  val (prevLadder, lastladder, _) = data.last
+  lastladder.values.toList.sortBy(-_.rating).map(i => (i.rating, i.seasonWins, i.seasonLosses)).foreach(println)
+
   val clusterer = new HTClusterer
 
   var i = 0

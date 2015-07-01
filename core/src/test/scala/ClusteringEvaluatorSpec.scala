@@ -73,7 +73,7 @@ class ClusteringEvaluatorSpec extends FlatSpec with Matchers {
   "prepare data" should "return correct first ladder" in {
     val firstMatches = (team1580, team1500)
     val data: Stream[(LadderSnapshot, LadderSnapshot, Set[(Team, Team)])] =
-      prepareData(Some(ladder), Some(Seq(team1500, team1580)), (_, _) => Seq(firstMatches))
+      prepareData(Some(ladder), Some(Seq(team1500, team1580)), identity, (_, _) => Seq(firstMatches))
 
     val (prevLadder, currentLadder, matchesPlayed) = data.head
     prevLadder should contain theSameElementsAs ladder
@@ -86,7 +86,7 @@ class ClusteringEvaluatorSpec extends FlatSpec with Matchers {
   it should "make correct transition to second ladder" in {
     val matches = (team1580, team1500)
     val data: Stream[(LadderSnapshot, LadderSnapshot, Set[(Team, Team)])] =
-      prepareData(Some(ladder), Some(Seq(team1500, team1580)), (_, _) => Seq(matches))
+      prepareData(Some(ladder), Some(Seq(team1500, team1580)), identity, (_, _) => Seq(matches))
 
     val (initLadder, firstLadder, firstMatchesPlayed) = data.head
     val (prevLadder, currentLadder, secondMatchesPlayed) = data.tail.head
@@ -96,5 +96,22 @@ class ClusteringEvaluatorSpec extends FlatSpec with Matchers {
     team1500.members.map(currentLadder).foreach { _.rating should be(1477) }
     team1580.members.map(currentLadder).foreach { _.rating should be(1603) }
     secondMatchesPlayed should contain theSameElementsAs Seq(matches)
+  }
+
+  "replace player" should "remove one player and add another" in {
+    val rt = replacePlayer(team1500, player1500.id, player1580.id)
+    rt.members should contain (player1580.id)
+    rt.members shouldNot contain (player1500.id)
+  }
+
+  "hop teams" should "exhange players between 1500 and 1580 teams" in {
+    val (t1, t2) = hopTeams(team1500, team1580)
+    t1.members.intersect(team1580.members).size should be(1)
+    t2.members.intersect(team1500.members).size should be(1)
+  }
+
+  "hopTeamsRandomly" should "preserve the number of teams" in {
+    hopTeamsRandomly(Seq(team1500, team1580)).size should be(2)
+    // TODO: expand this test
   }
 }
