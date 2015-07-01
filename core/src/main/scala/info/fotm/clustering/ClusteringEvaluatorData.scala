@@ -6,7 +6,7 @@ import info.fotm.domain._
 import scala.util.Random
 
 object ClusteringEvaluatorData {
-  lazy val matchesPerTurn = 5
+  lazy val matchesPerTurn = 10
   lazy val rng = new Random()
   lazy val ladderSize = 100
   lazy val teamSize = 3

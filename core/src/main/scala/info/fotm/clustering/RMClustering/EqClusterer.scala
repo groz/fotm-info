@@ -34,12 +34,13 @@ class EqClusterer extends Clusterer
       }
     }
 
-    val kMeansRunCount = 3
+    val kMeansRunCount = 5
 
     val kmeansClusterer = new KMeansClusterer
     val approxCountOfGroups = input.length / groupSize
     val clusterizations = (1 to kMeansRunCount).map(i => kmeansClusterer.clusterize(input, approxCountOfGroups))
-    val optClusterization = clusterizations.minBy(estimateClusterization)
+    //val optClusterization = clusterizations.minBy(estimateClusterization)
+    val optClusterization = clusterizations.filter(c => c.size == approxCountOfGroups).minBy(estimateClusterization)
     movePoint(optClusterization.toList).toSet
 
     //val n = uneqClusters.map(x => difference(groupSize, x.length)).sum //negative clusters deviation sum
