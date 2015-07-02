@@ -10,5 +10,6 @@ object Clusterer {
 
 trait Clusterer {
   def clusterize(input: Cluster, groupSize: Int): Set[Cluster]
+  // TODO: change to ``def clusterize[T](input: Map[T, MathVector], groupSize: Int): Set[Seq[T]]''
 }
 

@@ -6,12 +6,18 @@ import info.fotm.domain._
 import scala.util.Random
 
 object ClusteringEvaluatorData {
-  lazy val matchesPerTurn = 20
-  lazy val rng = new Random()
-  lazy val ladderSize = 200
+  /*
+  controls number of players changed between turns and fed to clusterer
+  for example:
+    10 matchesPerTurn = 30 players changed, clusterer will get 15(+) and 15(-)
+    in reality that number is also split between factions (not evenly though)
+   */
+  lazy val matchesPerTurn = 50
+  lazy val ladderSize = 1000
   lazy val teamSize = 3
   lazy val gamesPerWeek = 50
   lazy val hopRatio = 0.1
+  lazy val rng = new Random()
 
   def genPlayer = {
     val id = java.util.UUID.randomUUID().toString
