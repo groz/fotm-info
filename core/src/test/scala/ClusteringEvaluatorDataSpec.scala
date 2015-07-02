@@ -100,9 +100,9 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
   }
 
   "hop teams" should "exhange players between 1500 and 1580 teams" in {
-    val (t1, t2) = hopTeams(team1500, team1580)
-    t1.members.intersect(team1580.members).size should be(1)
-    t2.members.intersect(team1500.members).size should be(1)
+    val hopped = hopTeams(team1500, team1580)
+    hopped(0).members.intersect(team1580.members).size should be(1)
+    hopped(1).members.intersect(team1500.members).size should be(1)
   }
 
   "hopTeamsRandomly" should "preserve the number of teams" in {

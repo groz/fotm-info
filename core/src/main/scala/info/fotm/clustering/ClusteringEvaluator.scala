@@ -65,7 +65,7 @@ object ClusteringEvaluator extends App {
   // Runner
   import ClusteringEvaluatorData._
 
-  val data = prepareData().drop(500).take(1000).toList
+  val data = prepareData().drop(500).take(200).toList
   val (prevLadder, lastladder, _) = data.last
   lastladder.values.toList.sortBy(-_.rating).map(i => (i.rating, i.seasonWins, i.seasonLosses, i.weeklyWins, i.weeklyLosses)).foreach(println)
 

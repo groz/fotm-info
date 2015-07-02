@@ -6,8 +6,10 @@ lazy val commonSettings = Seq(
 
 name := "fotm"
 
+lazy val bnetapi = project.settings(commonSettings: _*)
+
 lazy val util = project.settings(commonSettings: _*)
 
-lazy val core = project.dependsOn(util).settings(commonSettings: _*)
+lazy val core = project.dependsOn(util, bnetapi).settings(commonSettings: _*)
 
-lazy val crawler = project.dependsOn(util, core).settings(commonSettings: _*)
+lazy val crawler = project.dependsOn(util, core, bnetapi).settings(commonSettings: _*)

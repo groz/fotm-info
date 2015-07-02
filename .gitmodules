@@ -1,0 +1,3 @@
+[submodule "bnetapi"]
+	path = bnetapi
+	url = https://github.com/Groz/fotm-bnet-api

@@ -6,9 +6,9 @@ import info.fotm.domain._
 import scala.util.Random
 
 object ClusteringEvaluatorData {
-  lazy val matchesPerTurn = 10
+  lazy val matchesPerTurn = 30
   lazy val rng = new Random()
-  lazy val ladderSize = 100
+  lazy val ladderSize = 200
   lazy val teamSize = 3
   lazy val gamesPerWeek = 50
   lazy val hopRatio = 0.1
@@ -88,61 +88,32 @@ object ClusteringEvaluatorData {
     }
   }
 
-  def hopTeams(team1: Team, team2: Team): (Team, Team) = {
+  def hopTeams(team1: Team, team2: Team): Seq[Team] = {
     val p1 = rng.shuffle(team1.members.toList).head
     val p2 = rng.shuffle(team2.members.toList).head
-    (replacePlayer(team1, p1, p2), replacePlayer(team2, p2, p1))
-  }
-
-  def hopTeamsByPlayer(teams: Seq[Team], ladder: LadderSnapshot): Seq[Team] = {
-    val ratio = hopRatio //hopRatioOpt.getOrElse(hopRatio)
-    //val players: Array[CharacterId] = rng.shuffle(teams).map(_.members).flatten.toArray
-    // TODO: shuffle
-    val players: Array[CharacterId] = teams.map(_.members).flatten.toArray
-    for (i <- 0 to players.length / 2) {
-      if (rng.nextDouble() < ratio) {
-        val idx = players.length - i - 1
-        val tmp = players(i)
-        players(i) = players(idx)
-        players(idx) = tmp
-      }
-    }
-    players.sliding(teamSize, teamSize).map(_.toSet).map(Team).toSeq
+    Seq(replacePlayer(team1, p1, p2), replacePlayer(team2, p2, p1))
   }
 
   def hopTeamsRandomly(teams: Seq[Team], ladder: LadderSnapshot, hopRatioOpt: Option[Double] = None): Seq[Team] = {
-    val nHopTeams: Int = (teams.size * hopRatioOpt.getOrElse(hopRatio)).toInt
+    val hr = hopRatioOpt.getOrElse(hopRatio)
 
-    if (nHopTeams == 0) teams
-    else {
-      /*
-        group players into buckets by rating
-        to swap players between teams with similar ratings
-        each bucket should have 1 random transfer
-       */
-      val bucketSize = teams.size / nHopTeams
-      val buckets = teams.sliding(bucketSize, bucketSize).toList
-
-      val hopped = for {
-        teamBucket: Seq[Team] <- buckets
-        shuffled = rng.shuffle(teamBucket)
-      } yield {
-          val t1: Team = shuffled.head
-          val t2: Team = shuffled.tail.head
-          val (r1, r2) = hopTeams(t1, t2)
-          (teamBucket diff Seq(t1, t2)) ++ Seq(r1, r2)
-        }
-
-      hopped.flatten.toSeq
+    val pairs = for {
+      window: Seq[Team] <- teams.sortBy(_.rating(ladder)).sliding(2, 2)
+      t1 = window.head
+      t2 = window.last
+    } yield {
+      if (rng.nextDouble < hr)
+        hopTeams(t1, t2)
+      else
+        Seq(t1, t2)
     }
-  }
 
-  def hopTeamsDef(teams: Seq[Team], ladder: LadderSnapshot): Seq[Team] =
-    hopTeamsRandomly(teams, ladder)
+    pairs.flatten.toSeq
+  }
 
   def prepareData(ladderOpt: Option[LadderSnapshot] = None,
                   teamsOpt: Option[Seq[Team]] = None,
-                  hopTeams: (Seq[Team], LadderSnapshot) => Seq[Team] = hopTeamsDef,
+                  hopTeams: (Seq[Team], LadderSnapshot) => Seq[Team] = hopTeamsRandomly(_, _, None),
                   pickGames: (LadderSnapshot, Seq[Team]) => Seq[(Team, Team)] = pickGamesRandomly,
                   i: Int = 0)
   : Stream[(LadderSnapshot, LadderSnapshot, Set[Game])] = {
