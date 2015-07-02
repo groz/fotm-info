@@ -110,6 +110,7 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
   }
 
   it should "correctly swap players between teams" in {
+    // TODO: pass rng function to hopTeamsRandomly to enable this test
     val players1400 = (1 to teamSize).map(i => genPlayer.copy(rating = 1400))
     val players1600 = (1 to teamSize).map(i => genPlayer.copy(rating = 1600))
     val team1400 = Team(players1400.map(_.id).toSet)
