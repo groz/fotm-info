@@ -1,5 +1,4 @@
 import info.fotm.clustering.ClusteringEvaluator._
-import info.fotm.clustering.ClusteringEvaluatorData._
 import info.fotm.clustering._
 import info.fotm.domain.Domain.LadderSnapshot
 import info.fotm.domain.{CharacterStats, Team}
@@ -9,6 +8,8 @@ import org.scalatest._
 import scala.collection.immutable.{IndexedSeq, TreeMap}
 
 class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with ClusteringEvaluatorSpecBase {
+  import gen._
+
   "Team rating" should "be mean of players' ratings" in {
     team1580.rating(ladder) should be(1580)
   }

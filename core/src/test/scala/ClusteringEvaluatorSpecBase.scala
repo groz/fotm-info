@@ -1,9 +1,12 @@
-import info.fotm.clustering.ClusteringEvaluatorData._
+import info.fotm.clustering.Defaults
 import info.fotm.domain.Domain._
 import info.fotm.domain.Team
 
 trait ClusteringEvaluatorSpecBase {
-  val teamSize = 3
+  val gen = Defaults.generators(3)
+  import gen._
+
+  val teamSize = Defaults.settings(3).teamSize
   val players1500 = (1 to teamSize).map(i => genPlayer)
   val players1580 = (1 to teamSize).map(i => genPlayer.copy(rating = 1580))
   val player1500 = players1500.head

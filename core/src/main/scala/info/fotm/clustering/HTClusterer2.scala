@@ -1,12 +1,12 @@
 package info.fotm.clustering
 
+import info.fotm.clustering.Clusterer.Cluster
 import info.fotm.util.MathVector
-import info.fotm.clustering.Clusterer._
 
 /*
 Hasan-Timur clusterer
  */
-class HTClusterer extends Clusterer {
+class HTClusterer2 extends Clusterer {
   def clusterize(input: Cluster, groupSize: Int): Set[Cluster] = {
     def clusterLinearization (a: Seq[(MathVector, Double)], b: Cluster) : Seq[(MathVector, Double)] =
       if (b.isEmpty) a else {
@@ -38,8 +38,8 @@ class HTClusterer extends Clusterer {
 
     //findClusters(l, tol)
 
-    val p = 20
-    var h = max / p
+    val p = 1000
+    val h = 1.0 * max / p
     def searching(tol: Double, maxTol: Double, acc: Set[Cluster]): Set[Cluster] = {
       if (tol > maxTol) acc else searching(tol + h, maxTol, acc ++ findClusters(l, tol).filter(x => x.size == groupSize))
     }

@@ -5,18 +5,25 @@ import info.fotm.domain._
 
 import scala.util.Random
 
-object ClusteringEvaluatorData {
+case class EvaluatorSettings(matchesPerTurn: Int = 20,
+                            ladderSize: Int = 1000,
+                            teamSize: Int = 5,
+                            hopRatio: Double = 0.05)
+
+case object Defaults {
+  lazy val settings = List(2, 3, 5, 10).map(size => (size, EvaluatorSettings(teamSize = size))).toMap
+  lazy val generators = settings.map(kv => kv._1 -> new ClusteringEvaluatorData(kv._2))
+}
+
+class ClusteringEvaluatorData(settings: EvaluatorSettings) {
+  import settings._
   /*
   controls number of players changed between turns and fed to clusterer
   for example:
     10 matchesPerTurn = 30 players changed, clusterer will get 15(+) and 15(-)
     in reality that number is also split between factions (not evenly though)
    */
-  lazy val matchesPerTurn = 20
-  lazy val ladderSize = 1000
-  lazy val teamSize = 3
   lazy val gamesPerWeek = 50
-  lazy val hopRatio = 0.05
   lazy val rng = new Random()
 
   def genPlayer = {
@@ -144,7 +151,7 @@ object ClusteringEvaluatorData {
 
     val teams = hopTeams(prevTeams, ladder)
 
-    println(s"Same teams: ${teams.intersect(prevTeams).size} / ${teams.size}")
+    //println(s"Same teams: ${teams.intersect(prevTeams).size} / ${teams.size}")
 
     val matches: Seq[(Team, Team)] = pickGames(ladder, teams)
 

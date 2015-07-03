@@ -1,14 +1,11 @@
 import info.fotm.clustering._
-import ClusteringEvaluatorData._
 import ClusteringEvaluator._
-import info.fotm.domain.Domain.LadderSnapshot
-import info.fotm.domain.Team
 import info.fotm.util.MathVector
 import org.scalatest._
 
-import scala.collection.immutable.{TreeMap, IndexedSeq}
-
 class ClusteringEvaluatorSpec extends FlatSpec with Matchers with ClusteringEvaluatorSpecBase {
+  import gen._
+
   "evaluateStep" should "return correct metrics when everything is guessed right" in {
     val games = Set((team1580, team1500))
 

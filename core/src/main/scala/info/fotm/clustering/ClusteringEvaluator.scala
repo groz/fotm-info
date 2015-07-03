@@ -7,8 +7,6 @@ import info.fotm.domain._
 import info.fotm.util.Statistics.Metrics
 import info.fotm.util.{Statistics, MathVector}
 
-import scala.util.Random
-
 object ClusteringEvaluator extends App {
   def sqr(x: Double) = x * x
 
@@ -22,13 +20,13 @@ object ClusteringEvaluator extends App {
     ci.nextInfo.weeklyLosses
   )
 
-  def findTeams(clusterer: RealClusterer, diffs: Seq[CharFeatures]): Set[Team] = {
+  def findTeams(clusterer: RealClusterer, diffs: Seq[CharFeatures], teamSize: Int): Set[Team] = {
     if (diffs.isEmpty)
       Set()
     else {
       val features: Seq[MathVector] = Statistics.normalize(diffs.map(featurize))
       val featureMap = diffs.map(_.prevInfo.id).zip(features).toMap
-      val clusters = clusterer.clusterize(featureMap, ClusteringEvaluatorData.teamSize)
+      val clusters = clusterer.clusterize(featureMap, teamSize)
       clusters.map(ps => Team(ps.toSet))
     }
   }
@@ -49,7 +47,11 @@ object ClusteringEvaluator extends App {
     val eDiffs = eTeams.flatMap(_.members).toList.map { p => CharFeatures(ladder(p), nextLadder(p)) }
 
     // algo evaluation: match output against teamsPlayed
-    val teams = findTeams(clusterer, wDiffs) ++ findTeams(clusterer, lDiffs) ++ findTeams(clusterer, eDiffs)
+    val teamSize = teamsPlayed.head.members.size
+    val teams =
+      findTeams(clusterer, wDiffs, teamSize) ++
+      findTeams(clusterer, lDiffs, teamSize) ++
+      findTeams(clusterer, eDiffs, teamSize)
     Statistics.calcMetrics(teams, teamsPlayed)
   }
 
@@ -65,31 +67,44 @@ object ClusteringEvaluator extends App {
   }
 
   {
-    // Runner
-    import ClusteringEvaluatorData._
+    for ((_, settings) <- Defaults.settings) {
+      println(s"Evaluating $settings:")
+      val dataGen = new ClusteringEvaluatorData(settings)
 
-    val data = prepareData().drop(500).take(200).toList
-    val (prevLadder, lastladder, _) = data.last
-    lastladder.values.toList.sortBy(-_.rating).map(i => (i.rating, i.seasonWins, i.seasonLosses, i.weeklyWins, i.weeklyLosses)).foreach(println)
+      // Runner
+      val data = dataGen.prepareData().drop(500).take(200).toList
+      //val (prevLadder, lastladder, _) = data.last
+      //lastladder.values.toList.sortBy(-_.rating).map(i => (i.rating, i.seasonWins, i.seasonLosses, i.weeklyWins, i.weeklyLosses)).foreach(println)
 
-    val clusterers: Map[String, RealClusterer] = Map(
-      "Random" -> RealClusterer.wrap(new RandomClusterer),
-      "Closest + Multiplexer" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer,
-      "Closest" -> RealClusterer.wrap(new ClosestClusterer),
-      "Closest + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Verifier,
-      "Closest + Multiplexer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier,
-      "HTClusterer" -> RealClusterer.wrap(new HTClusterer),
-      "HTClusterer + Verifier" -> RealClusterer.wrap(new HTClusterer),
-      "RMClusterer" -> RealClusterer.wrap(new EqClusterer),
-      "RMClusterer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer)) with Verifier
-//      "HT + RM + Verifier" -> new Summator(RealClusterer.wrap(new EqClusterer), RealClusterer.wrap(new HTClusterer)) with Verifier
-//      "HT + RM + Closest" -> new Summator(new EqClusterer, new HTClusterer, new ClosestClusterer),
-//      "HT + RM + (Closest with Multiplexer)" -> new Summator(new EqClusterer, new HTClusterer, new ClosestClusterer with Multiplexer)
-    )
+      val clusterers: Map[String, RealClusterer] = Map(
+        "HTClusterer" -> RealClusterer.wrap(new HTClusterer),
+        "HTClusterer2" -> RealClusterer.wrap(new HTClusterer2)
+//         "Random" -> RealClusterer.wrap(new RandomClusterer),
+//         "Closest + Multiplexer" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer,
+//          "Closest" -> RealClusterer.wrap(new ClosestClusterer)
+        //      "Closest + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Verifier,
+        //      "Closest + Multiplexer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier,
+        //      "HTClusterer + Verifier" -> RealClusterer.wrap(new HTClusterer),
+        //      "RMClusterer" -> RealClusterer.wrap(new EqClusterer),
+        //      "RMClusterer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer)) with Verifier,
+        ////      "HT + RM + Verifier" -> new Summator(RealClusterer.wrap(new EqClusterer), RealClusterer.wrap(new HTClusterer)) with Verifier
+        ////      "HT + RM + Closest" -> new Summator(new EqClusterer, new HTClusterer, new ClosestClusterer),
+        //      "HT + RM + (Closest with Multiplexer)" -> new Summator(
+        //        RealClusterer.wrap(new EqClusterer),
+        //        RealClusterer.wrap(new HTClusterer),
+        //        new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
+        //      ),
+        //      "HT + RM + (Closest with Multiplexer) + Verifier" -> new ClonedClusterer(new Summator(
+        //        RealClusterer.wrap(new EqClusterer),
+        //        RealClusterer.wrap(new HTClusterer),
+        //        new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
+        //      )) with Verifier
+      )
 
-    for ((name, clusterer) <- clusterers) {
-      val result = evaluate(clusterer, data)
-      println(s"$name = $result")
+      for ((name, clusterer) <- clusterers.par) {
+        val result = evaluate(clusterer, data)
+        println(s"$name = $result")
+      }
     }
   }
 }
