@@ -81,7 +81,7 @@ object Crawler extends App {
         prev.filter(distance(_, current) == 1).foreach { check(_, current) }
 
         val next = history.from(current).tail.headOption
-        next.filter(distance(_, current) == 1).foreach { check(current, _) }
+        next.filter(distance(current, _) == 1).foreach { check(current, _) }
 
         // TODO: keep history to fixed max size
         if (history.size > maxSize)
