@@ -12,7 +12,7 @@ object ClusteringEvaluatorData {
     10 matchesPerTurn = 30 players changed, clusterer will get 15(+) and 15(-)
     in reality that number is also split between factions (not evenly though)
    */
-  lazy val matchesPerTurn = 50
+  lazy val matchesPerTurn = 20
   lazy val ladderSize = 1000
   lazy val teamSize = 3
   lazy val gamesPerWeek = 50

@@ -46,7 +46,6 @@ object ClusteringEvaluator extends App {
     val eDiffs = eTeams.flatMap(_.members).toList.map { p => CharFeatures(ladder(p), nextLadder(p)) }
 
     // algo evaluation: match output against teamsPlayed
-    //println(wDiffs.size, lDiffs.size)
     val teams = findTeams(wDiffs) ++ findTeams(lDiffs) ++ findTeams(eDiffs)
     Statistics.calcMetrics(teams, teamsPlayed)
   }
@@ -82,8 +81,17 @@ object ClusteringEvaluator extends App {
 
       def teamFinder(diffs: Seq[CharFeatures]): Set[Team] = {
         print('.')
+
         findTeams((ps: Seq[MathVector]) => {
-          if (ps.size == 0) Set(ps)
+          /*
+          Temporary output to see the data fed into clusterizers
+
+          val inputs = ps.sliding(teamSize, teamSize).toList
+          inputs.foreach(println)
+          println("==========")
+          */
+
+          if (ps.size == 0) Set()
           else clusterer.clusterize(rng.shuffle(ps), teamSize)
         }, diffs)
       }
