@@ -13,7 +13,8 @@ class ClosestClusterer extends Clusterer {
       val (result, cluster, left) = acc
 
       cluster.size match {
-        case 0 => (result, Seq(left.head), left.tail)
+        case 0 =>
+          (result, Seq(left.head), left.tail)
         case x: Int if x == size =>
           if (left.size > 0)
             (result + cluster, Seq(left.head), left.tail)

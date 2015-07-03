@@ -13,3 +13,22 @@ trait Clusterer {
   // TODO: change to ``def clusterize[T](input: Map[T, MathVector], groupSize: Int): Set[Seq[T]]''
 }
 
+trait RealClusterer {
+  def clusterize[T](input: Map[T, MathVector], groupSize: Int): Set[Seq[T]]
+  // def clusterize(input: Seq[MathVector], groupSize: Int): Seq[Int]
+}
+
+object RealClusterer {
+
+  // TODO: works only as long as MathVector has referential equality
+  def wrap(clusterer: Clusterer) = new RealClusterer {
+
+    override def clusterize[T](input: Map[T, MathVector], groupSize: Int): Set[Seq[T]] = {
+      val reverseMap = input.map(_.swap)
+      val clusters: Set[Cluster] = clusterer.clusterize(input.values.toSeq, groupSize)
+      clusters.map(_.map(reverseMap))
+    }
+
+  }
+
+}

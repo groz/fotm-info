@@ -105,6 +105,12 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
     rt.members should contain (player1500.id)
   }
 
+  it should "work when the players are in the same team" in {
+    val rt = replacePlayer(team1500, team1500.members.head, team1500.members.last)
+    rt.members.size should be(3)
+    team1500.members.foreach { rt.members should contain (_) }
+  }
+
   "hop teams" should "exhange players between 1500 and 1580 teams" in {
     val hopped = hopTeams(team1500, team1580)
     hopped(0).members.intersect(team1580.members).size should be(1)

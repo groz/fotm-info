@@ -16,7 +16,7 @@ object ClusteringEvaluatorData {
   lazy val ladderSize = 1000
   lazy val teamSize = 3
   lazy val gamesPerWeek = 50
-  lazy val hopRatio = 0.1
+  lazy val hopRatio = 0.05
   lazy val rng = new Random()
 
   def genPlayer = {
@@ -46,7 +46,10 @@ object ClusteringEvaluatorData {
       .toSeq
   }
 
-  def replacePlayer(team: Team, src: CharacterId, dst: CharacterId) = team.copy(team.members - src + dst)
+  def replacePlayer(team: Team, src: CharacterId, dst: CharacterId): Team = {
+    if (team.members.contains(src) && team.members.contains(dst)) team
+    else team.copy(team.members - src + dst)
+  }
 
   def calcRating(charId: CharacterId, team: Team, won: Boolean)(ladder: LadderSnapshot): Int = {
     val teamRating = team.rating(ladder)
