@@ -15,8 +15,7 @@ class ClosestPlusPlusClusterer extends Clusterer {
       if (clusters.isEmpty)
         (clusters :+ Seq(left.head), left diff Seq(left.head))
       else {
-        val averages: Seq[MathVector] = clusters.map(MathVector.avg)
-        val furthest: MathVector = left.maxBy(v => averages.map(_.distTo(v)).sum)
+        val furthest: MathVector = left.maxBy(v => clusters.flatten.map(_.distTo(v)).sum)
         (clusters :+ Seq(furthest), left diff Seq(furthest))
       }
     }
@@ -27,7 +26,12 @@ class ClosestPlusPlusClusterer extends Clusterer {
 
     // add points to nearest clusters that are not yet full
     vectorsLeft.foldLeft(seedClusters) { (clusters, v) =>
-      val closestCluster = clusters.filter(_.size < groupSize).minBy(MathVector.avg(_).distTo(v))
+      val nonFullClusters = clusters.filter(_.size < groupSize)
+
+      val closestCluster = nonFullClusters.minBy { cluster =>
+        cluster.map(_.distTo(v)).sum
+      }
+
       val newCluster = closestCluster :+ v
       (clusters diff Seq(closestCluster)) :+ newCluster
     }.toSet

@@ -1,6 +1,7 @@
 package info.fotm.clustering
 
 import info.fotm.clustering.RMClustering.EqClusterer
+import info.fotm.clustering.enhancers.Multiplexer
 import info.fotm.domain.Domain._
 import info.fotm.domain._
 import info.fotm.util.Statistics.Metrics
@@ -71,8 +72,10 @@ object ClusteringEvaluator extends App {
 
     val clusterers = Map(
       "Random" -> new RandomClusterer,
+      "Closest" -> new ClosestClusterer,
+      "Closest with Multiplexer" -> new ClosestClusterer with Multiplexer,
+      "Closest++" -> new ClosestPlusPlusClusterer,
       "HTClusterer" -> new HTClusterer,
-      "ClosestClusterer" -> new ClosestClusterer,
       "RMClusterer" -> new EqClusterer
     )
 

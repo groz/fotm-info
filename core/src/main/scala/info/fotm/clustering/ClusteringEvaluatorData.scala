@@ -108,7 +108,9 @@ object ClusteringEvaluatorData {
       t1 = window.head
       t2 = window.last
     } yield {
-      if (rng.nextDouble < hr)
+      if (t1 == t2)
+        Seq(t1)
+      else if (rng.nextDouble < hr)
         hopTeams(t1, t2)
       else
         Seq(t1, t2)
