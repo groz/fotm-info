@@ -77,16 +77,17 @@ object ClusteringEvaluator extends App {
       //lastladder.values.toList.sortBy(-_.rating).map(i => (i.rating, i.seasonWins, i.seasonLosses, i.weeklyWins, i.weeklyLosses)).foreach(println)
 
       val clusterers: Map[String, RealClusterer] = Map(
+        "Random" -> RealClusterer.wrap(new RandomClusterer),
         "HTClusterer" -> RealClusterer.wrap(new HTClusterer),
-        "HTClusterer2" -> RealClusterer.wrap(new HTClusterer2)
-//         "Random" -> RealClusterer.wrap(new RandomClusterer),
-//         "Closest + Multiplexer" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer,
-//          "Closest" -> RealClusterer.wrap(new ClosestClusterer)
+        "HTClusterer2" -> RealClusterer.wrap(new HTClusterer2),
+        "HTClusterer2 + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new HTClusterer2)) with Verifier,
+        "RMClusterer" -> RealClusterer.wrap(new EqClusterer),
+        "RMClusterer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer)) with Verifier,
+        "Closest" -> RealClusterer.wrap(new ClosestClusterer),
+        "Closest + Multiplexer" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer,
+        "Closest + Multiplexer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier,
         //      "Closest + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Verifier,
-        //      "Closest + Multiplexer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier,
         //      "HTClusterer + Verifier" -> RealClusterer.wrap(new HTClusterer),
-        //      "RMClusterer" -> RealClusterer.wrap(new EqClusterer),
-        //      "RMClusterer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer)) with Verifier,
         ////      "HT + RM + Verifier" -> new Summator(RealClusterer.wrap(new EqClusterer), RealClusterer.wrap(new HTClusterer)) with Verifier
         ////      "HT + RM + Closest" -> new Summator(new EqClusterer, new HTClusterer, new ClosestClusterer),
         //      "HT + RM + (Closest with Multiplexer)" -> new Summator(
@@ -94,11 +95,11 @@ object ClusteringEvaluator extends App {
         //        RealClusterer.wrap(new HTClusterer),
         //        new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
         //      ),
-        //      "HT + RM + (Closest with Multiplexer) + Verifier" -> new ClonedClusterer(new Summator(
-        //        RealClusterer.wrap(new EqClusterer),
-        //        RealClusterer.wrap(new HTClusterer),
-        //        new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
-        //      )) with Verifier
+        "HT + RM + Closest + Verifier" -> new ClonedClusterer(new Summator(
+          RealClusterer.wrap(new EqClusterer),
+          RealClusterer.wrap(new HTClusterer),
+          RealClusterer.wrap(new ClosestClusterer)
+        )) with Verifier
       )
 
       for ((name, clusterer) <- clusterers.par) {
