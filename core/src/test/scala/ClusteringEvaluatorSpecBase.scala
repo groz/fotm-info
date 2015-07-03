@@ -13,3 +13,4 @@ trait ClusteringEvaluatorSpecBase {
 
   val ladder: LadderSnapshot = (players1500 ++ players1580).map(p => (p.id, p)).toMap
 }
+

@@ -2,9 +2,7 @@ import info.fotm.clustering._
 import info.fotm.util.MathVector
 import org.scalatest._
 
-import scala.collection.immutable.{TreeMap, IndexedSeq}
-
-class ClosestClustererSpec extends FlatSpec with Matchers {
+class ClosestClustererSpec extends FlatSpec with Matchers with ClustererSpecBase {
 
   "clusterize" should "correctly group simple vectors" in {
     val clusterer = new ClosestClusterer
@@ -21,7 +19,7 @@ class ClosestClustererSpec extends FlatSpec with Matchers {
     val expected = Set(
       Seq(input(0), input(3)),
       Seq(input(1), input(4)),
-      Seq(input(2), input(5))
+      Seq(input(5), input(2))
     )
 
     val clusters: Set[Seq[MathVector]] = clusterer.clusterize(input, 2)
