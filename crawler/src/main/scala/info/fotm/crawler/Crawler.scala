@@ -48,11 +48,6 @@ object Crawler extends App {
     lt
   }
 
-  /*
-  TODO: create a queue of updates here sorted by totalGames
-  ? start processing first 2 when there are 2 more in the queue
-  */
-
   def distance(l1: MyLeaderboard, l2: MyLeaderboard): Int = {
     val commonKeys: Set[CharId] = l1.keySet.intersect(l2.keySet)
     val distances: Set[Int] = commonKeys.map(k => l2(k).seasonTotal - l1(k).seasonTotal)
