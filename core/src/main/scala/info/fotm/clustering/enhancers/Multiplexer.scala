@@ -10,7 +10,7 @@ import scala.util.Random
 trait Multiplexer extends RealClusterer {
   protected lazy val multiplexRng = new Random
   protected lazy val multiplexTurns = 20
-  protected lazy val multiplexThreshold = 2
+  protected lazy val multiplexThreshold = 3
 
   abstract override def clusterize[T](input: Map[T, MathVector], groupSize: Int): Set[Seq[T]] = {
     class RandomOrder extends Ordering[T] {

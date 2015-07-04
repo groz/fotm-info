@@ -34,7 +34,8 @@ object ClusteringEvaluator extends App {
   def evaluateStep(clusterer: RealClusterer,
                    ladder: LadderSnapshot,
                    nextLadder: LadderSnapshot,
-                   games: Set[Game]): Statistics.Metrics = {
+                   games: Set[Game],
+                   nLost: Int = 0): Statistics.Metrics = {
     print(".")
     val teamsPlayed: Set[Team] = games.map(g => Seq(g._1, g._2)).flatten
 
@@ -46,11 +47,15 @@ object ClusteringEvaluator extends App {
     val lDiffs = lTeams.flatMap(_.members).toList.map { p => CharFeatures(ladder(p), nextLadder(p)) }
     val eDiffs = eTeams.flatMap(_.members).toList.map { p => CharFeatures(ladder(p), nextLadder(p)) }
 
+    val noisyWDiffs = wDiffs.drop(nLost/2).dropRight(nLost/2)
+    val noisyLDiffs = lDiffs.drop(nLost/2).dropRight(nLost/2)
+
     // algo evaluation: match output against teamsPlayed
     val teamSize = teamsPlayed.head.members.size
     val teams =
-      findTeams(clusterer, wDiffs, teamSize) ++
-      findTeams(clusterer, lDiffs, teamSize) ++
+      //findTeams(clusterer, wDiffs, teamSize) ++
+      findTeams(clusterer, noisyWDiffs, teamSize) ++
+      findTeams(clusterer, noisyLDiffs, teamSize) ++
       findTeams(clusterer, eDiffs, teamSize)
     Statistics.calcMetrics(teams, teamsPlayed)
   }
@@ -58,7 +63,7 @@ object ClusteringEvaluator extends App {
   def evaluate(clusterer: RealClusterer, data: Seq[(LadderSnapshot, LadderSnapshot, Set[Game])]): Double = {
     val stats: Seq[Metrics] =
       for { (ladder, nextLadder, games) <- data }
-      yield evaluateStep(clusterer, ladder, nextLadder, games)
+      yield evaluateStep(clusterer, ladder, nextLadder, games, 2 * games.head._1.members.size - 1)
 
     val combinedMetrics: Metrics = stats.reduce(_ + _)
     println(s"\n$combinedMetrics")
@@ -84,8 +89,8 @@ object ClusteringEvaluator extends App {
         "RMClusterer" -> RealClusterer.wrap(new EqClusterer),
         "RMClusterer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer)) with Verifier,
         "Closest" -> RealClusterer.wrap(new ClosestClusterer),
-        "Closest + Multiplexer" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer,
-        "Closest + Multiplexer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier,
+        "Closest * Multiplexer" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer,
+        "Closest * Multiplexer * Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier,
         //      "Closest + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Verifier,
         //      "HTClusterer + Verifier" -> RealClusterer.wrap(new HTClusterer),
         ////      "HT + RM + Verifier" -> new Summator(RealClusterer.wrap(new EqClusterer), RealClusterer.wrap(new HTClusterer)) with Verifier
@@ -95,11 +100,21 @@ object ClusteringEvaluator extends App {
         //        RealClusterer.wrap(new HTClusterer),
         //        new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
         //      ),
-        "HT + RM + Closest + Verifier" -> new ClonedClusterer(new Summator(
+        "(HT + RM + Closest) * Verifier" -> new ClonedClusterer(new Summator(
           RealClusterer.wrap(new EqClusterer),
           RealClusterer.wrap(new HTClusterer),
           RealClusterer.wrap(new ClosestClusterer)
-        )) with Verifier
+        )) with Verifier,
+        "(HT2 + Closest * Multiplexer) * Verifier(2)" -> new ClonedClusterer(new Summator(
+          RealClusterer.wrap(new HTClusterer2),
+          new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
+        )) with Verifier,
+        "(HT2 + Closest * Multiplexer) * Verifier(3)" -> new ClonedClusterer(new Summator(
+          RealClusterer.wrap(new HTClusterer2),
+          new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
+        )) with Verifier {
+          override lazy val verifierThreshold = 3
+        }
       )
 
       for ((name, clusterer) <- clusterers.par) {
