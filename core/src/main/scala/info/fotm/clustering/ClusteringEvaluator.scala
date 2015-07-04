@@ -37,7 +37,7 @@ object ClusteringEvaluator extends App {
                    games: Set[Game],
                    nLost: Int = 0): Statistics.Metrics = {
     print(".")
-    val teamsPlayed: Set[Team] = games.map(g => Seq(g._1, g._2)).flatten
+    val teamsPlayed: Set[Team] = games.flatMap(g => Seq(g._1, g._2))
 
     val (wTeams, leTeams) = teamsPlayed.partition(t => t.rating(nextLadder) - t.rating(ladder) > 0)
     val (eTeams, lTeams) = leTeams.partition(t => t.rating(nextLadder) - t.rating(ladder) == 0)
@@ -62,8 +62,11 @@ object ClusteringEvaluator extends App {
 
   def evaluate(clusterer: RealClusterer, data: Seq[(LadderSnapshot, LadderSnapshot, Set[Game])]): Double = {
     val stats: Seq[Metrics] =
-      for { (ladder, nextLadder, games) <- data }
-      yield evaluateStep(clusterer, ladder, nextLadder, games, 2 * games.head._1.members.size - 1)
+      for {
+        (ladder, nextLadder, games) <- data
+        noise = 2 * games.head._1.members.size - 1
+      }
+      yield evaluateStep(clusterer, ladder, nextLadder, games, noise)
 
     val combinedMetrics: Metrics = stats.reduce(_ + _)
     println(s"\n$combinedMetrics")
@@ -83,13 +86,13 @@ object ClusteringEvaluator extends App {
 
       val clusterers: Map[String, RealClusterer] = Map(
         "Random" -> RealClusterer.wrap(new RandomClusterer),
-        "HTClusterer" -> RealClusterer.wrap(new HTClusterer),
+//        "HTClusterer" -> RealClusterer.wrap(new HTClusterer),
         "HTClusterer2" -> RealClusterer.wrap(new HTClusterer2),
         "HTClusterer2 + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new HTClusterer2)) with Verifier,
-        "RMClusterer" -> RealClusterer.wrap(new EqClusterer),
-        "RMClusterer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer)) with Verifier,
-        "Closest" -> RealClusterer.wrap(new ClosestClusterer),
-        "Closest * Multiplexer" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer,
+        //"RMClusterer" -> RealClusterer.wrap(new EqClusterer),
+        //"RMClusterer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer)) with Verifier,
+//        "Closest" -> RealClusterer.wrap(new ClosestClusterer),
+//        "Closest * Multiplexer" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer,
         "Closest * Multiplexer * Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier,
         //      "Closest + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Verifier,
         //      "HTClusterer + Verifier" -> RealClusterer.wrap(new HTClusterer),
@@ -100,21 +103,15 @@ object ClusteringEvaluator extends App {
         //        RealClusterer.wrap(new HTClusterer),
         //        new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
         //      ),
-        "(HT + RM + Closest) * Verifier" -> new ClonedClusterer(new Summator(
-          RealClusterer.wrap(new EqClusterer),
-          RealClusterer.wrap(new HTClusterer),
-          RealClusterer.wrap(new ClosestClusterer)
-        )) with Verifier,
+//        "(HT + RM + Closest) * Verifier" -> new ClonedClusterer(new Summator(
+//          RealClusterer.wrap(new EqClusterer),
+//          RealClusterer.wrap(new HTClusterer),
+//          RealClusterer.wrap(new ClosestClusterer)
+//        )) with Verifier,
         "(HT2 + Closest * Multiplexer) * Verifier(2)" -> new ClonedClusterer(new Summator(
           RealClusterer.wrap(new HTClusterer2),
           new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
-        )) with Verifier,
-        "(HT2 + Closest * Multiplexer) * Verifier(3)" -> new ClonedClusterer(new Summator(
-          RealClusterer.wrap(new HTClusterer2),
-          new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
-        )) with Verifier {
-          override lazy val verifierThreshold = 3
-        }
+        )) with Verifier
       )
 
       for ((name, clusterer) <- clusterers.par) {

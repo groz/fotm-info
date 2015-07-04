@@ -5,7 +5,7 @@ import info.fotm.domain._
 
 import scala.util.Random
 
-case class EvaluatorSettings(matchesPerTurn: Int = 20,
+case class EvaluatorSettings(matchesPerTurn: Int = 50,
                             ladderSize: Int = 1000,
                             teamSize: Int = 5,
                             hopRatio: Double = 0.05)
