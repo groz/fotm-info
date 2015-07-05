@@ -34,6 +34,10 @@ class MathVectorSpec extends FlatSpec with Matchers {
     (MathVector(1.0, 1.0) * 2) should equal (MathVector(2, 2))
   }
 
+  it should "multiply vector by a zero correctly" in {
+    (MathVector(1.0, 1.0) * 0) should equal (MathVector(0, 0))
+  }
+
   it should "calc vector length correctly" in {
     MathVector(3.0, 4.0).length should equal (5.0)
   }
