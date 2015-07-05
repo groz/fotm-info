@@ -28,7 +28,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings) {
 
   def genPlayer = {
     val id = java.util.UUID.randomUUID().toString
-    CharacterStats(CharacterId(id), 1500, 0, 0, 0, 0)
+    CharacterStats(CharacterId(id, id), 1500, 0, 0, 0, 0)
   }
 
   def genLadder(nPlayers: Int): LadderSnapshot = (0 until nPlayers).map(i => {
