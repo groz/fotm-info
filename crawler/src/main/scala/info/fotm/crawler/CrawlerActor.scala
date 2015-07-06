@@ -66,13 +66,15 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
   } yield context.actorOf(Props(classOf[TeamFinderActor], algo), self.path.name + "-finder-"+name))
   .toList
 
+  self ! Crawl
+
   override def receive = {
     case Crawl =>
       api.leaderboard(Twos).map(LeaderboardReceived).recover {
         case _ => CrawlFailed
       } pipeTo self
 
-    case CrawlFailed =>
+    case CrawlFailed => self ! Crawl
 
     case LeaderboardReceived(leaderboard: Leaderboard) =>
       val current: MyLeaderboard = leaderboard.rows.map(r => (CharacterId(r.name, r.realmSlug), r)).toMap
@@ -96,6 +98,7 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
         if (history.size > maxSize)
           history -= history.head
       }
+      self ! Crawl
   }
 
   private def processUpdate(previous: MyLeaderboard, current: MyLeaderboard) = {
