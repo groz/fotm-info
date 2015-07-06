@@ -45,4 +45,7 @@ class MathVectorSpec extends FlatSpec with Matchers {
   it should "normalize vector correctly" in {
     //MathVector(2.0, 0, 0).normalize should equal (MathVector(1.0, 0, 0))
   }
+  it should "do something" in {
+    //MathVector(2.0, 0, 0).normalize should equal (MathVector(1.0, 0, 0))
+  }
 }
