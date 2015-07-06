@@ -49,4 +49,8 @@ class MathVectorSpec extends FlatSpec with Matchers {
     (-MathVector(1.0, 1.0, 1.0)) should equal (MathVector(-1.0, -1.0, -1.0))
   }
   //little change
+
+  it should "calculate average correctly" in {
+    MathVector.avg(Seq(MathVector(1,2), MathVector(3,6))) should equal (MathVector(2.0,4.0))
+  }
 }
