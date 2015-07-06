@@ -13,7 +13,31 @@
         </encoder>
     </appender>
 
+    <appender name="US2v2" class="ch.qos.logback.core.FileAppender">
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator>
+                <expression>return logger.contains("netty") || logger.contains("AsyncCompletionHandler");</expression>
+            </evaluator>
+            <OnMatch>DENY</OnMatch>
+        </filter>
+
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator>
+                <expression>return ((String)mdc.get("akkaSource")).contains("US-2v2");</expression>
+            </evaluator>
+            <OnMatch>ACCEPT</OnMatch>
+            <OnMismatch>DENY</OnMismatch>
+        </filter>
+
+        <file>logs/us_2v2.txt</file>
+
+        <encoder>
+            <pattern>[%d{HH:mm:ss.SSS}] %-5level [%X{akkaSource}] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
     <root level="debug">
         <appender-ref ref="STDOUT" />
+        <appender-ref ref="US2v2" />
     </root>
 </configuration>
