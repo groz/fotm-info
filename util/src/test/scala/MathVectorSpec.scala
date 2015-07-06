@@ -48,5 +48,8 @@ class MathVectorSpec extends FlatSpec with Matchers {
   it should "apply unary minus correctly" in {
     (-MathVector(1.0, 1.0, 1.0)) should equal (MathVector(-1.0, -1.0, -1.0))
   }
+  it should "apply unary plus correctly" in {
+    (+MathVector(1.0, 1.0, 1.0)) should equal (MathVector(1.0, 1.0, 1.0))
+  }
   //little change
 }
