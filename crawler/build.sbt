@@ -1,13 +1,8 @@
 libraryDependencies ++= Seq(
   "net.databinder.dispatch" %% "dispatch-core" % "0.11.2",
+  "ch.qos.logback" % "logback-classic" % "1.1.3",
+  "org.codehaus.janino" % "janino" % "2.6.1",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
-)
-
-resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/"
-
-libraryDependencies ++= Seq(
-  "com.typesafe.play" %% "play-json" % "2.4.0",
-  "com.typesafe.play" %% "play-ws" % "2.4.0"
 )
 
 resolvers += "Typesafe Snapshots" at "http://repo.akka.io/snapshots/"
