@@ -1,6 +1,6 @@
 package info.fotm.clustering
 
-import info.fotm.clustering.RMClustering.EqClusterer
+import info.fotm.clustering.RMClustering.{EqClusterer2, EqClusterer}
 import info.fotm.clustering.enhancers.{ClonedClusterer, Verifier, Summator, Multiplexer}
 import info.fotm.domain.Domain._
 import info.fotm.domain._
@@ -52,11 +52,19 @@ object ClusteringEvaluator extends App {
 
     // algo evaluation: match output against teamsPlayed
     val teamSize = teamsPlayed.head.members.size
+//    val teams =
+//      //findTeams(clusterer, wDiffs, teamSize) ++
+//      findTeams(clusterer, noisyWDiffs, teamSize) ++
+//      findTeams(clusterer, noisyLDiffs, teamSize) ++
+//      findTeams(clusterer, eDiffs, teamSize)
+
+    // noiseless
     val teams =
-      //findTeams(clusterer, wDiffs, teamSize) ++
-      findTeams(clusterer, noisyWDiffs, teamSize) ++
-      findTeams(clusterer, noisyLDiffs, teamSize) ++
-      findTeams(clusterer, eDiffs, teamSize)
+    //findTeams(clusterer, wDiffs, teamSize) ++
+      findTeams(clusterer, wDiffs, teamSize) ++
+        findTeams(clusterer, lDiffs, teamSize) ++
+        findTeams(clusterer, eDiffs, teamSize)
+
     Statistics.calcMetrics(teams, teamsPlayed)
   }
 
@@ -85,12 +93,12 @@ object ClusteringEvaluator extends App {
       //lastladder.values.toList.sortBy(-_.rating).map(i => (i.rating, i.seasonWins, i.seasonLosses, i.weeklyWins, i.weeklyLosses)).foreach(println)
 
       val clusterers: Map[String, RealClusterer] = Map(
-        "Random" -> RealClusterer.wrap(new RandomClusterer),
+//        "Random" -> RealClusterer.wrap(new RandomClusterer),
 //        "HTClusterer" -> RealClusterer.wrap(new HTClusterer),
         "HTClusterer2" -> RealClusterer.wrap(new HTClusterer2),
         "HTClusterer2 + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new HTClusterer2)) with Verifier,
-        //"RMClusterer" -> RealClusterer.wrap(new EqClusterer),
-        //"RMClusterer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer)) with Verifier,
+        "RMClusterer" -> RealClusterer.wrap(new EqClusterer2),
+        "RMClusterer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer2)) with Verifier,
 //        "Closest" -> RealClusterer.wrap(new ClosestClusterer),
 //        "Closest * Multiplexer" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer,
         "Closest * Multiplexer * Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier,
