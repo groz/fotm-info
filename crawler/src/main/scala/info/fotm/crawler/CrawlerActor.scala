@@ -70,11 +70,11 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
 
   override def receive = {
     case Crawl =>
-      api.leaderboard(Twos).map(LeaderboardReceived).recover {
+      val request = api.leaderboard(Twos).map(LeaderboardReceived).recover {
         case _ => CrawlFailed
-      } pipeTo self
+      } pipeTo self onComplete { _ => self ! Crawl }
 
-    case CrawlFailed => self ! Crawl
+    case CrawlFailed =>
 
     case LeaderboardReceived(leaderboard: Leaderboard) =>
       val current: MyLeaderboard = leaderboard.rows.map(r => (CharacterId(r.name, r.realmSlug), r)).toMap
@@ -98,7 +98,6 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
         if (history.size > maxSize)
           history -= history.head
       }
-      self ! Crawl
   }
 
   private def processUpdate(previous: MyLeaderboard, current: MyLeaderboard) = {
