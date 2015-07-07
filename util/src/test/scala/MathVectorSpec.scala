@@ -53,4 +53,11 @@ class MathVectorSpec extends FlatSpec with Matchers {
   it should "calculate average correctly" in {
     MathVector.avg(Seq(MathVector(1,2), MathVector(3,6))) should equal (MathVector(2.0,4.0))
   }
+
+  it should "the triangle inequality must be carried" in {
+    val v1 = MathVector(1,2)
+    val v2 = MathVector(3,4)
+    val v3 = MathVector(2,1)
+    ((v1 distTo v2) + (v2 distTo v3) > (v1 distTo v3)) should equal (true)
+  }
 }
