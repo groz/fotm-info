@@ -30,6 +30,9 @@ class MathVector(val coords: Seq[Double]) {
 
   def distTo(that: MathVector) = (this - that).length
 
+  def distTo1(that: MathVector) = (this - that).coords.map(math.abs).sum
+
+  def distToInfty(that: MathVector) = (this - that).coords.maxBy(math.abs).abs
   def sqrDistTo(that: MathVector) = (this - that).sqrlength
 
   def normalize: MathVector = MathVector(coords.map(x => x / length): _*)

@@ -11,12 +11,14 @@ class KMeansClusterer extends Clusterer {
 
   def clusterize(input: Cluster, clustersCount: Int): Set[Cluster] =
   {
-
     val means = initialize_plusplus(input, clustersCount)
-    //println(means)
-    //println(Set(input))
     process(Set(input),means)
+  }
 
+  def clusterize(input: Cluster, clustersCount: Int, initCenters: Seq[V]): Set[Cluster] =
+  {
+    require(clustersCount == initCenters.length)
+    process(Set(input), initCenters)
   }
 
   def process(clusters: Set[Cluster], means: Seq[V]): Set[Cluster] =
@@ -107,7 +109,7 @@ class KMeansClusterer extends Clusterer {
     clusters.map(c=> div(c.reduce(sumOf),c.length)).toSeq
   }
 
-  def distance(v1: V, v2: V): Double = v1.sqrDistTo(v2) //v1.zip(v2).map(x=>Math.pow(x._1-x._2,2)).sum
+  def distance(v1: V, v2: V): Double = v1.distTo1(v2) //v1.zip(v2).map(x=>Math.pow(x._1-x._2,2)).sum
 
   def sumOf(v1: V, v2: V): V = v1 + v2 //v1.zip(v2).map({case(x1,x2)=>x1+x2})
 

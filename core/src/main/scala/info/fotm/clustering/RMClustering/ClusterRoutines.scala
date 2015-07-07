@@ -5,6 +5,71 @@ import info.fotm.util.MathVector
 
 object ClusterRoutines
 {
+
+
+
+  def merge(clusters: Set[Cluster], num: Int = 0, prevDev: Double = Double.MaxValue): Set[Cluster] =
+  {
+    if (clusters.size == 1)
+      clusters
+    else
+    {
+      val deviations: Map[Cluster, Double] = clusters.map(c => c -> meanAbsDeviation(c)).toMap
+      // max iterations is limited to clusters count
+      if (num > 2 * clusters.size || (deviations.values.sum - prevDev).abs < 0.000000001)
+      {
+        if (num > 2 * clusters.size)
+          println("Merge limit exceeded")
+        //println(deviations.values.sum)
+        clusters
+      }
+      else
+      {
+        val pairs = cartesianProd(clusters, clusters).filter(p => p._1 != p._2)
+        val (c1, c2) = pairs.minBy(p => distance(p._1, p._2) - deviations(p._1))
+        if (distance(c1, c2) < 1.05 * deviations(c1))
+        {
+          // TODO: add check if the clusters are the same before and after mergeAndDivide
+          val mergingClusters = Set(c1, c2)
+          val newClusters = mergeAndDivide(mergingClusters)
+          merge((clusters -- mergingClusters) ++ newClusters, num + 1, deviations.values.sum)
+        }
+        else
+          clusters
+      }
+    }
+  }
+
+  def mergeAndDivide(clusters: Set[Cluster]): Set[Cluster] =
+  {
+    val count = clusters.size
+    val clusterer = new KMeansDiv2Clusterer
+    clusterer.clusterize(clusters.toSeq.flatMap(c => c), count)
+  }
+
+  def onePointMerge(clusters: Set[Cluster]): Set[Cluster] =
+  {
+    val oneClusterOpt = clusters.find(c => c.length == 1)
+    if (!oneClusterOpt.isDefined)
+      clusters
+    else
+    {
+      val oneCluster = oneClusterOpt.get
+      val other = clusters - oneCluster
+      val target = other.minBy(distance(oneCluster, _))
+      onePointMerge((other - target) + (target ++ oneCluster))
+    }
+  }
+
+  def makeInitialClusterization(input: Cluster, groupSize: Int): Set[Cluster] =
+  {
+    val approxCountOfGroups = input.length / groupSize
+    val kmeansClusterer = new KMeansDiv2Clusterer
+    val clusterizations = (1 to 2).map(j => kmeansClusterer.clusterize(input, approxCountOfGroups))
+    val optClusterization = clusterizations.filter(c => c.size == approxCountOfGroups).minBy(estimateClusterization)
+    optClusterization
+  }
+
   def makeGraphFromClusters(clusters: List[Cluster], groupSize: Int): Graph[Int] =
   {
     val distances = clusters.map(x => clusters.map(y => distance(x, y)).toVector).toVector
@@ -16,6 +81,12 @@ object ClusterRoutines
   {
     //graph.labels.filterKeys(x => x > 0).values.toSet
     graph.labels.filter(x => x._2 > 0).keys.toSet
+  }
+
+  def getNegativeVertices(graph: Graph[Int]): Set[Int] =
+  {
+    //graph.labels.filterKeys(x => x > 0).values.toSet
+    graph.labels.filter(x => x._2 < 0).keys.toSet
   }
 
   def findOptimalPath(graph: Graph[Int], paths: Set[GraphPath]): GraphPath =
@@ -46,9 +117,21 @@ object ClusterRoutines
     listOfClusters.zip(centers).foldLeft(0.0)((acc, x) => acc + meanAbsDeviation(x._1, x._2))
   }
 
-  def meanAbsDeviation(cluster: Cluster, vector: V): Double =
+  def meanAbsDeviation(cluster: Cluster, fromVector: V): Double =
   {
-    cluster.foldLeft(0.0)((acc, v) => acc + distance(v, vector)) / cluster.length
+    cluster.foldLeft(0.0)((acc, v) => acc + distance(v, fromVector)) / cluster.length
+  }
+
+  def meanAbsDeviation(cluster: Cluster): Double =
+  {
+    meanAbsDeviation(cluster, getClusterGeometricCenter(cluster))
+  }
+
+  def meanDistToClosest(cluster: Cluster): Double =
+  {
+    val set = cluster.toSet
+    cluster.map(x => distance(x, (set - x).toSeq)).sum / cluster.size
+    //(set - x).map(y => distance(x, y)).min
   }
 
   /*=========================================================================*/
@@ -80,7 +163,14 @@ object ClusterRoutines
 
 
   /* ================================================ */
-
+  def cartesianProd[TX, TY](colX: Iterable[TX], colY: Iterable[TY]): Iterable[(TX, TY)] =
+  {
+    for
+    {
+      x <- colX
+      y <- colY
+    } yield (x, y)
+  }
 
   def difference(a: Int, b: Int): Int =
   {
@@ -112,9 +202,9 @@ object ClusterRoutines
     c1.sortBy(x => distance(x, c2.minBy(y => distance(x, y))))
   }
 
-  def distance(v: V, cl: Cluster): Double =
+  def distance(v: V, cluster: Cluster): Double =
   {
-    cl.map(x => distance(x, v)).min
+    cluster.map(x => distance(x, v)).min
   }
 
 
@@ -144,7 +234,7 @@ object ClusterRoutines
 
   def distance(v1: V, v2: V): Double =
   {
-    v1.distTo(v2)
+    v1.distTo1(v2)
     //new MathVector(v1).distanceSqrTo(MathVector(v2))
   }
 
