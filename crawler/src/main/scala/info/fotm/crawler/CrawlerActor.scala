@@ -80,8 +80,6 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
         api.leaderboard(Twos).map(LeaderboardReceived).recover {
           case _ => CrawlFailed
         } pipeTo self onComplete { _ => self ! Crawl }
-      } else {
-        log.debug("Not ready for crawl")
       }
 
     case CrawlFailed =>
