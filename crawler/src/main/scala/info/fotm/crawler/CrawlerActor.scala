@@ -71,15 +71,19 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
 
   override def receive = {
     case ReadyForCrawl =>
+      log.debug("Ready for crawl")
       if (!readyForCrawl) self ! Crawl
       readyForCrawl = true
 
     case Crawl =>
       if (readyForCrawl) {
+        log.debug("Crawl started")
         readyForCrawl = false
         api.leaderboard(Twos).map(LeaderboardReceived).recover {
           case _ => CrawlFailed
         } pipeTo self onComplete { _ => self ! Crawl }
+      } else {
+        log.debug("Not ready for crawl")
       }
 
     case CrawlFailed =>

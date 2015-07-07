@@ -29,7 +29,7 @@ def createAppender =  { region, bracket ->
         }
         filter(EvaluatorFilter) {
             evaluator(JaninoEventEvaluator) {
-                expression = 'return ((String)mdc.get("akkaSource")).contains("US-2v2");'
+                expression = 'return ((String)mdc.get("akkaSource")).toUpperCase().contains("'+name.toUpperCase()+'");'
             }
             onMatch = ACCEPT
             onMismatch = DENY
@@ -40,8 +40,18 @@ def createAppender =  { region, bracket ->
             pattern = "[%d{HH:mm:ss.SSS}] %-5level [%X{akkaSource}] %logger{36} - %msg%n"
         }
     }
+    name
 }
 
-createAppender("us", "2v2")
+def brackets = ["2v2", "3v3", "5v5", "rbg"]
+def regions = ["us", "europe", "taiwan", "korea", "china"]
 
-root(DEBUG, ["STDOUT", "us-2v2"])
+def appenders = ["STDOUT"]
+
+for (b in brackets) {
+    for (r in regions) {
+        appenders << createAppender(r, b)
+    }
+}
+
+root(DEBUG, appenders)

@@ -12,8 +12,8 @@ object CrawlerApp extends App {
 
   val system = ActorSystem("crawlerSystem")
 
-  val regions = List(US)
-  val brackets = List(Twos)
+  val regions = List(US, Taiwan, Korea, Europe, China)
+  val brackets = List(Twos, Threes)
 
   for {
     region <- regions
