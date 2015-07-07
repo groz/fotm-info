@@ -18,6 +18,7 @@ object CrawlerActor {
   type MyLeaderboard = Map[CharacterId, LeaderboardRow]
 
   case object Crawl
+  case object ReadyForCrawl
   case class LeaderboardReceived(leaderboard: Leaderboard)
   case object CrawlFailed
 
@@ -66,13 +67,20 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
   } yield context.actorOf(Props(classOf[TeamFinderActor], algo), self.path.name + "-finder-"+name))
   .toList
 
-  self ! Crawl
+  var readyForCrawl = false
 
   override def receive = {
+    case ReadyForCrawl =>
+      if (!readyForCrawl) self ! Crawl
+      readyForCrawl = true
+
     case Crawl =>
-      val request = api.leaderboard(Twos).map(LeaderboardReceived).recover {
-        case _ => CrawlFailed
-      } pipeTo self onComplete { _ => self ! Crawl }
+      if (readyForCrawl) {
+        readyForCrawl = false
+        api.leaderboard(Twos).map(LeaderboardReceived).recover {
+          case _ => CrawlFailed
+        } pipeTo self onComplete { _ => self ! Crawl }
+      }
 
     case CrawlFailed =>
 
