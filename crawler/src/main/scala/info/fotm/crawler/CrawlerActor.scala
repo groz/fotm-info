@@ -1,6 +1,6 @@
 package info.fotm.crawler
 
-import akka.actor.{Props, Actor}
+import akka.actor.{ActorRef, Props, Actor}
 import akka.event.{LoggingReceive, Logging}
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
@@ -9,7 +9,6 @@ import info.fotm.clustering.enhancers.{Summator, Verifier, Multiplexer, ClonedCl
 import info.fotm.clustering._
 import info.fotm.domain.{CharacterStats, CharacterId}
 
-import scala.collection.mutable
 import akka.pattern.pipe
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -39,7 +38,7 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
   val log = Logging(context.system, this)
   val api = new BattleNetAPI(region, apiKey).WoW
 
-  val lbOrdering = Ordering.fromLessThan[MyLeaderboard] { (l1, l2) =>
+  implicit val lbOrdering = Ordering.fromLessThan[MyLeaderboard] { (l1, l2) =>
     val commonKeys = l1.keySet.intersect(l2.keySet)
     val lt = commonKeys.exists(k => l1(k).seasonTotal < l2(k).seasonTotal)
     val gt = commonKeys.exists(k => l1(k).seasonTotal > l2(k).seasonTotal)
@@ -60,12 +59,15 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
     )) with Verifier
   )
 
-  val history = mutable.TreeSet.empty(lbOrdering)
-  val maxSize = 10
-  val finders = (for {
-    (name, algo: RealClusterer) <- algos
-  } yield context.actorOf(Props(classOf[TeamFinderActor], algo), self.path.name + "-finder-"+name))
-  .toList
+  val updatesObserver = new ConsecutiveUpdatesObserver[MyLeaderboard](processUpdate, 10, distance(_, _) == 1)
+
+  val finders: List[ActorRef] = (
+    for {
+      (name, algo: RealClusterer) <- algos
+    } yield {
+      val actorName = self.path.name + "-finder-"+name
+      context.actorOf(Props(classOf[TeamFinderActor], algo), actorName)
+    }).toList
 
   var readyForCrawl = false
 
@@ -86,26 +88,7 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
 
     case LeaderboardReceived(leaderboard: Leaderboard) =>
       val current: MyLeaderboard = leaderboard.rows.map(r => (CharacterId(r.name, r.realmSlug), r)).toMap
-
-      if (history.add(current)) {
-        val before = history.until(current).toIndexedSeq.map(_ => "_").mkString
-        val after = history.from(current).toIndexedSeq.tail.map(_ => "_").mkString
-
-        log.debug(s"Leaderboard history queue: ${before}X${after}")
-
-        val prev = history.until(current).lastOption
-        prev.filter(distance(_, current) == 1).foreach {
-          processUpdate(_, current)
-        }
-
-        val next = history.from(current).tail.headOption
-        next.filter(distance(current, _) == 1).foreach {
-          processUpdate(current, _)
-        }
-
-        if (history.size > maxSize)
-          history -= history.head
-      }
+      updatesObserver.process(current)
   }
 
   private def processUpdate(previous: MyLeaderboard, current: MyLeaderboard) = {
