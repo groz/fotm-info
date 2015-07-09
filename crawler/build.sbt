@@ -1,5 +1,4 @@
 libraryDependencies ++= Seq(
-  "com.google.guava" % "guava" % "18.0",
   "net.databinder.dispatch" %% "dispatch-core" % "0.11.2",
   "ch.qos.logback" % "logback-classic" % "1.1.3",
   "org.codehaus.janino" % "janino" % "2.6.1",

@@ -1,16 +1,18 @@
 package info.fotm.crawler
 
+import akka.event.{NoLogging, LoggingAdapter}
+import info.fotm.util.ObservableStream
 import scala.collection.mutable
-import akka.event.slf4j.Logger
 
-
-
-
-
-class ConsecutiveUpdatesObserver[T](maxSize: Int = -1)
-                        (implicit ordering: Ordering[T]) extends ObservableStream[(T, T)] {
-  val log = Logger(this.getClass.getName)
+class UpdatesQueue[T](maxSize: Int = -1)(implicit ordering: Ordering[T], log: LoggingAdapter = NoLogging) {
   val history = mutable.TreeSet.empty
+
+  /*
+  Turned out to be pretty useless abstraction for this particular case, but left here for now.
+   */
+  val stream = new ObservableStream[(T, T)] {
+    def signal(value: Type) = super.publish(value)
+  }
 
   def process(current: T): Unit = {
     if (history.add(current)) {
@@ -22,12 +24,12 @@ class ConsecutiveUpdatesObserver[T](maxSize: Int = -1)
 
       val prev: Option[T] = before.lastOption
       prev.foreach { p =>
-        publish(p, current)
+        stream.signal(p, current)
       }
 
       val next = history.from(current).tail.headOption
       next.foreach { n =>
-        publish(current, n)
+        stream.signal(current, n)
       }
 
       if (maxSize != -1 && history.size > maxSize) {

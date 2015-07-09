@@ -1,18 +1,24 @@
-import info.fotm.crawler.ConsecutiveUpdatesObserver
+import akka.event.NoLogging
+import info.fotm.crawler.UpdatesQueue
 import org.scalatest._
 
-class ConsecutiveUpdatesObserverSpec extends FlatSpec with Matchers {
+class UpdatesSpec extends FlatSpec with Matchers {
 
   "process" should "not fire for single elements" in {
     var fired = false
-    val updates = new ConsecutiveUpdatesObserver[Int]()
+
+    val updates = new UpdatesQueue[Int]()
+    for { _ <- updates.stream } fired = true
+
     updates.process(1)
     fired should be(false)
   }
 
   it should "fire for simple pairs" in {
     var fired = false
-    val updates = new ConsecutiveUpdatesObserver[Int]()
+
+    val updates = new UpdatesQueue[Int]()
+    for { _ <- updates.stream } fired = true
 
     updates.process(1)
     fired should be(false)
@@ -23,7 +29,8 @@ class ConsecutiveUpdatesObserverSpec extends FlatSpec with Matchers {
 
   it should "not fire for pairs not passing filter" in {
     var fired = false
-    val updates = new ConsecutiveUpdatesObserver[Int]()//.filter(ab => false)
+    val updates = new UpdatesQueue[Int]()
+    for { _ <- updates.stream if false } fired = true
 
     updates.process(1)
     fired should be(false)
@@ -34,7 +41,8 @@ class ConsecutiveUpdatesObserverSpec extends FlatSpec with Matchers {
 
   it should "fire for pairs passing filter" in {
     var fired = false
-    val updates = new ConsecutiveUpdatesObserver[Int]() //filter = (a, b) => a < b)
+    val updates = new UpdatesQueue[Int]()
+    for { (a, b) <- updates.stream if a < b } fired = true
 
     updates.process(2)
     fired should be(false)
@@ -45,7 +53,8 @@ class ConsecutiveUpdatesObserverSpec extends FlatSpec with Matchers {
 
   it should "not fire for non consecutive updates" in {
     var fired = false
-    val updates = new ConsecutiveUpdatesObserver[Int]()
+    val updates = new UpdatesQueue[Int]()
+    for { _ <- updates.stream } fired = true
 
     updates.process(1)
     fired should be(false)
@@ -57,7 +66,8 @@ class ConsecutiveUpdatesObserverSpec extends FlatSpec with Matchers {
   it should "fire twice for updates put in the middle" in {
     val pairs = scala.collection.mutable.ListBuffer[(Int, Int)]()
 
-    val updates = new ConsecutiveUpdatesObserver[Int]() //(a, b) => pairs += ((a, b)), filter = _ + 1 == _)
+    val updates = new UpdatesQueue[Int]()
+    for { (a, b) <- updates.stream if a + 1 == b } pairs += ((a, b))
 
     val expected = List((1, 2), (2, 3))
 

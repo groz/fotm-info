@@ -1,7 +1,7 @@
 package info.fotm.crawler
 
 import akka.actor.{ActorRef, Props, Actor}
-import akka.event.{LoggingReceive, Logging}
+import akka.event.{LoggingAdapter, LoggingReceive, Logging}
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
 import info.fotm.api.regions._
@@ -35,7 +35,7 @@ object CrawlerActor {
 class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Actor {
   import CrawlerActor._
 
-  val log = Logging(context.system, this)
+  implicit val log: LoggingAdapter = Logging(context.system, this)
   val api = new BattleNetAPI(region, apiKey).WoW
 
   implicit val lbOrdering = Ordering.fromLessThan[MyLeaderboard] { (l1, l2) =>
@@ -59,7 +59,12 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
     ) with Verifier
   )
 
-  val updatesObserver = new ConsecutiveUpdatesObserver[MyLeaderboard](10)//.filter(distance(_) == 1)
+  val updatesObserver = new UpdatesQueue[MyLeaderboard](10)
+
+  val subs = for {
+    (prev, next) <- updatesObserver.stream
+    if distance(prev, next) == 1
+  } processUpdate(prev, next)
 
   val finders: List[ActorRef] = (
     for {
@@ -123,8 +128,7 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
     }
   }
 
-  private def distance(kv: (MyLeaderboard, MyLeaderboard)): Int = {
-    val (l1, l2) = kv
+  private def distance(l1: MyLeaderboard, l2: MyLeaderboard): Int = {
     val commonKeys: Set[CharacterId] = l1.keySet.intersect(l2.keySet)
     val distances: Set[Int] = commonKeys.map(k => l2(k).seasonTotal - l1(k).seasonTotal)
     log.debug(s"Distances: $distances")
