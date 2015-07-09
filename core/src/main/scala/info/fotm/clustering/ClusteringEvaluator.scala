@@ -52,7 +52,6 @@ object ClusteringEvaluator extends App {
 
     // algo evaluation: match output against teamsPlayed
     val teamSize = teamsPlayed.head.members.size
-
     val teams =
       findTeams(clusterer, noisyWDiffs, teamSize) ++
       findTeams(clusterer, noisyLDiffs, teamSize) ++

@@ -1,6 +1,6 @@
 package info.fotm.crawler
 
-import akka.actor.{Props, Actor}
+import akka.actor.{ActorRef, Props, Actor}
 import akka.event.{LoggingReceive, Logging}
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
@@ -10,7 +10,6 @@ import info.fotm.clustering.enhancers.{Summator, Verifier, Multiplexer, ClonedCl
 import info.fotm.clustering._
 import info.fotm.domain.{CharacterStats, CharacterId}
 
-import scala.collection.mutable
 import akka.pattern.pipe
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -40,7 +39,7 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
   val log = Logging(context.system, this)
   val api = new BattleNetAPI(region, apiKey).WoW
 
-  val lbOrdering = Ordering.fromLessThan[MyLeaderboard] { (l1, l2) =>
+  implicit val lbOrdering = Ordering.fromLessThan[MyLeaderboard] { (l1, l2) =>
     val commonKeys = l1.keySet.intersect(l2.keySet)
     val lt = commonKeys.exists(k => l1(k).seasonTotal < l2(k).seasonTotal)
     val gt = commonKeys.exists(k => l1(k).seasonTotal > l2(k).seasonTotal)
@@ -56,72 +55,48 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
     //"RMClusterer_Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer2)) with Verifier
   )
 
-  val history = mutable.TreeSet.empty(lbOrdering)
-  val maxSize = 10
-  val finders = (for {
-    (name, algo: RealClusterer) <- algos
-  } yield context.actorOf(Props(classOf[TeamFinderActor], algo), name))
-  .toList
+  val updatesObserver = new ConsecutiveUpdatesObserver[MyLeaderboard](processUpdate, 10, distance(_, _) == 1)
+
+  val finders: List[ActorRef] = (
+    for {
+      (name, algo: RealClusterer) <- algos
+    } yield {
+      val actorName = self.path.name + "-finder-"+name
+      context.actorOf(Props(classOf[TeamFinderActor], algo), actorName)
+    }).toList
 
   def crawling(recrawlRequested: Boolean): Receive = {
     case CrawlFailed =>
-      context.unbecome()
       log.debug("Crawl failed.")
+      context.unbecome()
+      if (recrawlRequested)
+        self ! ReadyForCrawl
 
     case LeaderboardReceived(leaderboard: Leaderboard) =>
-      context.unbecome()
       log.debug("Crawl succeeded.")
+      context.unbecome()
+      if (recrawlRequested)
+        self ! ReadyForCrawl
+
       val current: MyLeaderboard = leaderboard.rows.map(r => (CharacterId(r.name, r.realmSlug), r)).toMap
-
-      if (history.add(current)) {
-        val before = history.until(current).toIndexedSeq.map(_ => "_").mkString
-        val after = history.from(current).toIndexedSeq.tail.map(_ => "_").mkString
-
-        log.debug(s"Leaderboard history queue: ${before}X${after}")
-
-        val prev = history.until(current).lastOption
-        prev.filter(distance(_, current) == 1).foreach {
-          processUpdate(_, current)
-        }
-
-        val next = history.from(current).tail.headOption
-        next.filter(distance(current, _) == 1).foreach {
-          processUpdate(current, _)
-        }
-
-        if (history.size > maxSize)
-          history -= history.head
-      }
+      updatesObserver.process(current)
 
     case ReadyForCrawl =>
-      context.become(crawling(true))
-  }
-
-  def inCrawl: Receive = {
-    case Crawl =>
-      context.become(crawling(false))
-      log.debug("Starting crawl...")
-      api.leaderboard(Twos).map(LeaderboardReceived).recover {
-        case _ => CrawlFailed
-      } pipeTo self onComplete { _ =>
-        log.debug("Finished crawl.")
-      }
+      log.debug("ReadyForCrawl -> crawling -> crawling(true)")
+      context become crawling(true)
   }
 
   override def receive: Receive = {
     case ReadyForCrawl =>
-      context.become(inCrawl)
-      log.debug("Crawl queued!")
-      self ! Crawl
-  }
+      log.debug("ReadyForCrawl -> receive -> crawling(false)")
+      context.become(crawling(false))
 
-  /*
-  State: Idle
-  on: ReadyForCrawl   to: Crawling
-  State: Crawling
-  on: Crawl
-  on: FinishedCrawl   if (readyForCrawl was received) to: Crawling else to: Idle
-  */
+      api.leaderboard(Twos)
+        .map(LeaderboardReceived)
+        .recover { case _ => CrawlFailed } pipeTo self onComplete { _ =>
+          log.debug("Finished crawl.")
+        }
+  }
 
   private def processUpdate(previous: MyLeaderboard, current: MyLeaderboard) = {
     val commonKeys: Set[CharacterId] = previous.keySet.intersect(current.keySet)
