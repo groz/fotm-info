@@ -51,7 +51,12 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
 
   val algos: Map[String, RealClusterer] = Map(
     "Closest_Multiplexer_Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier,
-    "RMClusterer_Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer2)) with Verifier
+    "RMClusterer_Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer2)) with Verifier,
+    "HT2_CM_RM_V" -> new Summator(
+      RealClusterer.wrap(new HTClusterer2),
+      RealClusterer.wrap(new EqClusterer2),
+      new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
+    ) with Verifier
   )
 
   val updatesObserver = new ConsecutiveUpdatesObserver[MyLeaderboard](processUpdate, 10, distance(_, _) == 1)

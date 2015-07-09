@@ -114,10 +114,11 @@ object ClusteringEvaluator extends App {
 //          RealClusterer.wrap(new HTClusterer),
 //          RealClusterer.wrap(new ClosestClusterer)
 //        )) with Verifier,
-        "(HT2 + Closest * Multiplexer) * Verifier(2)" -> new ClonedClusterer(new Summator(
+        "(HT2 + CM + RM) * V" -> new Summator(
           RealClusterer.wrap(new HTClusterer2),
+          RealClusterer.wrap(new EqClusterer2),
           new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
-        )) with Verifier
+        ) with Verifier
       )
 
       for ((name, clusterer) <- clusterers.par) {
