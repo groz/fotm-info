@@ -20,7 +20,7 @@ appender("STDOUT", ConsoleAppender) {
   }
 }
 
-def rolloverPattern = { name -> "logs/archives/%d{yyyy-MM-dd_HH-mm}/${name}.txt" }
+def rolloverPattern = { name -> "logs/archives/%d{yyyy-MM-dd_HH}/${name}.txt" }
 
 def createAppender =  { region, bracket ->
     def name = region + "-" + bracket
