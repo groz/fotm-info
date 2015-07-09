@@ -1,39 +1,42 @@
 package info.fotm.crawler
 
 import scala.collection.mutable
+import akka.event.slf4j.Logger
 
-object ConsecutiveUpdatesObserver {
-  def apply[T](onUpdate: (T, T) => Unit, maxSize: Int = -1, filter: (T, T) => Boolean = (a: T, b: T) => true)
-              (implicit ordering: Ordering[T]) =
-    new ConsecutiveUpdatesObserver[T](onUpdate, maxSize, filter)
-}
 
-class ConsecutiveUpdatesObserver[T](onUpdate: (T, T) => Unit, maxSize: Int, filter: (T, T) => Boolean)
-                        (implicit ordering: Ordering[T]) {
+
+
+
+class ConsecutiveUpdatesObserver[T](maxSize: Int = -1)
+                        (implicit ordering: Ordering[T]) extends ObservableStream[(T, T)] {
+  val log = Logger(this.getClass.getName)
   val history = mutable.TreeSet.empty
 
-  def process(current: T): String = {
+  def process(current: T): Unit = {
     if (history.add(current)) {
       val before = history.until(current)
       val after = history.from(current).tail
 
+      val strBefore = before.toIndexedSeq.map(_ => "_").mkString
+      val strAfter = after.toIndexedSeq.map(_ => "_").mkString
+
       val prev: Option[T] = before.lastOption
-      prev.filter(filter(_, current)).foreach {
-        onUpdate(_, current)
+      prev.foreach { p =>
+        publish(p, current)
       }
 
       val next = history.from(current).tail.headOption
-      next.filter(filter(current, _)).foreach {
-        onUpdate(current, _)
+      next.foreach { n =>
+        publish(current, n)
       }
 
       if (maxSize != -1 && history.size > maxSize) {
         history -= history.head
       }
 
-      val strBefore = before.toIndexedSeq.map(_ => "_").mkString
-      val strAfter = after.toIndexedSeq.map(_ => "_").mkString
-      s"History queue: ${strBefore}X${strAfter}"
-    } else ""
+      log.debug(s"History queue: ${strBefore}X${strAfter}")
+    } else {
+      log.debug("Update already in history.")
+    }
   }
 }

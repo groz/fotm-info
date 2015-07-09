@@ -50,8 +50,8 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
   }
 
   val algos: Map[String, RealClusterer] = Map(
-    "Closest_Multiplexer_Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier,
-    "RMClusterer_Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer2)) with Verifier,
+    "CM_V" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier,
+    "RM_V" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer2)) with Verifier,
     "HT2_CM_RM_V" -> new Summator(
       RealClusterer.wrap(new HTClusterer2),
       RealClusterer.wrap(new EqClusterer2),
@@ -59,7 +59,7 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
     ) with Verifier
   )
 
-  val updatesObserver = new ConsecutiveUpdatesObserver[MyLeaderboard](processUpdate, 10, distance(_, _) == 1)
+  val updatesObserver = new ConsecutiveUpdatesObserver[MyLeaderboard](10)//.filter(distance(_) == 1)
 
   val finders: List[ActorRef] = (
     for {
@@ -123,7 +123,8 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
     }
   }
 
-  private def distance(l1: MyLeaderboard, l2: MyLeaderboard): Int = {
+  private def distance(kv: (MyLeaderboard, MyLeaderboard)): Int = {
+    val (l1, l2) = kv
     val commonKeys: Set[CharacterId] = l1.keySet.intersect(l2.keySet)
     val distances: Set[Int] = commonKeys.map(k => l2(k).seasonTotal - l1(k).seasonTotal)
     log.debug(s"Distances: $distances")
