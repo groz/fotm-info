@@ -12,8 +12,8 @@ object CrawlerApp extends App {
 
   val system = ActorSystem("crawlerSystem")
 
-  val regions = List(US)
-  val brackets = List(Twos)
+  val regions = List(US, Korea, China, Taiwan, Europe)
+  val brackets = List(Twos, Threes, Fives, Rbg)
 
   for {
     region <- regions
@@ -21,6 +21,6 @@ object CrawlerApp extends App {
   } {
     val name = s"crawler-$region-${bracket.slug}"
     val crawler = system.actorOf(Props(classOf[CrawlerActor], apiKey, region, bracket), name)
-    system.scheduler.schedule(0 seconds, 20 seconds, crawler, CrawlerActor.ReadyForCrawl)
+    system.scheduler.schedule(0 seconds, 10 seconds, crawler, CrawlerActor.Crawl)
   }
 }

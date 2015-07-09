@@ -2,7 +2,13 @@ package info.fotm.crawler
 
 import scala.collection.mutable
 
-class ConsecutiveUpdatesObserver[T](onUpdate: (T, T) => Unit, maxSize: Int = -1, filter: (T, T) => Boolean = (a: T, b: T) => true)
+object ConsecutiveUpdatesObserver {
+  def apply[T](onUpdate: (T, T) => Unit, maxSize: Int = -1, filter: (T, T) => Boolean = (a: T, b: T) => true)
+              (implicit ordering: Ordering[T]) =
+    new ConsecutiveUpdatesObserver[T](onUpdate, maxSize, filter)
+}
+
+class ConsecutiveUpdatesObserver[T](onUpdate: (T, T) => Unit, maxSize: Int, filter: (T, T) => Boolean)
                         (implicit ordering: Ordering[T]) {
   val history = mutable.TreeSet.empty
 

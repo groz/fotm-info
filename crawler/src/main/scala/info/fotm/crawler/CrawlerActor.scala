@@ -18,7 +18,6 @@ object CrawlerActor {
   type MyLeaderboard = Map[CharacterId, LeaderboardRow]
 
   case object Crawl
-  case object ReadyForCrawl
   case class LeaderboardReceived(leaderboard: Leaderboard)
   case object CrawlFailed
 
@@ -51,8 +50,8 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
   }
 
   val algos: Map[String, RealClusterer] = Map(
-    "Closest_Multiplexer_Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier
-    //"RMClusterer_Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer2)) with Verifier
+    "Closest_Multiplexer_Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier,
+    "RMClusterer_Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer2)) with Verifier
   )
 
   val updatesObserver = new ConsecutiveUpdatesObserver[MyLeaderboard](processUpdate, 10, distance(_, _) == 1)
@@ -61,41 +60,34 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
     for {
       (name, algo: RealClusterer) <- algos
     } yield {
-      val actorName = self.path.name + "-finder-"+name
-      context.actorOf(Props(classOf[TeamFinderActor], algo), actorName)
+      context.actorOf(Props(classOf[TeamFinderActor], algo), name)
     }).toList
 
   def crawling(recrawlRequested: Boolean): Receive = {
     case CrawlFailed =>
-      log.debug("Crawl failed.")
       context.unbecome()
       if (recrawlRequested)
-        self ! ReadyForCrawl
+        self ! Crawl
 
     case LeaderboardReceived(leaderboard: Leaderboard) =>
-      log.debug("Crawl succeeded.")
       context.unbecome()
       if (recrawlRequested)
-        self ! ReadyForCrawl
+        self ! Crawl
 
       val current: MyLeaderboard = leaderboard.rows.map(r => (CharacterId(r.name, r.realmSlug), r)).toMap
       updatesObserver.process(current)
 
-    case ReadyForCrawl =>
-      log.debug("ReadyForCrawl -> crawling -> crawling(true)")
+    case Crawl =>
       context become crawling(true)
   }
 
   override def receive: Receive = {
-    case ReadyForCrawl =>
-      log.debug("ReadyForCrawl -> receive -> crawling(false)")
+    case Crawl =>
       context.become(crawling(false))
 
       api.leaderboard(Twos)
         .map(LeaderboardReceived)
-        .recover { case _ => CrawlFailed } pipeTo self onComplete { _ =>
-          log.debug("Finished crawl.")
-        }
+        .recover { case _ => CrawlFailed } pipeTo self
   }
 
   private def processUpdate(previous: MyLeaderboard, current: MyLeaderboard) = {
