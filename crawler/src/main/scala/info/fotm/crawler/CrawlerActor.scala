@@ -118,13 +118,16 @@ class CrawlerActor(apiKey: String, region: Region, bracket: Bracket) extends Act
     log.debug(s"diffs: $diffs")
     log.debug(s"Factions: $factionNumbers")
 
+    // used to calc current rating
+    val currentLadderSnapshot = for { (k, v) <- current } yield (k, toStats(v))
+
     // send to finders
     for {
       (_, factionChars: Set[CharacterId]) <- factions
       features: Set[CharFeatures] = factionChars.map(p => CharFeatures(toStats(previous(p)), toStats(current(p))))
       (_, bucket: Set[CharFeatures]) <- features.groupBy(_.won)
     } {
-      finders.foreach { _ ! TeamFinderActor.UpdateFound(bracket.size, bucket) }
+      finders.foreach { _ ! TeamFinderActor.UpdateFound(bracket.size, bucket, currentLadderSnapshot) }
     }
   }
 
