@@ -3,6 +3,9 @@ package info.fotm.util.azure
 import com.twitter.bijection._
 import info.fotm.util.Compression._
 import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object AzureStorageApp extends App {
 
@@ -23,6 +26,6 @@ object AzureStorageApp extends App {
 
   val keys = azureStorage.keys("US/3v3")
   val valueFuture = azureStorage.get(keys.head)
-  val value = Await.result(valueFuture, Inf)
+  val value = Await.result(valueFuture, Duration.Inf)
   println(value)
 }

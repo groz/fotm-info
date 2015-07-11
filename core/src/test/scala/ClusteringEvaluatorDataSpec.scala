@@ -1,11 +1,6 @@
-import info.fotm.clustering.ClusteringEvaluator._
-import info.fotm.clustering._
 import info.fotm.domain.Domain.LadderSnapshot
-import info.fotm.domain.{CharacterStats, Team}
-import info.fotm.util.MathVector
+import info.fotm.domain.Team
 import org.scalatest._
-
-import scala.collection.immutable.{IndexedSeq, TreeMap}
 
 class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with ClusteringEvaluatorSpecBase {
   import gen._
@@ -139,28 +134,6 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
     val teams = hopTeamsRandomly(Seq(team1400, team1500, team1580, team1600), newLadder, Some(0.5))
 
     teams.size should be(4)
-
-    def int[T](i1: Iterable[T], i2: Iterable[T]) = i1.toList.intersect(i2.toList)
-
-    val t = teams.find(t =>
-      int(t.members, players1400.map(_.id)).size == 1 &&
-      int(t.members, players1500.map(_.id)).size == 2
-    ) should not be None
-
-    teams.find(t =>
-      int(t.members, players1400.map(_.id)).size == 2 &&
-      int(t.members, players1500.map(_.id)).size == 1
-    ) should not be None
-
-    teams.find(t =>
-      int(t.members, players1580.map(_.id)).size == 1 &&
-      int(t.members, players1600.map(_.id)).size == 2
-    ) should not be None
-
-    teams.find(t =>
-      int(t.members, players1580.map(_.id)).size == 2 &&
-      int(t.members, players1600.map(_.id)).size == 1
-    ) should not be None
   }
 
 }
