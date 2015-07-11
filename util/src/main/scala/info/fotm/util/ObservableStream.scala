@@ -1,8 +1,7 @@
 package info.fotm.util
 
 import com.google.common.collect.MapMaker
-
-import scala.collection.concurrent.{Map, TrieMap}
+import scala.collection.concurrent
 import scala.collection.JavaConverters._
 
 trait ObservableStream[T] { self =>
@@ -11,11 +10,11 @@ trait ObservableStream[T] { self =>
   protected[this] type Type = T
 
   // private interface
-  private val subs: Map[Subscription, Observer] = new TrieMap[Subscription, Observer]()
-  private val weaksubs: Map[Subscription, Observer] =
+  private val subs: concurrent.Map[Subscription, Observer] = new concurrent.TrieMap[Subscription, Observer]()
+  private val weaksubs: concurrent.Map[Subscription, Observer] =
     new MapMaker().concurrencyLevel(4).weakKeys.makeMap[Subscription, Observer].asScala
 
-  private def addsub(pool: Map[Subscription, Observer], observer: Observer): Subscription = {
+  private def addsub(pool: concurrent.Map[Subscription, Observer], observer: Observer): Subscription = {
     val sub = new Subscription {
       def unsubscribe(): Unit = pool -= this
     }

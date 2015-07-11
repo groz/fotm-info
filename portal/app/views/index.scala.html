@@ -1,0 +1,9 @@
+@(message: String, teams: List[Team], setups: List[Setup])
+
+@main("FotM") {
+
+    <h1>@message</h1>
+
+    @teamsView(teams)
+    @setupsView(setups)
+}

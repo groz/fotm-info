@@ -1,0 +1,8 @@
+@(teams: List[Team])
+
+@for(t <- teams) {
+    @for(c <- t.characters) {
+        @character(c)
+    }
+    <br/>
+}
