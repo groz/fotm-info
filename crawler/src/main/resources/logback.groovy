@@ -1,3 +1,4 @@
+import ch.qos.logback.classic.boolex.GEventEvaluator
 import ch.qos.logback.classic.boolex.JaninoEventEvaluator
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.core.ConsoleAppender
@@ -32,8 +33,8 @@ def createAppender =  { region, bracket ->
             onMatch = DENY
         }
         filter(EvaluatorFilter) {
-            evaluator(JaninoEventEvaluator) {
-                expression = 'return ((String)mdc.get("akkaSource")).toUpperCase().contains("' + name.toUpperCase() + '");'
+            evaluator(GEventEvaluator) {
+                expression = "e.mdc?.get('akkaSource')?.toUpperCase()?.contains('${name.toUpperCase()}')"
             }
             onMatch = ACCEPT
             onMismatch = DENY

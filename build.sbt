@@ -19,10 +19,4 @@ lazy val crawler = project.dependsOn(util, core, bnetapi).settings(commonSetting
 
 lazy val portal = project.dependsOn(util, core, crawler, bnetapi).settings(commonSettings: _*).enablePlugins(PlayScala)
 
-resolvers in ThisBuild += "Akka Snapshot Repository" at "http://repo.akka.io/snapshots/"
-
-libraryDependencies in ThisBuild ++= Seq(
-  "ch.qos.logback" % "logback-classic" % "1.1.3",
-  "org.codehaus.janino" % "janino" % "2.6.1",
-  "org.codehaus.groovy" % "groovy" % "2.4.3"
-)
+resolvers in ThisBuild += "Typesafe Snapshots" at "http://repo.akka.io/snapshots/"

@@ -61,7 +61,7 @@ class EqClusterer2 extends Clusterer
     }
     catch
     {
-      case _ => tuned
+      case _: Throwable => tuned
     }
 
     //val n = uneqClusters.map(x => difference(groupSize, x.length)).sum //negative clusters deviation sum
