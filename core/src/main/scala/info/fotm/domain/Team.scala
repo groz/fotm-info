@@ -1,13 +1,13 @@
 package info.fotm.domain
 
-final case class TeamSnapshot private (team: Team, snapshots: Set[CharacterSnapshot], rating: Int, stats: Stats)
+final case class TeamSnapshot private (team: Team, view: TeamView, stats: Stats) {
+  lazy val rating = view.rating
+}
 
 object TeamSnapshot {
   def apply(snapshots: Set[CharacterSnapshot]): TeamSnapshot = {
     val team = Team(snapshots.map(_.id))
-    val totalRating = snapshots.toList.map(_.stats.rating)
-    val rating = totalRating.sum.toDouble / snapshots.size
-    new TeamSnapshot(team, snapshots, rating.toInt, Stats.empty)
+    new TeamSnapshot(team, TeamView(snapshots), Stats.empty)
   }
 
   def apply(team: Team, characterLadder: CharacterLadder): TeamSnapshot = {
@@ -17,3 +17,10 @@ object TeamSnapshot {
 }
 
 final case class Team(members: Set[CharacterId])
+
+final case class TeamView(snapshots: Set[CharacterSnapshot]) {
+  lazy val rating = {
+    val totalRating = snapshots.toList.map(_.stats.rating)
+    totalRating.sum.toDouble / snapshots.size
+  }
+}
