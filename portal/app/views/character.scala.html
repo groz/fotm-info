@@ -1,9 +1,0 @@
-@(c: Character)
-
-<img src="@routes.Assets.versioned(s"images/classes/class_${c.charClass.id}.png")"/>
-
-@c.charClass.spec.map { s =>
-    <img src="@routes.Assets.versioned(s"images/specs/spec_$s.png")"/>
-}
-
-<span>@c.name</span> - <span>@c.realm.slug</span>

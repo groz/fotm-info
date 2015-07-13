@@ -2,6 +2,7 @@ package controllers
 
 import akka.util.Timeout
 import info.fotm.aether.Storage
+import info.fotm.aether.Storage.TeamLadderResponse
 import info.fotm.domain.Axis
 import models._
 
@@ -28,8 +29,8 @@ class Application @Inject() (system: ActorSystem) extends Controller {
       Future.successful(NotFound: Result)
     } { axis =>
       val request = storageActor ? Storage.GetTeamLadder(axis)
-      request.mapTo[Storage.TeamLadderResponse].map { response =>
-        Ok(response.toString)
+      request.mapTo[Storage.TeamLadderResponse].map { (response: TeamLadderResponse) =>
+        Ok(views.html.index("Teams", response.teamLadder))
       }
     }
 

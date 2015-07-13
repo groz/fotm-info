@@ -47,7 +47,7 @@ class CrawlerActor(storage: ActorSelection, apiKey: String, axis: Axis) extends 
     ) with Verifier
   )
 
-  val clusterer = algos("RM")
+  val clusterer = algos("RM_V")
 
   val updatesObserver = new UpdatesQueue[CharacterLadder](10)
 

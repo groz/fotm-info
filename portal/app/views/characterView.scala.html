@@ -1,0 +1,9 @@
+@import info.fotm.domain.CharacterSnapshot
+
+@(c: CharacterSnapshot)
+
+<img src="@routes.Assets.versioned(s"images/classes/class_${c.id.classId}.png")"/>
+
+<img src="@routes.Assets.versioned(s"images/specs/spec_${c.view.specId}.png")"/>
+
+<span>@c.id.name</span> - <span>@c.id.realmSlug</span>

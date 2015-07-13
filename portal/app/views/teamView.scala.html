@@ -1,0 +1,7 @@
+@import info.fotm.domain.TeamSnapshot
+
+@(teamSnapshot: TeamSnapshot)
+
+@for(c <- teamSnapshot.view.snapshots) {
+    @characterView(c)
+}

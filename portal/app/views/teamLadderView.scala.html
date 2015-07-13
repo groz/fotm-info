@@ -1,0 +1,8 @@
+@import info.fotm.domain.TeamLadder
+
+@(teamLadder: TeamLadder)
+
+@for((team, snapshot) <- teamLadder.rows) {
+    @teamView(snapshot)
+    <br/>
+}
