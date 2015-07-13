@@ -1,50 +1,55 @@
 package info.fotm.clustering
 
+import info.fotm.api.models.LeaderboardRow
 import info.fotm.domain.Domain._
 import info.fotm.domain._
 
 import scala.util.Random
 
-case class EvaluatorSettings(matchesPerTurn: Int = 50,
-                            ladderSize: Int = 1000,
-                            teamSize: Int = 5,
-                            hopRatio: Double = 0.05)
-
-case object Defaults {
-  lazy val settings = List(2, 3, 5, 10).map(size => (size, EvaluatorSettings(teamSize = size))).toMap
-  lazy val generators = settings.map(kv => kv._1 -> new ClusteringEvaluatorData(kv._2))
-}
-
 class ClusteringEvaluatorData(settings: EvaluatorSettings) {
   import settings._
-  /*
-  controls number of players changed between turns and fed to clusterer
-  for example:
-    10 matchesPerTurn = 30 players changed, clusterer will get 15(+) and 15(-)
-    in reality that number is also split between factions (not evenly though)
-   */
+
   lazy val gamesPerWeek = 50
   lazy val rng = new Random()
 
-  def genPlayer = {
+  def genPlayer: CharacterSnapshot = genPlayer(1500)
+
+  def genPlayer(rating: Int): CharacterSnapshot = {
     val id = java.util.UUID.randomUUID().toString
-    CharacterStats(CharacterId(id, id), 1500, 0, 0, 0, 0)
+    val raw = LeaderboardRow(
+      ranking = 1,
+      rating = rating,
+      name = id,
+      realmId = 1,
+      realmName = "123",
+      realmSlug = "123",
+      raceId = 1,
+      classId = 1,
+      specId = 1,
+      factionId = 1,
+      genderId = 1,
+      seasonWins = 0,
+      seasonLosses = 0,
+      weeklyWins = 0,
+      weeklyLosses = 0
+    )
+    CharacterSnapshot(raw)
   }
 
-  def genLadder(nPlayers: Int): LadderSnapshot = (0 until nPlayers).map(i => {
-    val player = genPlayer
-    (player.id, player)
-  }).toMap
+  def genLadder(nPlayers: Int): CharacterLadder = {
+    val rows = (0 until nPlayers).map(i => genPlayer).map(c => (c.id, c)).toMap
+    CharacterLadder(Axis.all.head, rows)
+  }
 
   // selects pairs of (winner, loser) from teams
-  def pickGamesRandomly(ladder: LadderSnapshot, teams: Seq[Team]): Seq[(Team, Team)] = {
+  def pickGamesRandomly(ladder: CharacterLadder, teams: Seq[Team]): Seq[(Team, Team)] = {
     val shuffledTeams: Seq[Team] = rng.shuffle(teams)
     shuffledTeams
       .sliding(2, 2)
       .map { s =>
-        val team1 = s(0)
-        val team2 = s(1)
-        if (rng.nextDouble() < winChance(team1.rating(ladder), team2.rating(ladder)))
+        val (team1, team2) = (s(0), s(1))
+        val (rating1, rating2) = (TeamSnapshot(team1, ladder).rating, TeamSnapshot(team2, ladder).rating)
+        if (rng.nextDouble() < winChance(rating1, rating2))
           (team1, team2)
         else
           (team2, team1)
@@ -58,8 +63,8 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings) {
     else team.copy(team.members - src + dst)
   }
 
-  def calcRating(charId: CharacterId, team: Team, won: Boolean)(ladder: LadderSnapshot): Int = {
-    val teamRating = team.rating(ladder)
+  def calcRating(charId: CharacterId, team: Team, won: Boolean)(ladder: CharacterLadder): Int = {
+    val teamRating = TeamSnapshot(team, ladder).rating
     val charInfo = ladder(charId)
     if (won) {
       charInfo.rating + calcRatingChange(charInfo.rating, teamRating)
@@ -77,30 +82,22 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings) {
     Math.round(k * (1 - chance)).toInt
   }
 
-  def play(currentLadder: LadderSnapshot, wTeam: Team, lTeam: Team): LadderSnapshot = {
-    val ladderWithWinners: LadderSnapshot =
-      wTeam.members.foldLeft(currentLadder) { (ladder, charId) =>
-        val ratingDelta = calcRating(charId, lTeam, won = true)(currentLadder)
-        val charInfo = currentLadder(charId)
+  def play(ladder: CharacterLadder, wTeam: Team, lTeam: Team): CharacterLadder = {
+    val ladderWithWinners: CharacterLadder =
+      wTeam.members.foldLeft(ladder) { (ladder, charId) =>
+        val rating = calcRating(charId, lTeam, won = true)(ladder)
+        val snapshot: CharacterSnapshot = ladder.rows(charId)
 
-        val newCharInfo = charInfo.copy(
-          rating = ratingDelta,
-          weeklyWins = charInfo.weeklyWins + 1,
-          seasonWins = charInfo.seasonWins + 1)
-
-        ladder.updated(charInfo.id, newCharInfo)
+        val updatedStats = CharacterStats(rating, snapshot.stats.weekly.win, snapshot.stats.season.win)
+        ladder.copy(rows = ladder.rows.updated(charId, snapshot.copy(stats = updatedStats)))
       }
 
     lTeam.members.foldLeft(ladderWithWinners) { (ladder, charId) =>
-      val ratingDelta = calcRating(charId, wTeam, won = false)(currentLadder)
-      val charInfo = currentLadder(charId)
+      val rating = calcRating(charId, wTeam, won = false)(ladder)
+      val snapshot: CharacterSnapshot = ladder.rows(charId)
 
-      val newCharInfo = charInfo.copy(
-        rating = ratingDelta,
-        weeklyLosses = charInfo.weeklyLosses + 1,
-        seasonLosses = charInfo.seasonLosses + 1)
-
-      ladder.updated(charInfo.id, newCharInfo)
+      val updatedStats = CharacterStats(rating, snapshot.stats.weekly.loss, snapshot.stats.season.loss)
+      ladder.copy(rows = ladder.rows.updated(charId, snapshot.copy(stats = updatedStats)))
     }
   }
 
@@ -110,11 +107,11 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings) {
     Seq(replacePlayer(team1, p1, p2), replacePlayer(team2, p2, p1))
   }
 
-  def hopTeamsRandomly(teams: Seq[Team], ladder: LadderSnapshot, hopRatioOpt: Option[Double] = None): Seq[Team] = {
+  def hopTeamsRandomly(teams: Seq[Team], ladder: CharacterLadder, hopRatioOpt: Option[Double] = None): Seq[Team] = {
     val hr = hopRatioOpt.getOrElse(hopRatio)
 
     val pairs = for {
-      window: Seq[Team] <- teams.sortBy(_.rating(ladder)).sliding(2, 2)
+      window: Seq[Team] <- teams.sortBy(t => TeamSnapshot(t, ladder).rating).sliding(2, 2)
       t1 = window.head
       t2 = window.last
     } yield {
@@ -129,22 +126,32 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings) {
     pairs.flatten.toSeq
   }
 
-  def prepareData(ladderOpt: Option[LadderSnapshot] = None,
-                  teamsOpt: Option[Seq[Team]] = None,
-                  hopTeams: (Seq[Team], LadderSnapshot) => Seq[Team] = hopTeamsRandomly(_, _, None),
-                  pickGames: (LadderSnapshot, Seq[Team]) => Seq[(Team, Team)] = pickGamesRandomly,
-                  i: Int = 0)
-  : Stream[(LadderSnapshot, LadderSnapshot, Set[Game])] = {
-    val ladderInput: LadderSnapshot = ladderOpt.getOrElse( genLadder(ladderSize) )
+  def prepareData(
+      ladderOpt: Option[CharacterLadder] = None,
+      teamsOpt: Option[Seq[Team]] = None,
+      hopTeams: (Seq[Team], CharacterLadder) => Seq[Team] = hopTeamsRandomly(_, _, None),
+      pickGames: (CharacterLadder, Seq[Team]) => Seq[(Team, Team)] = pickGamesRandomly,
+      i: Int = 0)
+    : Stream[(CharacterLadder, CharacterLadder, Set[Game])] = {
 
-    val ladder: LadderSnapshot =
+    import CharacterSnapshot._
+
+    val ladderInput: CharacterLadder = ladderOpt.getOrElse( genLadder(ladderSize) )
+
+    val ladder: CharacterLadder =
       if (i % gamesPerWeek != 0) ladderInput
-      else
-        for { (id, stats) <- ladderInput }
-        yield (id, stats.copy(weeklyWins = 0, weeklyLosses = 0))
+      else {
+        val rows =
+          for { (id, snapshot: CharacterSnapshot) <- ladderInput.rows }
+          yield {
+            val newSnapshot = snapshot.copy(stats = snapshot.stats.copy(weekly = Stats.empty))
+            (id, newSnapshot)
+          }
+        ladderInput.copy(rows = rows)
+      }
 
     val prevTeams: Seq[Team] = teamsOpt.getOrElse {
-      val ids = ladder.keys.toSeq
+      val ids = ladder.rows.keys.toSeq
       val result = ids.sliding(teamSize, teamSize).map(p => Team(p.toSet)).toSeq
       if (result.last.members.size == teamSize) result else result.init
     }
@@ -155,7 +162,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings) {
 
     val matches: Seq[(Team, Team)] = pickGames(ladder, teams)
 
-    val nextLadder: LadderSnapshot = matches.foldLeft(ladder) { (l, t) => play(l, t._1, t._2) }
+    val nextLadder: CharacterLadder = matches.foldLeft(ladder) { (l, t) => play(l, t._1, t._2) }
 
     (ladder, nextLadder, matches.toSet) #:: prepareData(Some(nextLadder), Some(teams), hopTeams, pickGames, i + 1)
   }

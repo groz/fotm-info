@@ -1,12 +1,19 @@
 package info.fotm.domain
 
-import info.fotm.domain.Domain.LadderSnapshot
+final case class TeamSnapshot private (team: Team, snapshots: Set[CharacterSnapshot], rating: Int, stats: Stats)
 
-case class Team(members: Set[CharacterId]) {
-  def rating(ladder: LadderSnapshot): Int = {
-    val charInfos: Set[CharacterStats] = members.map(ladder)
-    val totalRating = charInfos.toSeq.map(_.rating).sum
-    val result = totalRating / members.size.toDouble
-    result.toInt
+object TeamSnapshot {
+  def apply(snapshots: Set[CharacterSnapshot]): TeamSnapshot = {
+    val team = Team(snapshots.map(_.id))
+    val totalRating = snapshots.toList.map(_.stats.rating)
+    val rating = totalRating.sum.toDouble / snapshots.size
+    new TeamSnapshot(team, snapshots, rating.toInt, Stats.empty)
+  }
+
+  def apply(team: Team, characterLadder: CharacterLadder): TeamSnapshot = {
+    val snapshots = team.members.map(t => characterLadder.rows(t))
+    TeamSnapshot(snapshots)
   }
 }
+
+final case class Team(members: Set[CharacterId])

@@ -11,13 +11,13 @@ object ClusteringEvaluator extends App {
   def sqr(x: Double) = x * x
 
   def featurize(ci: CharFeatures): MathVector = MathVector(
-    ci.nextInfo.rating - ci.prevInfo.rating,
-    sqr(ci.nextInfo.rating - ci.prevInfo.rating) / ci.prevInfo.rating.toDouble,
-    ci.nextInfo.rating,
-    ci.nextInfo.seasonWins,
-    ci.nextInfo.seasonLosses,
-    ci.nextInfo.weeklyWins,
-    ci.nextInfo.weeklyLosses
+    ci.next.rating - ci.prev.rating,
+    sqr(ci.next.rating - ci.prev.rating) / ci.prev.rating.toDouble,
+    ci.next.rating,
+    ci.next.season.wins,
+    ci.next.season.losses,
+    ci.next.weekly.wins,
+    ci.next.weekly.losses
   )
 
   def findTeams(clusterer: RealClusterer, diffs: Seq[CharFeatures], teamSize: Int): Set[Team] = {
@@ -25,27 +25,29 @@ object ClusteringEvaluator extends App {
       Set()
     else {
       val features: Seq[MathVector] = Statistics.normalize(diffs.map(featurize))
-      val featureMap = diffs.map(_.prevInfo.id).zip(features).toMap
+      val featureMap = diffs.map(_.id).zip(features).toMap
       val clusters = clusterer.clusterize(featureMap, teamSize)
       clusters.map(ps => Team(ps.toSet))
     }
   }
 
   def evaluateStep(clusterer: RealClusterer,
-                   ladder: LadderSnapshot,
-                   nextLadder: LadderSnapshot,
+                   ladder: CharacterLadder,
+                   nextLadder: CharacterLadder,
                    games: Set[Game],
                    nLost: Int = 0): Statistics.Metrics = {
     print(".")
     val teamsPlayed: Set[Team] = games.flatMap(g => Seq(g._1, g._2))
+    val currentSnapshots = teamsPlayed.map(t => (t, TeamSnapshot(t, ladder))).toMap
+    val nextSnapshots = teamsPlayed.map(t => (t, TeamSnapshot(t, nextLadder))).toMap
 
-    val (wTeams, leTeams) = teamsPlayed.partition(t => t.rating(nextLadder) - t.rating(ladder) > 0)
-    val (eTeams, lTeams) = leTeams.partition(t => t.rating(nextLadder) - t.rating(ladder) == 0)
+    val (wTeams, leTeams) = teamsPlayed.partition(t => nextSnapshots(t).rating - currentSnapshots(t).rating > 0)
+    val (eTeams, lTeams) = leTeams.partition(t => nextSnapshots(t).rating - currentSnapshots(t).rating == 0)
 
     // algo input: ladder diffs for playersPlayed
-    val wDiffs = wTeams.flatMap(_.members).toList.map { p => CharFeatures(ladder(p), nextLadder(p)) }
-    val lDiffs = lTeams.flatMap(_.members).toList.map { p => CharFeatures(ladder(p), nextLadder(p)) }
-    val eDiffs = eTeams.flatMap(_.members).toList.map { p => CharFeatures(ladder(p), nextLadder(p)) }
+    val wDiffs = wTeams.flatMap(_.members).toList.map { p => CharFeatures(p, ladder(p), nextLadder(p)) }
+    val lDiffs = lTeams.flatMap(_.members).toList.map { p => CharFeatures(p, ladder(p), nextLadder(p)) }
+    val eDiffs = eTeams.flatMap(_.members).toList.map { p => CharFeatures(p, ladder(p), nextLadder(p)) }
 
     val noisyWDiffs = wDiffs.drop(nLost/2).dropRight(nLost/2)
     val noisyLDiffs = lDiffs.drop(nLost/2).dropRight(nLost/2)
@@ -66,7 +68,7 @@ object ClusteringEvaluator extends App {
     Statistics.calcMetrics(teams, teamsPlayed)
   }
 
-  def evaluate(clusterer: RealClusterer, data: Seq[(LadderSnapshot, LadderSnapshot, Set[Game])]): Double = {
+  def evaluate(clusterer: RealClusterer, data: Seq[(CharacterLadder, CharacterLadder, Set[Game])]): Double = {
     val stats: Seq[Metrics] =
       for {
         (ladder, nextLadder, games) <- data

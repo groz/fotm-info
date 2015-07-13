@@ -1,10 +1,17 @@
 package controllers
 
+import info.fotm.aether.LadderStorageActor
 import models._
+
+import javax.inject._
+import akka.actor._
 import play.api._
 import play.api.mvc._
 
-object Application extends Controller {
+@Singleton
+class Application @Inject() (system: ActorSystem) extends Controller {
+
+  lazy val ladderStorageActor = system.actorOf(Props[LadderStorageActor], "ladder-storage-actor")
 
   def index = Action {
     implicit val euRegion = Region("EU")
