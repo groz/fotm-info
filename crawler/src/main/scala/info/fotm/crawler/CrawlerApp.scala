@@ -5,7 +5,7 @@ import akka.util.Timeout
 import dispatch.Http
 import info.fotm.aether.Storage
 import info.fotm.api.BattleNetAPI
-import info.fotm.domain.{CharacterSnapshot, TeamView, TeamUpdate, Axis}
+import info.fotm.domain._
 import scala.concurrent.{Future, Await}
 import scala.concurrent.duration._
 import info.fotm.api.models._
@@ -16,8 +16,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object CrawlerApp extends App {
   val apiKey = "vntnwpsguf4pqak7e8y7tgn35795fqfj"
 
-  val axis = Axis.all
-
   val system = ActorSystem("crawlerSystem")
 
   val storageSelector: ActorSelection = system.actorSelection("akka.tcp://application@127.0.0.1:45000/user/storage-actor")
@@ -26,7 +24,7 @@ object CrawlerApp extends App {
   //storage ! Storage.Updates(Axis(US, Fives), Seq())
 
   val actorSetups = for {
-    a <- axis
+    a <- Axis.all
   } yield {
       val name = s"crawler-${a.region}-${a.bracket.slug}"
       val props = Props(classOf[CrawlerActor], storageSelector, apiKey, a)

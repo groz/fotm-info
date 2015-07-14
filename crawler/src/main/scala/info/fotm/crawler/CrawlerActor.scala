@@ -12,6 +12,9 @@ import akka.actor.{ActorSelection, ActorRef, Actor}
 import akka.event.{LoggingAdapter, Logging}
 import akka.pattern.pipe
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 object CrawlerActor {
   case object Crawl
@@ -56,6 +59,7 @@ class CrawlerActor(storage: ActorSelection, apiKey: String, axis: Axis) extends 
     (prev, next) <- updatesObserver.stream
     if distance(prev, next) == 1
     teams = processUpdate(prev, next)
+    if teams.size != 0
   } {
     log.debug(s"Sending ${teams.size} updates to storage...")
     storage ! Storage.Updates(axis, teams)
@@ -83,12 +87,22 @@ class CrawlerActor(storage: ActorSelection, apiKey: String, axis: Axis) extends 
     case Crawl =>
       context.become(crawling(false))
 
-      api.leaderboard(axis.bracket)
+      /*
+      val delay = akka.pattern.after(25.seconds, using = context.system.scheduler) {
+        log.debug(s"Request ${axis.region}, ${axis.bracket} timed out.")
+        Future.successful(CrawlFailed)
+      }
+      */
+
+      val query = api.leaderboard(axis.bracket)
         .map(LeaderboardReceived)
-        .recover { case _ => CrawlFailed } pipeTo self
+        .recover { case _ => CrawlFailed }
+
+      //Future firstCompletedOf Seq(delay, query) pipeTo self
+      query pipeTo self
   }
 
-  private def processUpdate(previousLadder: CharacterLadder, currentLadder: CharacterLadder) = {
+  private def processUpdate(previousLadder: CharacterLadder, currentLadder: CharacterLadder): List[TeamUpdate] = {
     val commonKeys: Set[CharacterId] = previousLadder.rows.keySet.intersect(currentLadder.rows.keySet)
 
     // stats
@@ -120,18 +134,14 @@ class CrawlerActor(storage: ActorSelection, apiKey: String, axis: Axis) extends 
   private def findTeams(charDiffs: Set[CharFeatures], currentLadder: CharacterLadder): Set[TeamUpdate] = {
     val vectorizedFeatures = charDiffs.map(c => (c, ClusteringEvaluator.featurize(c))).toMap
 
-    val teamUpdates: Set[TeamUpdate] = for {
+    for {
       cluster: Seq[CharFeatures] <- clusterer.clusterize(vectorizedFeatures, axis.bracket.size)
     } yield {
-        val won = cluster.head.won
-        val cs = cluster.map(_.id).map(c => currentLadder.rows(c)).toSet
-        val snapshot = TeamSnapshot(cs)
-        TeamUpdate(snapshot.view, won)
-      }
-
-    log.info(s"Found: $teamUpdates")
-
-    teamUpdates
+      val won = cluster.head.won
+      val cs = cluster.map(_.id).map(c => currentLadder.rows(c)).toSet
+      val snapshot = TeamSnapshot(cs)
+      TeamUpdate(snapshot.view, won)
+    }
   }
 
   private def distance(l1: CharacterLadder, l2: CharacterLadder): Int = {
