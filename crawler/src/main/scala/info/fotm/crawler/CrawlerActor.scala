@@ -11,6 +11,7 @@ import info.fotm.domain._
 import akka.actor.{ActorSelection, ActorRef, Actor}
 import akka.event.{LoggingAdapter, Logging}
 import akka.pattern.pipe
+import info.fotm.util.ObservableReadStream
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -20,12 +21,18 @@ object CrawlerActor {
   case object Crawl
   case class LeaderboardReceived(leaderboard: Leaderboard)
   case object CrawlFailed
+  case object CrawlTimedOut
 }
 
-class CrawlerActor(storage: ActorSelection, apiKey: String, axis: Axis) extends Actor {
+class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor {
   import CrawlerActor._
 
+  val historySize = 20
+
   implicit val log: LoggingAdapter = Logging(context.system, this)
+
+  val requestTimeout = 30.seconds
+
   val api = new BattleNetAPI(axis.region, apiKey).WoW
 
   implicit val lbOrdering = Ordering.fromLessThan[CharacterLadder] { (l1, l2) =>
@@ -46,38 +53,49 @@ class CrawlerActor(storage: ActorSelection, apiKey: String, axis: Axis) extends 
     "HT2_CM_RM_V" -> new Summator(
       RealClusterer.wrap(new HTClusterer2),
       RealClusterer.wrap(new EqClusterer2),
-      new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
+      new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer {
+        override lazy val multiplexTurns = 30
+        override lazy val multiplexThreshold = 5
+      }
     ) with Verifier
   )
 
-  val clusterer = algos("RM_V")
+  val clusterer = algos("HT2_CM_RM_V")
 
-  val updatesObserver = new UpdatesQueue[CharacterLadder](10)
+  val updatesObserver = new UpdatesQueue[CharacterLadder](historySize)
 
   // subscribe storage to ladder updates
   val updatesSubscription = for {
-    (prev, next) <- updatesObserver.stream
-    if distance(prev, next) == 1
-    teams = processUpdate(prev, next)
+    (prev, next) <- updatesObserver
+    ladderUpdate = LadderUpdate(prev, next)
+    if ladderUpdate.distance == 1
+    teams = processUpdate(ladderUpdate)
     if teams.size != 0
   } {
-    log.debug(s"Sending ${teams.size} updates to storage...")
+    log.debug(s"Sending ${teams.size} teams to storage...")
     storage ! Storage.Updates(axis, teams)
   }
 
+  def continue(recrawlRequested: Boolean, message: String = "") = {
+    if (!message.isEmpty)
+      log.debug(message)
+
+    context.unbecome()
+    if (recrawlRequested)
+      self ! Crawl
+  }
+
   def crawling(recrawlRequested: Boolean): Receive = {
+    case CrawlTimedOut =>
+      continue(recrawlRequested, "Crawl timed out")
+
     case CrawlFailed =>
-      context.unbecome()
-      if (recrawlRequested)
-        self ! Crawl
+      continue(recrawlRequested, "Crawl failed")
 
     case LeaderboardReceived(leaderboard: Leaderboard) =>
-      context.unbecome()
-      if (recrawlRequested)
-        self ! Crawl
-
       val current = CharacterLadder(axis, leaderboard)
       updatesObserver.process(current)
+      continue(recrawlRequested)
 
     case Crawl =>
       context become crawling(true)
@@ -87,44 +105,35 @@ class CrawlerActor(storage: ActorSelection, apiKey: String, axis: Axis) extends 
     case Crawl =>
       context.become(crawling(false))
 
-      /*
-      val delay = akka.pattern.after(25.seconds, using = context.system.scheduler) {
-        log.debug(s"Request ${axis.region}, ${axis.bracket} timed out.")
-        Future.successful(CrawlFailed)
+      val delay = akka.pattern.after(requestTimeout, using = context.system.scheduler) {
+        Future.successful(CrawlTimedOut)
       }
-      */
 
       val query = api.leaderboard(axis.bracket)
         .map(LeaderboardReceived)
         .recover { case _ => CrawlFailed }
 
-      //Future firstCompletedOf Seq(delay, query) pipeTo self
-      query pipeTo self
+      Future firstCompletedOf Seq(delay, query) pipeTo self
   }
 
-  private def processUpdate(previousLadder: CharacterLadder, currentLadder: CharacterLadder): List[TeamUpdate] = {
-    val commonKeys: Set[CharacterId] = previousLadder.rows.keySet.intersect(currentLadder.rows.keySet)
-
-    // stats
-    val changed: Set[CharacterId] = commonKeys.filter(k => previousLadder(k).season.total != currentLadder(k).season.total)
-
+  private def processUpdate(ladderUpdate: LadderUpdate): List[TeamUpdate] = {
+    import ladderUpdate._
     // only take those with 1 game diff
-    val focus: Set[CharacterId] = changed.filter(k => previousLadder(k).season.total + 1 == currentLadder(k).season.total)
-    val factions: Map[Int, Set[CharacterId]] = focus.groupBy(k => currentLadder.rows(k).view.factionId)
+    val changed: Set[CharacterId] = commonIds.filter(k => previous(k).season.total + 1 == current(k).season.total)
+    val factions: Map[Int, Set[CharacterId]] = changed.groupBy(k => current.rows(k).view.factionId)
     val factionNumbers: Map[Int, Int] = factions.map(g => (g._1, g._2.size))
 
     // stats logging
-    val diffs: Set[Int] = changed.map(k => previousLadder(k).season.total - currentLadder(k).season.total)
-
-    log.debug(s"Total: ${currentLadder.rows.size}, changed: ${changed.size}")
-    log.debug(s"diffs: $diffs")
+    log.debug(s"Total: ${current.rows.size}, changed: ${changed.size}")
     log.debug(s"Factions: $factionNumbers")
+    log.debug(s"Distances: ${ladderUpdate.distances}")
 
+    // output teams
     for {
-      (_, factionChars: Set[CharacterId]) <- factions.toList    // split by factions
-      features: Set[CharFeatures] = extractFeatures(factionChars, previousLadder, currentLadder)
-      (_, bucket: Set[CharFeatures]) <- features.groupBy(_.won) // further split by winners/losers
-      team <- findTeams(bucket, currentLadder)                  // find teams for each group
+      (_, factionChars: Set[CharacterId]) <- factions.toList      // split by factions
+      features: Set[CharFeatures] = extractFeatures(factionChars, previous, current)
+      (_, bucket: Set[CharFeatures]) <- features.groupBy(_.won)   // further split by winners/losers
+      team <- findTeams(bucket, current)                          // find teams for each group
     } yield team
   }
 
@@ -142,12 +151,5 @@ class CrawlerActor(storage: ActorSelection, apiKey: String, axis: Axis) extends 
       val snapshot = TeamSnapshot(cs)
       TeamUpdate(snapshot.view, won)
     }
-  }
-
-  private def distance(l1: CharacterLadder, l2: CharacterLadder): Int = {
-    val commonKeys: Set[CharacterId] = l1.rows.keySet.intersect(l2.rows.keySet)
-    val distances: Set[Int] = commonKeys.map(k => l2(k).season.total - l1(k).season.total)
-    log.debug(s"Distances: $distances")
-    distances.map(Math.abs).max
   }
 }

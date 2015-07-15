@@ -5,6 +5,10 @@ import akka.event.{Logging, LoggingReceive}
 import info.fotm.domain._
 
 object Storage {
+  // init flows
+  final case class Init(state: Map[Axis, Map[Team, TeamSnapshot]])
+  case object InitFrom
+
   // input
   final case class Updates(axis: Axis, teamUpdates: Seq[TeamUpdate])
 
@@ -55,6 +59,12 @@ class Storage extends Actor {
       } { ladder =>
         sender ! TeamLadderResponse(TeamLadder(axis, ladder))
       }
+
+    case Init(state: Map[Axis, Map[Team, TeamSnapshot]]) =>
+      context.become( process(state, subs) )
+
+    case InitFrom =>
+      sender ! Init(ladders)
 
     case Subscribe =>
       context.become( process(ladders, subs + sender) )

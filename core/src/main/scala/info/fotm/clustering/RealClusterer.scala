@@ -14,7 +14,7 @@ object RealClusterer {
       else {
         val reverseMap = input.map(_.swap)
         val clusters: Set[Cluster] = clusterer.clusterize(input.values.toSeq, groupSize)
-        clusters.map(_.map(reverseMap))
+        clusters.map(vectors => vectors.map(reverseMap))
       }
     }
 

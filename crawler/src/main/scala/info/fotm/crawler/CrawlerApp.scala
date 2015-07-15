@@ -18,23 +18,20 @@ object CrawlerApp extends App {
 
   val system = ActorSystem("crawlerSystem")
 
-  val storageSelector: ActorSelection = system.actorSelection("akka.tcp://application@127.0.0.1:45000/user/storage-actor")
-  //val resolver: Future[ActorRef] = storageSelector.resolveOne()(5.seconds)
-  //val storage: ActorRef = Await.result(resolver, 5.seconds)
-  //storage ! Storage.Updates(Axis(US, Fives), Seq())
+  val storage = system.actorOf(Props[Storage], "storage")
 
   val actorSetups = for {
     a <- Axis.all
   } yield {
       val name = s"crawler-${a.region}-${a.bracket.slug}"
-      val props = Props(classOf[CrawlerActor], storageSelector, apiKey, a)
+      val props = Props(classOf[CrawlerActor], storage, apiKey, a)
       (name, props)
     }
 
   def spawnAll(system: ActorSystem): Unit =
     for ((name, props) <- actorSetups) {
       val crawler = system.actorOf(props, name)
-      system.scheduler.schedule(0 seconds, 10 seconds, crawler, CrawlerActor.Crawl)
+      system.scheduler.schedule(0.seconds, 10.seconds, crawler, CrawlerActor.Crawl)
     }
 
   spawnAll(system)
@@ -46,10 +43,7 @@ object MyApp extends App {
   val api = new BattleNetAPI(US, apiKey).WoW
 
   val lbFuture = api.leaderboard(Threes).map { lb =>
-    val gs = lb.rows.groupBy(_.specId).map { kv =>
-      val (spec, g) = kv
-      (spec, g.size)
-    }
+    val gs = for { (specId, g) <- lb.rows.groupBy(_.specId) } yield (specId, g.size)
     gs.toList.sortBy(-_._2).foreach(println)
   }
 

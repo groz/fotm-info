@@ -8,7 +8,7 @@ class UpdatesSpec extends FlatSpec with Matchers {
     var fired = false
 
     val updates = new UpdatesQueue[Int]()
-    for { _ <- updates.stream } fired = true
+    for { _ <- updates } fired = true
 
     updates.process(1)
     fired should be(false)
@@ -18,7 +18,7 @@ class UpdatesSpec extends FlatSpec with Matchers {
     var fired = false
 
     val updates = new UpdatesQueue[Int]()
-    for { _ <- updates.stream } fired = true
+    for { _ <- updates } fired = true
 
     updates.process(1)
     fired should be(false)
@@ -30,7 +30,7 @@ class UpdatesSpec extends FlatSpec with Matchers {
   it should "not fire for pairs not passing filter" in {
     var fired = false
     val updates = new UpdatesQueue[Int]()
-    for { _ <- updates.stream if false } fired = true
+    for { _ <- updates if false } fired = true
 
     updates.process(1)
     fired should be(false)
@@ -42,7 +42,7 @@ class UpdatesSpec extends FlatSpec with Matchers {
   it should "fire for pairs passing filter" in {
     var fired = false
     val updates = new UpdatesQueue[Int]()
-    for { (a, b) <- updates.stream if a < b } fired = true
+    for { (a, b) <- updates if a < b } fired = true
 
     updates.process(2)
     fired should be(false)
@@ -54,7 +54,7 @@ class UpdatesSpec extends FlatSpec with Matchers {
   it should "not fire for non consecutive updates" in {
     var fired = false
     val updates = new UpdatesQueue[Int]()
-    for { _ <- updates.stream } fired = true
+    for { _ <- updates } fired = true
 
     updates.process(1)
     fired should be(false)
@@ -67,7 +67,7 @@ class UpdatesSpec extends FlatSpec with Matchers {
     val pairs = scala.collection.mutable.ListBuffer[(Int, Int)]()
 
     val updates = new UpdatesQueue[Int]()
-    for { (a, b) <- updates.stream if a + 1 == b } pairs += ((a, b))
+    for { (a, b) <- updates if a + 1 == b } pairs += ((a, b))
 
     val expected = List((1, 2), (2, 3))
 

@@ -4,10 +4,23 @@ import com.google.common.collect.MapMaker
 import scala.collection.concurrent
 import scala.collection.JavaConverters._
 
-trait ObservableStream[T] { self =>
-  type Observer = T => Unit
+trait Subscription {
+  def unsubscribe(): Unit
+}
 
-  protected[this] type Type = T
+trait ObservableReadStream[+T] {
+  def foreach(observer: T => Unit): Subscription
+  def filter(p: T => Boolean): ObservableReadStream[T]
+  def map[U](f: T => U): ObservableReadStream[U]
+  def flatMap[U](f: T => ObservableStream[U]): ObservableReadStream[U]
+}
+
+trait ObservableWriteStream[-T] {
+  def publish(value: T): Unit
+}
+
+trait ObservableStream[T] extends ObservableReadStream[T] with ObservableWriteStream[T] { self =>
+  type Observer = T => Unit
 
   // private interface
   private val subs: concurrent.Map[Subscription, Observer] = new concurrent.TrieMap[Subscription, Observer]()
@@ -27,7 +40,7 @@ trait ObservableStream[T] { self =>
   private def weaksub(observer: Observer): Subscription = addsub(weaksubs, observer)
 
   // implementers interface
-  protected def publish(value: T) = {
+  def publish(value: T) = {
     for { (_, o) <- subs } o(value)
     for { (_, o) <- weaksubs } o(value)
   }
@@ -49,6 +62,3 @@ trait ObservableStream[T] { self =>
   }
 }
 
-trait Subscription {
-  def unsubscribe(): Unit
-}

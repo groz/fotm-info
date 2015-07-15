@@ -14,3 +14,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-slf4j" % "2.4-SNAPSHOT",
   "com.typesafe.akka" %% "akka-testkit" % "2.4-SNAPSHOT" % "test"
 )
+
+javaOptions ++= Seq(
+  "-XX:+UseConcMarkSweepGC",
+  "-XX:+CMSClassUnloadingEnabled"
+)

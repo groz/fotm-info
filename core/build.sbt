@@ -1,4 +1,5 @@
 libraryDependencies ++= Seq(
+  "com.github.nscala-time" %% "nscala-time" % "2.0.0",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
 

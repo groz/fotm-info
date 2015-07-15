@@ -14,10 +14,12 @@ object ClusteringEvaluator extends App {
     ci.next.rating - ci.prev.rating,
     sqr(ci.next.rating - ci.prev.rating) / ci.prev.rating.toDouble,
     ci.next.rating,
-    ci.next.season.wins,
-    ci.next.season.losses,
-    ci.next.weekly.wins,
-    ci.next.weekly.losses
+    ci.next.season.total,
+    ci.next.weekly.total,
+    ci.next.season.wins - ci.next.season.losses,
+    ci.next.weekly.wins - ci.next.weekly.losses,
+    ci.next.season.wins / ci.next.season.total.toDouble,
+    ci.next.weekly.wins / ci.next.weekly.total.toDouble
   )
 
   def findTeams(clusterer: RealClusterer, diffs: Seq[CharFeatures], teamSize: Int): Set[Team] = {
