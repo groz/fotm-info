@@ -23,14 +23,11 @@ class KMeansClusterer extends Clusterer {
 
   def process(clusters: Set[Cluster], means: Seq[V]): Set[Cluster] =
   {
-    //println("Process method")
-    //println("clusters:"+clusters)
     val newClusters = assignment(clusters,means)
-    //println("newclusters:"+newClusters)
+
     if (newClusters!=clusters)
     {
       val newMeans = update(newClusters)
-      //println(newMeans)
       process(newClusters,newMeans)
     }
     else

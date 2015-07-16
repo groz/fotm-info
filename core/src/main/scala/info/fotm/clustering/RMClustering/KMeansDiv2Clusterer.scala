@@ -26,14 +26,15 @@ class KMeansDiv2Clusterer(maxClusterCond: Set[Cluster] => Cluster = cs => cs.fil
       clusterizationStep(initClusters, groupsCount)
   }
 
-  def clusterizationStep(clusters: Set[Cluster], clustersCount: Int): Set[Cluster] =
+  // TODO: fix StackOverflow workaround here
+  def clusterizationStep(clusters: Set[Cluster], clustersCount: Int, i: Int = 0): Set[Cluster] =
   {
     val maxCluster = maxClusterCond(clusters)
     val newClusters = (clusters - maxCluster) ++ divide(maxCluster)
-    if (newClusters.size == clustersCount)
+    if (i > 100 || newClusters.size >= clustersCount)
       newClusters
     else
-      clusterizationStep(newClusters, clustersCount)
+      clusterizationStep(newClusters, clustersCount, i + 1)
   }
 
   // divides cluster in two parts

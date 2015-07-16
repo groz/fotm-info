@@ -9,13 +9,19 @@ object RealClusterer {
   def wrap(clusterer: Clusterer) = new RealClusterer {
 
     override def clusterize[T](input: Map[T, MathVector], groupSize: Int): Set[Seq[T]] = {
-      if (input.size < groupSize)
+//      println(s"Started ${clusterer.getClass}.clusterize")
+
+      val result: Set[Seq[T]] = if (input.size < groupSize)
         Set()
       else {
         val reverseMap = input.map(_.swap)
         val clusters: Set[Cluster] = clusterer.clusterize(input.values.toSeq, groupSize)
         clusters.map(vectors => vectors.map(reverseMap))
       }
+
+//      println(s"Finished ${clusterer.getClass}.clusterize")
+
+      result
     }
 
   }

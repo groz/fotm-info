@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 object Compression {
 
-  implicit val str2bytes = Bijection.build[String, Array[Byte]](_.getBytes(UTF_8))(new String(_, UTF_8))
+  implicit val str2bytes = Bijection.build[String, Array[Byte]](_.getBytes)(new String(_))
 
   implicit val str2base64 = str2bytes andThen Bijection.bytes2Base64
 

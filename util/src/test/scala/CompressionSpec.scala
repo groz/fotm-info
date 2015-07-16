@@ -14,6 +14,13 @@ class CompressionSpec extends FlatSpec with Matchers {
     unzipped should equal (uncompressed)
   }
 
+  "zip/unzip" should "receive same localized string when converted back and forth" in {
+    val uncompressed = "Привет, мир!"
+    val zipped = Compression.str2GZippedBase64(uncompressed)
+    val unzipped = Compression.str2GZippedBase64.inverse(zipped)
+    unzipped should equal (uncompressed)
+  }
+
   "base64" should "encode user:pass as dXNlcjpwYXNz" in {
     val base = "user:pass"
     val base64 = Bijection[String, Base64String](base)

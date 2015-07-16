@@ -6,11 +6,11 @@ import info.fotm.domain._
 
 object Storage {
   // init flows
-  final case class Init(state: Map[Axis, Map[Team, TeamSnapshot]])
+  final case class Init(state: Map[Axis, Map[Team, TeamSnapshot]], chars: Map[CharacterId, CharacterSnapshot])
   case object InitFrom
 
   // input
-  final case class Updates(axis: Axis, teamUpdates: Seq[TeamUpdate])
+  final case class Updates(axis: Axis, teamUpdates: Seq[TeamUpdate], charUpdates: Set[CharacterDiff])
 
   // output
   final case class GetTeamLadder(axis: Axis)
@@ -27,11 +27,11 @@ class Storage extends Actor {
   val log = Logging(context.system, this.getClass)
   // TODO: save/load state on init
 
-  override def receive: Receive = process(Map.empty, Set.empty)
+  override def receive: Receive = process(Map.empty, Map.empty, Set.empty)
 
-  def process(ladders: Map[Axis, Map[Team, TeamSnapshot]], subs: Set[ActorRef]): Receive = LoggingReceive {
+  def process(ladders: Map[Axis, Map[Team, TeamSnapshot]], chars: Map[CharacterId, CharacterSnapshot], subs: Set[ActorRef]): Receive = LoggingReceive {
 
-    case Updates(axis, teamUpdates) =>
+    case Updates(axis, teamUpdates, charUpdates: Set[CharacterDiff]) =>
       log.debug("Updates received. Processing...")
       val axisLadder: Map[Team, TeamSnapshot] = ladders.getOrElse(axis, Map.empty)
 
@@ -40,7 +40,9 @@ class Storage extends Actor {
         team = Team(update.view.snapshots.map(_.id))
         snapshotOption = axisLadder.get(team)
       } yield {
-          val snapshot = snapshotOption.fold { TeamSnapshot(update.view.snapshots) } {
+          val snapshot = snapshotOption.fold {
+            TeamSnapshot(update.view.snapshots)
+          } {
             _.copy(view = update.view)
           }
           if (update.won) snapshot.copy(stats = snapshot.stats.win)
@@ -48,10 +50,11 @@ class Storage extends Actor {
         }
 
       val newAxisLadder = axisLadder ++ updatedSnapshots.map(ts => (ts.team, ts))
-      context.become( process(ladders.updated(axis, newAxisLadder), subs) )
+      val newChars = chars ++ charUpdates.map(cu => (cu.id, cu.current)).toMap
+      context.become(process(ladders.updated(axis, newAxisLadder), newChars, subs))
 
       for (sub <- subs)
-        sub ! Updates(axis, teamUpdates)
+        sub ! Updates(axis, teamUpdates, charUpdates)
 
     case GetTeamLadder(axis: Axis) =>
       ladders.get(axis).fold {
@@ -60,17 +63,17 @@ class Storage extends Actor {
         sender ! TeamLadderResponse(TeamLadder(axis, ladder))
       }
 
-    case Init(state: Map[Axis, Map[Team, TeamSnapshot]]) =>
-      context.become( process(state, subs) )
+    case Init(state: Map[Axis, Map[Team, TeamSnapshot]], chars: Map[CharacterId, CharacterSnapshot]) =>
+      context.become(process(state, chars, subs))
 
     case InitFrom =>
-      sender ! Init(ladders)
+      sender ! Init(ladders, chars)
 
     case Subscribe =>
-      context.become( process(ladders, subs + sender) )
+      context.become(process(ladders, chars, subs + sender))
 
     case Unsubscribe =>
-      context.become( process(ladders, subs - sender) )
+      context.become(process(ladders, chars, subs - sender))
   }
 
 }

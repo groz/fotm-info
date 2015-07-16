@@ -1,9 +1,10 @@
 package info.fotm.util
 
 class MathVector(val coords: Seq[Double]) {
-  private def operation(that: MathVector, coordsOp: (Double, Double) => Double) = {
+  private def operation(that: MathVector, op: (Double, Double) => Double) = {
     require(this.dimension == that.dimension)
-    MathVector(coords.zip(that.coords).map(c => coordsOp(c._1, c._2)): _*)
+    val seq = coords.toList.zip(that.coords.toList).map(c => op(c._1, c._2))
+    MathVector(seq: _*)
   }
 
   lazy val dimension = coords.length

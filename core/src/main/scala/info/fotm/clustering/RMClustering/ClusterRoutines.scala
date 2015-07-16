@@ -66,8 +66,13 @@ object ClusterRoutines
     val approxCountOfGroups = input.length / groupSize
     val kmeansClusterer = new KMeansDiv2Clusterer
     val clusterizations = (1 to 2).map(j => kmeansClusterer.clusterize(input, approxCountOfGroups))
-    val optClusterization = clusterizations.filter(c => c.size == approxCountOfGroups).minBy(estimateClusterization)
-    optClusterization
+    // TODO: remove this workaround against StackOverflow
+    if (clusterizations.isEmpty)
+      Set()
+    else {
+      val optClusterization = clusterizations.filter(c => c.size == approxCountOfGroups).minBy(estimateClusterization)
+      optClusterization
+    }
   }
 
   def makeGraphFromClusters(clusters: List[Cluster], groupSize: Int): Graph[Int] =

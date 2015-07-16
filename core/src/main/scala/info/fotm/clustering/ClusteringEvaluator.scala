@@ -1,6 +1,6 @@
 package info.fotm.clustering
 
-import info.fotm.clustering.RMClustering.{EqClusterer2, EqClusterer}
+import info.fotm.clustering.RMClustering.EqClusterer2
 import info.fotm.clustering.enhancers.{ClonedClusterer, Verifier, Summator, Multiplexer}
 import info.fotm.domain.Domain._
 import info.fotm.domain._
@@ -14,12 +14,9 @@ object ClusteringEvaluator extends App {
     ci.next.rating - ci.prev.rating,
     sqr(ci.next.rating - ci.prev.rating) / ci.prev.rating.toDouble,
     ci.next.rating,
-    ci.next.season.total,
-    ci.next.weekly.total,
-    ci.next.season.wins - ci.next.season.losses,
-    ci.next.weekly.wins - ci.next.weekly.losses,
     ci.next.season.wins / ci.next.season.total.toDouble,
-    ci.next.weekly.wins / ci.next.weekly.total.toDouble
+    ci.next.weekly.wins / ci.next.weekly.total.toDouble,
+    ci.next.weekly.total
   )
 
   def findTeams(clusterer: RealClusterer, diffs: Seq[CharFeatures], teamSize: Int): Set[Team] = {
@@ -56,10 +53,15 @@ object ClusteringEvaluator extends App {
 
     // algo evaluation: match output against teamsPlayed
     val teamSize = teamsPlayed.head.members.size
-    val teams =
+    val teams: Set[Team] =
       findTeams(clusterer, noisyWDiffs, teamSize) ++
       findTeams(clusterer, noisyLDiffs, teamSize) ++
       findTeams(clusterer, eDiffs, teamSize)
+
+    // remove contentions (penalize multiplexer and merged algos)
+    val characters = teams.flatMap(t => t.members).toList
+    val charTeams: Map[CharacterId, Set[Team]] = characters.map(c => (c, teams.filter(t => t.members.contains(c)))).toMap
+    val (certain, _) = charTeams.partition(kv => kv._2.size == 1)
 
     // noiseless
 //    val teams =
@@ -67,7 +69,8 @@ object ClusteringEvaluator extends App {
 //        findTeams(clusterer, lDiffs, teamSize) ++
 //        findTeams(clusterer, eDiffs, teamSize)
 
-    Statistics.calcMetrics(teams, teamsPlayed)
+    val ct = certain.values.flatten.toSet
+    Statistics.calcMetrics(ct, teamsPlayed)
   }
 
   def evaluate(clusterer: RealClusterer, data: Seq[(CharacterLadder, CharacterLadder, Set[Game])]): Double = {
@@ -90,37 +93,35 @@ object ClusteringEvaluator extends App {
       val dataGen = new ClusteringEvaluatorData(settings)
 
       // Runner
-      val data = dataGen.prepareData().drop(500).take(200).toList
+      val data = dataGen.prepareData().slice(500, 700).toList
       //val (prevLadder, lastladder, _) = data.last
       //lastladder.values.toList.sortBy(-_.rating).map(i => (i.rating, i.seasonWins, i.seasonLosses, i.weeklyWins, i.weeklyLosses)).foreach(println)
 
+      def createCMV(turns: Int, threshold: Int): (String, RealClusterer) = {
+        s"C * M($turns, $threshold) * V" ->
+          new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier {
+            override lazy val multiplexTurns = turns
+            override lazy val multiplexThreshold = threshold
+          }
+      }
+
       val clusterers: Map[String, RealClusterer] = Map(
 //        "Random" -> RealClusterer.wrap(new RandomClusterer),
-//        "HTClusterer" -> RealClusterer.wrap(new HTClusterer),
-        "HTClusterer2" -> RealClusterer.wrap(new HTClusterer2),
-        "HTClusterer2 + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new HTClusterer2)) with Verifier,
-        "RMClusterer" -> RealClusterer.wrap(new EqClusterer2),
-        "RMClusterer + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer2)) with Verifier,
-//        "Closest" -> RealClusterer.wrap(new ClosestClusterer),
-//        "Closest * Multiplexer" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer,
-        "Closest * Multiplexer * Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier,
-        //      "Closest + Verifier" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Verifier,
-        //      "HTClusterer + Verifier" -> RealClusterer.wrap(new HTClusterer),
-        ////      "HT + RM + Verifier" -> new Summator(RealClusterer.wrap(new EqClusterer), RealClusterer.wrap(new HTClusterer)) with Verifier
-        ////      "HT + RM + Closest" -> new Summator(new EqClusterer, new HTClusterer, new ClosestClusterer),
-        //      "HT + RM + (Closest with Multiplexer)" -> new Summator(
-        //        RealClusterer.wrap(new EqClusterer),
-        //        RealClusterer.wrap(new HTClusterer),
-        //        new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
-        //      ),
-//        "(HT + RM + Closest) * Verifier" -> new ClonedClusterer(new Summator(
-//          RealClusterer.wrap(new EqClusterer),
-//          RealClusterer.wrap(new HTClusterer),
-//          RealClusterer.wrap(new ClosestClusterer)
-//        )) with Verifier,
-        "(HT2 + CM + RM) * V" -> new Summator(
-          RealClusterer.wrap(new HTClusterer2),
-          RealClusterer.wrap(new EqClusterer2),
+        "HT2" -> RealClusterer.wrap(new HTClusterer2),
+        "HT3" -> RealClusterer.wrap(new HTClusterer3),
+        "HT2 * V" -> new ClonedClusterer(RealClusterer.wrap(new HTClusterer2)) with Verifier,
+        "HT3 * V" -> new ClonedClusterer(RealClusterer.wrap(new HTClusterer3)) with Verifier,
+        "HT3[RM]" -> RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2))),
+        "HT3[RM] * V" -> new ClonedClusterer(RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2)))) with Verifier,
+        "RM" -> RealClusterer.wrap(new EqClusterer2),
+        "RM * V" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer2)) with Verifier,
+        createCMV(20, 3),
+        "(HT3 + CM) * V" -> new Summator(
+          RealClusterer.wrap(new HTClusterer3),
+          new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
+        ) with Verifier,
+        "(HT3[RM] + CM) * V" -> new Summator(
+          RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2))),
           new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
         ) with Verifier
       )

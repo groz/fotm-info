@@ -1,21 +1,18 @@
 package controllers
 
-import akka.actor.Actor.Receive
+import javax.inject._
+
+import akka.actor._
+import akka.pattern.ask
 import akka.util.Timeout
 import info.fotm.aether.Storage
 import info.fotm.aether.Storage.TeamLadderResponse
 import info.fotm.domain.Axis
-import models._
-
-import javax.inject._
-import akka.actor._
-import play.api._
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
 
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import akka.pattern.ask
 
 @Singleton
 class Application @Inject() (system: ActorSystem) extends Controller {

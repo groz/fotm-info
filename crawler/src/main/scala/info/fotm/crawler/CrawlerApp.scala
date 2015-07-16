@@ -1,6 +1,6 @@
 package info.fotm.crawler
 
-import akka.actor.{ActorSelection, ActorRef, Props, ActorSystem}
+import akka.actor._
 import akka.util.Timeout
 import dispatch.Http
 import info.fotm.aether.Storage
@@ -28,13 +28,13 @@ object CrawlerApp extends App {
       (name, props)
     }
 
-  def spawnAll(system: ActorSystem): Unit =
-    for ((name, props) <- actorSetups) {
+  def spawnAll(system: ActorSystem): List[Cancellable] =
+    for ((name, props) <- actorSetups) yield {
       val crawler = system.actorOf(props, name)
       system.scheduler.schedule(0.seconds, 10.seconds, crawler, CrawlerActor.Crawl)
     }
 
-  spawnAll(system)
+  val timers = spawnAll(system)
 }
 
 object MyApp extends App {

@@ -9,7 +9,7 @@ import info.fotm.clustering._
 import info.fotm.domain._
 
 import akka.actor.{ActorSelection, ActorRef, Actor}
-import akka.event.{LoggingAdapter, Logging}
+import akka.event.{LoggingReceive, LoggingAdapter, Logging}
 import akka.pattern.pipe
 import info.fotm.util.ObservableReadStream
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -69,23 +69,22 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
     (prev, next) <- updatesObserver
     ladderUpdate = LadderUpdate(prev, next)
     if ladderUpdate.distance == 1
-    teams = processUpdate(ladderUpdate)
-    if teams.size != 0
+    teamUpdates: List[TeamUpdate] = processUpdate(ladderUpdate)
+    if teamUpdates.nonEmpty
   } {
-    log.debug(s"Sending ${teams.size} teams to storage...")
-    storage ! Storage.Updates(axis, teams)
+    log.debug(s"Sending ${teamUpdates.size} teams to storage...")
+    storage ! Storage.Updates(axis, teamUpdates, ladderUpdate.charDiffs)
   }
 
   def continue(recrawlRequested: Boolean, message: String = "") = {
-    if (!message.isEmpty)
-      log.debug(message)
+    log.debug(s"continue with $message, recrawl: $recrawlRequested")
 
     context.unbecome()
     if (recrawlRequested)
       self ! Crawl
   }
 
-  def crawling(recrawlRequested: Boolean): Receive = {
+  def crawling(recrawlRequested: Boolean): Receive = LoggingReceive {
     case CrawlTimedOut =>
       continue(recrawlRequested, "Crawl timed out")
 
@@ -101,7 +100,7 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
       context become crawling(true)
   }
 
-  override def receive: Receive = {
+  override def receive: Receive = LoggingReceive {
     case Crawl =>
       context.become(crawling(false))
 
@@ -143,7 +142,7 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
   private def findTeams(charDiffs: Set[CharFeatures], currentLadder: CharacterLadder): Set[TeamUpdate] = {
     val vectorizedFeatures = charDiffs.map(c => (c, ClusteringEvaluator.featurize(c))).toMap
 
-    for {
+    val result = for {
       cluster: Seq[CharFeatures] <- clusterer.clusterize(vectorizedFeatures, axis.bracket.size)
     } yield {
       val won = cluster.head.won
@@ -151,5 +150,9 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
       val snapshot = TeamSnapshot(cs)
       TeamUpdate(snapshot.view, won)
     }
+
+    log.debug(s"Teams found: ${result.size}")
+
+    result
   }
 }
