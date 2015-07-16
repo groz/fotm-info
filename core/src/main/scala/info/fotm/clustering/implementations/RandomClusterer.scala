@@ -1,4 +1,6 @@
-package info.fotm.clustering
+package info.fotm.clustering.implementations
+
+import info.fotm.clustering.Clusterer
 
 import scala.util.Random
 

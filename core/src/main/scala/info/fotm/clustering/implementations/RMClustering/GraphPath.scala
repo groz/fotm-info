@@ -1,4 +1,4 @@
-package info.fotm.clustering.RMClustering
+package info.fotm.clustering.implementations.RMClustering
 
 class GraphPath(val length: Double, gPath: Vector[Int])
 {

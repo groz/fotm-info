@@ -1,6 +1,6 @@
-package info.fotm.clustering.RMClustering
+package info.fotm.clustering.implementations.RMClustering
 
-import info.fotm.clustering.RMClustering.ClusterRoutines._
+import info.fotm.clustering.implementations.RMClustering.ClusterRoutines._
 import info.fotm.clustering.Clusterer._
 
 /**

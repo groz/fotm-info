@@ -1,6 +1,7 @@
 package info.fotm.clustering
 
-import info.fotm.clustering.RMClustering.EqClusterer2
+import info.fotm.clustering.implementations.{ClosestClusterer, HTClusterer2, HTClusterer3}
+import info.fotm.clustering.implementations.RMClustering.EqClusterer2
 import info.fotm.clustering.enhancers.{ClonedClusterer, Verifier, Summator, Multiplexer}
 import info.fotm.domain.Domain._
 import info.fotm.domain._

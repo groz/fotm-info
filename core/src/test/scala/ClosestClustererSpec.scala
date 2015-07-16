@@ -1,4 +1,5 @@
 import info.fotm.clustering._
+import info.fotm.clustering.implementations.ClosestClusterer
 import info.fotm.util.MathVector
 import org.scalatest._
 

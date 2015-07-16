@@ -1,9 +1,12 @@
-import info.fotm.clustering.ClusteringEvaluator._
+type Set = (Int => Boolean)
 
-calcRatingChange(1592, 1488)
+def single(a: Int): Set = _ == a
 
-class MyMath(i: Int) {
-  def hello = i * 2
-}
+def union(s1: Set, s2: Set): Set = x => s1(x) || s2(x)
 
-winChance(1800, 2040)
+def intersection(s1: Set, s2: Set): Set = x => s1(x) && s2(x)
+
+def filter(s: Set, p: Int => Boolean): Set = x => s(x) && p(x)
+//def filter = intersection _
+
+val positives: Set = _ > 0

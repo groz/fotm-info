@@ -1,4 +1,4 @@
-package info.fotm.clustering.RMClustering
+package info.fotm.clustering.implementations.RMClustering
 
 /**
  * Created by Admin on 04.07.2015.

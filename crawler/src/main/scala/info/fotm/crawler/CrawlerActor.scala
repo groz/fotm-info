@@ -3,7 +3,8 @@ package info.fotm.crawler
 import info.fotm.aether.Storage
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
-import info.fotm.clustering.RMClustering.EqClusterer2
+import info.fotm.clustering.implementations.{ClosestClusterer, HTClusterer2}
+import info.fotm.clustering.implementations.RMClustering.EqClusterer2
 import info.fotm.clustering.enhancers.{Summator, Verifier, Multiplexer, ClonedClusterer}
 import info.fotm.clustering._
 import info.fotm.domain._

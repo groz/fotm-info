@@ -1,4 +1,4 @@
-package info.fotm.clustering.RMClustering
+package info.fotm.clustering.implementations.RMClustering
 
 import info.fotm.clustering.Clusterer._
 import info.fotm.util.MathVector

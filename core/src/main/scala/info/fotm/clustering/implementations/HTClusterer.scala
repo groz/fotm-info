@@ -1,7 +1,8 @@
-package info.fotm.clustering
+package info.fotm.clustering.implementations
 
-import info.fotm.util.MathVector
+import info.fotm.clustering.Clusterer
 import info.fotm.clustering.Clusterer._
+import info.fotm.util.MathVector
 
 /*
 Hasan-Timur clusterer

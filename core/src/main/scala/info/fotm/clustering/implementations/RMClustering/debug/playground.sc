@@ -1,6 +1,6 @@
 import info.fotm.clustering.Clusterer.Cluster
-import info.fotm.clustering.RMClustering.ClusterRoutines._
-import info.fotm.clustering.RMClustering.InputData
+import info.fotm.clustering.implementations.RMClustering.ClusterRoutines._
+import info.fotm.clustering.implementations.RMClustering.InputData
 import info.fotm.util.MathVector
 
 
