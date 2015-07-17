@@ -10,7 +10,7 @@ object ClusteringEvaluatorData {
   type DataSet = List[DataPoint]
 }
 
-class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(2)) {
+class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)) {
   import settings._
   import ClusteringEvaluatorData._
 
@@ -41,9 +41,11 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(2)
     CharacterSnapshot(raw)
   }
 
+  val axis = Axis.all.find(a => a.bracket.size == settings.teamSize).get
+
   def genLadder(nPlayers: Int): CharacterLadder = {
     val rows = (0 until nPlayers).map(i => genPlayer).map(c => (c.id, c)).toMap
-    CharacterLadder(Axis.all.head, rows)
+    CharacterLadder(axis, rows)
   }
 
   // selects pairs of (winner, loser) from teams

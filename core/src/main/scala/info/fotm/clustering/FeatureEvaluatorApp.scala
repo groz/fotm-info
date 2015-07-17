@@ -1,7 +1,8 @@
 package info.fotm.clustering
 
 import info.fotm.clustering.ClusteringEvaluatorData.DataPoint
-import info.fotm.clustering.implementations.ClosestClusterer
+import info.fotm.clustering.implementations.RMClustering.EqClusterer2
+import info.fotm.clustering.implementations.{HTClusterer3, ClosestClusterer}
 import info.fotm.util.MathVector
 
 object FeatureEvaluatorApp extends App {
@@ -10,18 +11,17 @@ object FeatureEvaluatorApp extends App {
   val data: Stream[DataPoint] = dataGen.updatesStream().slice(500, 650)
 
   def estimate(fs: Seq[Feature[CharacterStatsUpdate]]): Double = {
-    val clusterer = RealClusterer.wrap(new ClosestClusterer())  //RealClusterer.wrap(new HTClusterer3)
+    val clusterer = RealClusterer.wrap(new ClosestClusterer())
+    //val clusterer = RealClusterer.wrap(new HTClusterer3)
+    //val clusterer = RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2)))
     val evaluator = new ClusteringEvaluator(fs.toList)
     1 - evaluator.evaluate(clusterer, data)
   }
 
-  //val startingWeights = MathVector(1.920017017655817,1.6852265475430763,1.7828121676239097,0.36236970857264583,-0.01680493512018555,0.019357583492875974,-0.051903850244627514,-0.026909168262069905,0.015369070410552244,0.01563497128270752,0.03584343756647701)
+//  val startingWeights = MathVector(2.179498600996277,1.593301777294845,1.817542615061698,0.27151402114766976,0.7440438353774109,0.7438512713247858,-0.041006394687579384,0.763906482541476,0.01250563169272434,0.798455058753051,0.005920247667347223,0.8278914956535278,0.2491892886456094,0.8060805544258177,0.0797461392031601,1.571142710682229,0.247217196929698,0.7530892028608863)
+//  val weightedFeatures = Feature.reweigh(ClusteringEvaluatorApp.features.zip(startingWeights.coords))
+//  val weights = ML.findWeights(weightedFeatures, estimate)
 
-  val startingWeights = MathVector(1.5682110507723457,1.3505010228909948,1.4818716676603696,0.8184576198032117,0.9422036862186365,0.8817479865781163,0.0772021568910849,0.9480543351087883,0.5557253802836957,0.9283748797510101,0.4945504555038086,0.9601092121126161,0.847000689133825,0.9503571250713407,0.7927522342800631,1.33808954999056,0.7838856036341458,0.9377733875687569)
-
-  val weightedFeatures = Feature.reweigh(ClusteringEvaluatorApp.features.zip(startingWeights.coords))
-  val weights = ML.findWeights(weightedFeatures, estimate)
-
-  //val weights = ML.findWeights(ClusteringEvaluatorApp.features, estimate)
+  val weights = ML.findWeights(ClusteringEvaluatorApp.features, estimate)
   println(weights)
 }
