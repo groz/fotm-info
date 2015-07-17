@@ -10,11 +10,11 @@ object ClusteringEvaluatorData {
   type DataSet = List[DataPoint]
 }
 
-class ClusteringEvaluatorData(settings: EvaluatorSettings) {
+class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(2)) {
   import settings._
   import ClusteringEvaluatorData._
 
-  lazy val gamesPerWeek = 50
+  lazy val turnsPerWeek = 7 * 2
   lazy val rng = new Random()
 
   def genPlayer: CharacterSnapshot = genPlayer(1500)
@@ -131,7 +131,18 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings) {
     pairs.flatten.toSeq
   }
 
-  def prepareData(
+  def resetWeeklyStats(ladder: CharacterLadder): CharacterLadder = {
+    val newRows = for {
+      (id, charSnapshot) <- ladder.rows
+    } yield {
+        val newStats = charSnapshot.stats.copy(weekly = Stats.empty)
+        val newSnapshot = charSnapshot.copy(stats = newStats)
+        (id, newSnapshot)
+      }
+    ladder.copy(rows = newRows)
+  }
+
+  def updatesStream(
       ladderOpt: Option[CharacterLadder] = None,
       teamsOpt: Option[Seq[Team]] = None,
       hopTeams: (Seq[Team], CharacterLadder) => Seq[Team] = hopTeamsRandomly(_, _, None),
@@ -142,16 +153,8 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings) {
     val ladderInput: CharacterLadder = ladderOpt.getOrElse( genLadder(ladderSize) )
 
     val ladder: CharacterLadder =
-      if (i % gamesPerWeek != 0) ladderInput
-      else {
-        val rows =
-          for { (id, snapshot: CharacterSnapshot) <- ladderInput.rows }
-          yield {
-            val newSnapshot = snapshot.copy(stats = snapshot.stats.copy(weekly = Stats.empty))
-            (id, newSnapshot)
-          }
-        ladderInput.copy(rows = rows)
-      }
+      if (i % turnsPerWeek != 0) ladderInput
+      else resetWeeklyStats(ladderInput)
 
     val prevTeams: Seq[Team] = teamsOpt.getOrElse {
       val ids = ladder.rows.keys.toSeq
@@ -165,6 +168,6 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings) {
 
     val nextLadder: CharacterLadder = matches.foldLeft(ladder) { (l, t) => play(l, t._1, t._2) }
 
-    (ladder, nextLadder, matches.toSet) #:: prepareData(Some(nextLadder), Some(teams), hopTeams, pickGames, i + 1)
+    (ladder, nextLadder, matches.toSet) #:: updatesStream(Some(nextLadder), Some(teams), hopTeams, pickGames, i + 1)
   }
 }

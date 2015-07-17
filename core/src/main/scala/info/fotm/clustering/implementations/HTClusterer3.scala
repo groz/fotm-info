@@ -2,7 +2,7 @@ package info.fotm.clustering.implementations
 
 import info.fotm.clustering.Clusterer
 import info.fotm.clustering.Clusterer.Cluster
-import info.fotm.util.MathVector
+import info.fotm.util.{Statistics, MathVector}
 
 /*
 Hasan-Timur clusterer (minor mod+refactoring by Tagir)
@@ -42,7 +42,7 @@ class HTClusterer3(addition: Option[Clusterer] = None) extends Clusterer {
     val distances: Seq[Double] = linearized.map(_._2)
     val maxDistance: Double = distances.max
     val avgDistance: Double = distances.sum / linearized.length
-    val meanDistance: Double = distances.sorted.apply(distances.size / 2)
+    val meanDistance: Double = Statistics.mean(distances)
 
     val nSteps = 100
     val stepSize = maxDistance / nSteps

@@ -26,14 +26,16 @@ object Statistics {
     Metrics(truePositive.size, falsePositive.size, falseNegative.size)
   }
 
+  def mean(seq: Seq[Double]): Double = seq.sorted.apply(seq.size / 2)
+
   def normalize(matrix: Seq[MathVector]): Seq[MathVector] = {
     val mt = matrix.map(_.coords).transpose
-    val minmax = mt.map(column => (column.min, column.max))
+    val min_mean_max = mt.map(column => (column.min, mean(column), column.max))
 
     val scaled = for {
-      (column, (min, max)) <- mt.zip(minmax)
+      (column, (min, mean, max)) <- mt.zip(min_mean_max)
     } yield column.map { v =>
-        if (max != min) (v - min) / (max - min)
+        if (max != min) (v - mean) / (max - min)
         else 0.0
       }
 

@@ -64,7 +64,7 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
   "prepare data" should "return correct first ladder" in {
     val firstMatches = (team1580, team1500)
     val data: Stream[(CharacterLadder, CharacterLadder, Set[(Team, Team)])] =
-      prepareData(Some(ladder), Some(Seq(team1500, team1580)), (ts, _) => ts, (_, _) => Seq(firstMatches))
+      updatesStream(Some(ladder), Some(Seq(team1500, team1580)), (ts, _) => ts, (_, _) => Seq(firstMatches))
 
     val (prevLadder, currentLadder, matchesPlayed) = data.head
     prevLadder.rows should contain theSameElementsAs ladder.rows
@@ -77,7 +77,7 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
   it should "make correct transition to second ladder" in {
     val matches = (team1580, team1500)
     val data: Stream[(CharacterLadder, CharacterLadder, Set[(Team, Team)])] =
-      prepareData(Some(ladder), Some(Seq(team1500, team1580)), (ts, _) => ts, (_, _) => Seq(matches))
+      updatesStream(Some(ladder), Some(Seq(team1500, team1580)), (ts, _) => ts, (_, _) => Seq(matches))
 
     val (initLadder, firstLadder, firstMatchesPlayed) = data.head
     val (prevLadder, currentLadder, secondMatchesPlayed) = data.tail.head

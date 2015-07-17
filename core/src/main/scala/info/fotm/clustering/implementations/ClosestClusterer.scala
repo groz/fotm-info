@@ -17,13 +17,13 @@ class ClosestClusterer extends Clusterer {
         case 0 =>
           (result, Seq(left.head), left.tail)
         case x: Int if x == size =>
-          if (left.size > 0)
+          if (left.nonEmpty)
             (result + cluster, Seq(left.head), left.tail)
           else // last one
             (result + cluster, Seq(), left)
         case _ =>
           val avg = MathVector.avg(cluster)
-          if (left.size != 0) {
+          if (left.nonEmpty) {
             val nearest = left.minBy(_.distTo(avg))
             (result, cluster :+ nearest, left diff Seq(nearest))
           } else {

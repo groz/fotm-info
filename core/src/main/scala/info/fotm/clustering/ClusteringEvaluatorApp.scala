@@ -8,13 +8,36 @@ import info.fotm.clustering.implementations._
 object ClusteringEvaluatorApp extends App {
   def sqr(x: Double) = x * x
 
-  val features = List[Feature[CharacterStatsUpdate]](
-    Feature("rating",           u => u.next.rating),
-    Feature("ratingDerivative", u => sqr(u.next.rating - u.prev.rating) / u.prev.rating.toDouble),
-    Feature("ratingDiff",       u => Math.abs(u.next.rating - u.prev.rating)),
-    Feature("seasonWinsRatio",  u => u.next.season.wins / u.next.season.total.toDouble),
-    Feature("weeklyWinsRatio",  u => u.next.weekly.wins / u.next.weekly.total.toDouble),
-    Feature("weeklyTotal",      u => u.next.weekly.total)
+  lazy val features = List[Feature[CharacterStatsUpdate]](
+    Feature[CharacterStatsUpdate]("rating",           u => u.next.rating),
+
+    Feature[CharacterStatsUpdate]("ratingDerivative", u => sqr(u.next.rating - u.prev.rating) / u.prev.rating.toDouble),
+    Feature[CharacterStatsUpdate]("ratingDiff",       u => Math.abs(u.next.rating - u.prev.rating)),
+
+    Feature[CharacterStatsUpdate]("seasonWinsRatio",  u => u.next.season.wins / u.next.season.total.toDouble),
+    Feature[CharacterStatsUpdate]("weeklyWinsRatio",  u => u.next.weekly.wins / u.next.weekly.total.toDouble),
+
+    Feature[CharacterStatsUpdate]("weeklyTotal",      u => u.next.weekly.total),
+    Feature[CharacterStatsUpdate]("seasonTotal",      u => u.next.season.total),
+
+    Feature[CharacterStatsUpdate]("weeklyWins",       u => u.next.weekly.wins),
+    Feature[CharacterStatsUpdate]("seasonWins",       u => u.next.season.wins),
+
+    Feature[CharacterStatsUpdate]("weeklyLosses",     u => u.next.weekly.losses),
+    Feature[CharacterStatsUpdate]("seasonLosses",     u => u.next.season.losses),
+
+  // ==============
+    Feature[CharacterStatsUpdate]("weeklyDiff",       u => u.next.weekly.wins - u.next.weekly.losses),
+    Feature[CharacterStatsUpdate]("seasonDiff",       u => u.next.season.wins - u.next.season.losses),
+
+    Feature[CharacterStatsUpdate]("weeklyDiffSqr",    u => sqr(u.next.weekly.wins - u.next.weekly.losses)),
+    Feature[CharacterStatsUpdate]("seasonDiffSqr",    u => sqr(u.next.season.wins - u.next.season.losses)),
+
+    Feature[CharacterStatsUpdate]("ratingDiffSqr",       u => sqr(u.next.rating - u.prev.rating)),
+    Feature[CharacterStatsUpdate]("seasonWinsRatioSqr",  u => sqr(u.next.season.wins / u.next.season.total.toDouble)),
+    Feature[CharacterStatsUpdate]("weeklyWinsRatioSqr",  u => sqr(u.next.weekly.wins / u.next.weekly.total.toDouble))
+
+//    Feature.const[CharacterStatsUpdate]
   )
 
   val evaluator = new ClusteringEvaluator(features)
@@ -22,9 +45,7 @@ object ClusteringEvaluatorApp extends App {
   for ((_, settings) <- Defaults.settings) {
     println(s"Evaluating $settings:")
     val dataGen: ClusteringEvaluatorData = new ClusteringEvaluatorData(settings)
-
-    // Runner
-    val data: Stream[DataPoint] = dataGen.prepareData().slice(500, 700)
+    val data: Stream[DataPoint] = dataGen.updatesStream().slice(500, 700)
     //val (prevLadder, lastladder, _) = data.last
     //lastladder.values.toList.sortBy(-_.rating).map(i => (i.rating, i.seasonWins, i.seasonLosses, i.weeklyWins, i.weeklyLosses)).foreach(println)
 

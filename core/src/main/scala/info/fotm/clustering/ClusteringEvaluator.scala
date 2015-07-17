@@ -11,7 +11,7 @@ class ClusteringEvaluator(features: List[Feature[CharacterStatsUpdate]]) extends
     if (updates.isEmpty)
       Set()
     else {
-      val featureVectors: Seq[MathVector] = Statistics.normalize(updates.map(u => Feature.calcVector(u, features)))
+      val featureVectors: Seq[MathVector] = Feature.normalize(features, updates)
       val featureMap = updates.map(_.id).zip(featureVectors).toMap
       val clusters = clusterer.clusterize(featureMap, teamSize)
       clusters.map(ps => Team(ps.toSet))
