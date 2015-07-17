@@ -40,6 +40,10 @@ class MathVector(val coords: Seq[Double]) {
   def sqrDistTo(that: MathVector) = (this - that).sqrlength
 
   def normalize: MathVector = MathVector(coords.map(x => x / length): _*)
+
+  def update(n: Int, x: Double) = MathVector(coords.patch(n, Seq(x), 1): _*)
+
+  def apply(n: Int) = coords(n)
 }
 
 object MathVector {

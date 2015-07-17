@@ -6,7 +6,7 @@ object ML {
 
   def partialDerivative(f: MathVector => Double, point: MathVector, n: Int): Double = {
     val dx = 5e-2
-    val nextPoint = MathVector(point.coords.patch(n, Seq(point.coords(n)+dx), 1): _*)
+    val nextPoint = point.update(n, point(n) + dx)
     (f(nextPoint) - f(point)) / dx
   }
 
