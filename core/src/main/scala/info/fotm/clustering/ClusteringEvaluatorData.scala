@@ -1,13 +1,18 @@
 package info.fotm.clustering
 
 import info.fotm.api.models.LeaderboardRow
-import info.fotm.domain.Domain._
 import info.fotm.domain._
 
 import scala.util.Random
 
+object ClusteringEvaluatorData {
+  type DataPoint = (CharacterLadder, CharacterLadder, Set[(Team, Team)]) // previous, current, teamsPlayed
+  type DataSet = List[DataPoint]
+}
+
 class ClusteringEvaluatorData(settings: EvaluatorSettings) {
   import settings._
+  import ClusteringEvaluatorData._
 
   lazy val gamesPerWeek = 50
   lazy val rng = new Random()
@@ -132,9 +137,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings) {
       hopTeams: (Seq[Team], CharacterLadder) => Seq[Team] = hopTeamsRandomly(_, _, None),
       pickGames: (CharacterLadder, Seq[Team]) => Seq[(Team, Team)] = pickGamesRandomly,
       i: Int = 0)
-    : Stream[(CharacterLadder, CharacterLadder, Set[Game])] = {
-
-    import CharacterSnapshot._
+    : Stream[DataPoint] = {
 
     val ladderInput: CharacterLadder = ladderOpt.getOrElse( genLadder(ladderSize) )
 
@@ -157,8 +160,6 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings) {
     }
 
     val teams = hopTeams(prevTeams, ladder)
-
-    //println(s"Same teams: ${teams.intersect(prevTeams).size} / ${teams.size}")
 
     val matches: Seq[(Team, Team)] = pickGames(ladder, teams)
 

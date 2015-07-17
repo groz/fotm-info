@@ -131,20 +131,20 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
     // output teams
     for {
       (_, factionChars: Set[CharacterId]) <- factions.toList      // split by factions
-      features: Set[CharFeatures] = extractFeatures(factionChars, previous, current)
-      (_, bucket: Set[CharFeatures]) <- features.groupBy(_.won)   // further split by winners/losers
+      features: Set[CharacterStatsUpdate] = extractFeatures(factionChars, previous, current)
+      (_, bucket: Set[CharacterStatsUpdate]) <- features.groupBy(_.won)   // further split by winners/losers
       team <- findTeams(bucket, current)                          // find teams for each group
     } yield team
   }
 
   def extractFeatures(chars: Set[CharacterId], previousLadder: CharacterLadder, currentLadder: CharacterLadder) =
-    chars.map { p => CharFeatures(p, previousLadder(p), currentLadder(p)) }
+    chars.map { p => CharacterStatsUpdate(p, previousLadder(p), currentLadder(p)) }
 
-  private def findTeams(charDiffs: Set[CharFeatures], currentLadder: CharacterLadder): Set[TeamUpdate] = {
-    val vectorizedFeatures = charDiffs.map(c => (c, ClusteringEvaluator.featurize(c))).toMap
+  private def findTeams(charUpdates: Set[CharacterStatsUpdate], currentLadder: CharacterLadder): Set[TeamUpdate] = {
+    val vectorizedFeatures = charUpdates.map(c => (c, Feature.calcVector(c, ClusteringEvaluatorApp.features))).toMap
 
     val result = for {
-      cluster: Seq[CharFeatures] <- clusterer.clusterize(vectorizedFeatures, axis.bracket.size)
+      cluster: Seq[CharacterStatsUpdate] <- clusterer.clusterize(vectorizedFeatures, axis.bracket.size)
     } yield {
       val won = cluster.head.won
       val cs = cluster.map(_.id).map(c => currentLadder.rows(c)).toSet
