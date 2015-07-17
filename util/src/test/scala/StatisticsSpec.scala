@@ -17,23 +17,23 @@ class StatisticsSpec extends FlatSpec with Matchers {
   }
 
   it should "output 2/3 for 50/50 FP misses" in {
-    f1Score(Metrics(50, 50, 0)) should be(2/3.0)
+    f1Score(Metrics(50, 50, 0)) should be(2 / 3.0)
   }
 
   it should "output 2/3 for 50/50 FN misses" in {
-    f1Score(Metrics(50, 0, 50)) should be(2/3.0)
+    f1Score(Metrics(50, 0, 50)) should be(2 / 3.0)
   }
 
   "calcMetrics" should "output correct numbers" in {
     val metrics = calcMetrics(Set(0, 1, 2, 3), Set(1, 2, 3, 4, 5))
     // counts
-    metrics.truePositive should be (3)
-    metrics.falsePositive should be (1)
-    metrics.falseNegative should be (2)
+    metrics.truePositive should be(3)
+    metrics.falsePositive should be(1)
+    metrics.falseNegative should be(2)
   }
 
   it should "combine with other metrics correctly" in {
-    (Metrics(1, 2, 3) + Metrics(3, 4, 5)) should be (Metrics(4, 6, 8))
+    (Metrics(1, 2, 3) + Metrics(3, 4, 5)) should be(Metrics(4, 6, 8))
   }
 
   "normalize" should "correctly scale matrix" in {
@@ -43,15 +43,15 @@ class StatisticsSpec extends FlatSpec with Matchers {
     }
 
     val input = Seq(
-      MathVector(10, 30, 1),
-      MathVector(15, 50, 1),
-      MathVector(20, 60, 1)
+      MathVector(  0,  0, 0),
+      MathVector( 50,  5, 0.5),
+      MathVector(100, 10, 1)
     )
 
     val expected = Seq(
+      MathVector(-0.5, -0.5, -0.5),
       MathVector(0, 0, 0),
-      MathVector(0.5, 2.0/3, 0),
-      MathVector(1, 1, 0)
+      MathVector(1, 1, 1)
     )
 
     val normalized = normalize(input)

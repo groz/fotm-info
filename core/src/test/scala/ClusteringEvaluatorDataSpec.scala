@@ -61,6 +61,31 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
     team1580.members.map(nextLadder).foreach { _.rating should be(1592) }
   }
 
+  it should "adjust stats for all players involved" in {
+    val nextLadder: CharacterLadder = play(ladder, team1580, team1500)
+    team1500.members.foreach { c =>
+      val (prev, next) = (ladder(c), nextLadder(c))
+      next.season.total should be(prev.season.total + 1)
+      next.season.wins should be(prev.season.wins)
+      next.season.losses should be(prev.season.losses + 1)
+
+      next.weekly.total should be(prev.weekly.total + 1)
+      next.weekly.wins should be(prev.weekly.wins)
+      next.weekly.losses should be(prev.weekly.losses + 1)
+    }
+
+    team1580.members.foreach { c =>
+      val (prev, next) = (ladder(c), nextLadder(c))
+      next.season.total should be(prev.season.total + 1)
+      next.season.wins should be(prev.season.wins + 1)
+      next.season.losses should be(prev.season.losses)
+
+      next.weekly.total should be(prev.weekly.total + 1)
+      next.weekly.wins should be(prev.weekly.wins + 1)
+      next.weekly.losses should be(prev.weekly.losses)
+    }
+  }
+
   "prepare data" should "return correct first ladder" in {
     val firstMatches = (team1580, team1500)
     val data: Stream[(CharacterLadder, CharacterLadder, Set[(Team, Team)])] =
@@ -125,6 +150,24 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
 
   it should "correctly swap players between teams" in {
     // TODO: implement this
+  }
+
+  "resetWeeklyStats" should "reset weekly stats for all players in ladder" in {
+    val nextLadder: CharacterLadder = play(ladder, team1580, team1500)
+
+    val resetLadder = resetWeeklyStats(nextLadder)
+
+    team1580.members.map(resetLadder).foreach { c =>
+      c.weekly.total should be(0)
+      c.weekly.wins should be(0)
+      c.weekly.losses should be(0)
+    }
+
+    team1500.members.map(resetLadder).foreach { c =>
+      c.weekly.total should be(0)
+      c.weekly.wins should be(0)
+      c.weekly.losses should be(0)
+    }
   }
 
 }

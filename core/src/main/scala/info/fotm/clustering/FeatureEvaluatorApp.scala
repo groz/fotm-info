@@ -7,8 +7,20 @@ import info.fotm.util.MathVector
 
 object FeatureEvaluatorApp extends App {
 
-  val dataGen: ClusteringEvaluatorData = new ClusteringEvaluatorData()
-  val data: Stream[DataPoint] = dataGen.updatesStream().slice(500, 650)
+  val settings = EvaluatorSettings(
+    matchesPerTurn = 20,
+    ladderSize = 5000,
+    teamSize = 3,
+    hopRatio = 0.05,
+    turnsPerWeek = 600)
+
+  val dataGen: ClusteringEvaluatorData = new ClusteringEvaluatorData(settings)
+  val start = settings.turnsPerWeek * 4 / 3
+  val end = start + 2 * settings.turnsPerWeek
+  val data: Stream[DataPoint] = dataGen.updatesStream().slice(start, end)
+
+  val (prevLadder, lastladder, _) = data.last
+  lastladder.rows.toList.sortBy(-_._2.stats.rating).map(_._2.stats).foreach(println)
 
   def estimate(fs: Seq[Feature[CharacterStatsUpdate]]): Double = {
     val clusterer = RealClusterer.wrap(new ClosestClusterer())

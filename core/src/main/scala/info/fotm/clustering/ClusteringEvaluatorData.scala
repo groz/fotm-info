@@ -14,7 +14,6 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
   import settings._
   import ClusteringEvaluatorData._
 
-  lazy val turnsPerWeek = 7 * 2
   lazy val rng = new Random()
 
   def genPlayer: CharacterSnapshot = genPlayer(1500)
@@ -46,6 +45,26 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
   def genLadder(nPlayers: Int): CharacterLadder = {
     val rows = (0 until nPlayers).map(i => genPlayer).map(c => (c.id, c)).toMap
     CharacterLadder(axis, rows)
+  }
+
+  def pickGamesFromBuckets(ladder: CharacterLadder, teams: Seq[Team]): Seq[(Team, Team)] = {
+    // pick random indices, sort them by rating, group by 2
+    val sortedTeams: Seq[Team] = teams.sortBy(t => TeamSnapshot(t, ladder).view.rating)
+    val sf = rng.shuffle(teams.indices.toList)
+    val indices: List[Int] = sf.take(matchesPerTurn * 2).toList.sorted
+
+    indices
+      .sliding(2, 2)
+      .map { (s: List[Int]) =>
+      val (team1, team2) = (sortedTeams(s(0)), sortedTeams(s(1)))
+      val (rating1, rating2) = (TeamSnapshot(team1, ladder).rating, TeamSnapshot(team2, ladder).rating)
+      if (rng.nextDouble() < winChance(rating1, rating2))
+        (team1, team2)
+      else
+        (team2, team1)
+    }
+      .take(matchesPerTurn)
+      .toSeq
   }
 
   // selects pairs of (winner, loser) from teams
@@ -148,7 +167,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
       ladderOpt: Option[CharacterLadder] = None,
       teamsOpt: Option[Seq[Team]] = None,
       hopTeams: (Seq[Team], CharacterLadder) => Seq[Team] = hopTeamsRandomly(_, _, None),
-      pickGames: (CharacterLadder, Seq[Team]) => Seq[(Team, Team)] = pickGamesRandomly,
+      pickGames: (CharacterLadder, Seq[Team]) => Seq[(Team, Team)] = pickGamesFromBuckets,
       i: Int = 0)
     : Stream[DataPoint] = {
 

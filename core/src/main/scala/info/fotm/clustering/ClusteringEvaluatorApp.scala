@@ -46,8 +46,6 @@ object ClusteringEvaluatorApp extends App {
     println(s"Evaluating $settings:")
     val dataGen: ClusteringEvaluatorData = new ClusteringEvaluatorData(settings)
     val data: Stream[DataPoint] = dataGen.updatesStream().slice(500, 700)
-    //val (prevLadder, lastladder, _) = data.last
-    //lastladder.values.toList.sortBy(-_.rating).map(i => (i.rating, i.seasonWins, i.seasonLosses, i.weeklyWins, i.weeklyLosses)).foreach(println)
 
     def createCMV(turns: Int, threshold: Int): (String, RealClusterer) = {
       s"C * M($turns, $threshold) * V" ->
