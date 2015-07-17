@@ -5,7 +5,7 @@ import info.fotm.util.MathVector
 object ML {
 
   def partialDerivative(f: MathVector => Double, point: MathVector, n: Int): Double = {
-    val dx = 1e-1
+    val dx = 5e-2
     val nextPoint = MathVector(point.coords.patch(n, Seq(point.coords(n)+dx), 1): _*)
     (f(nextPoint) - f(point)) / dx
   }

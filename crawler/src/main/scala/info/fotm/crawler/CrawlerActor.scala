@@ -3,7 +3,7 @@ package info.fotm.crawler
 import info.fotm.aether.Storage
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
-import info.fotm.clustering.implementations.{ClosestClusterer, HTClusterer2}
+import info.fotm.clustering.implementations.{HTClusterer3, ClosestClusterer, HTClusterer2}
 import info.fotm.clustering.implementations.RMClustering.EqClusterer2
 import info.fotm.clustering.enhancers.{Summator, Verifier, Multiplexer, ClonedClusterer}
 import info.fotm.clustering._
@@ -47,21 +47,7 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
     lt
   }
 
-  val algos: Map[String, RealClusterer] = Map(
-    "CM_V" -> new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier,
-    "RM_V" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer2)) with Verifier,
-    "RM" -> RealClusterer.wrap(new EqClusterer2),
-    "HT2_CM_RM_V" -> new Summator(
-      RealClusterer.wrap(new HTClusterer2),
-      RealClusterer.wrap(new EqClusterer2),
-      new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer {
-        override lazy val multiplexTurns = 30
-        override lazy val multiplexThreshold = 5
-      }
-    ) with Verifier
-  )
-
-  val clusterer = algos("HT2_CM_RM_V")
+  val clusterer = RealClusterer.wrap(new HTClusterer3)
 
   val updatesObserver = new UpdatesQueue[CharacterLadder](historySize)
 
@@ -141,7 +127,7 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
     chars.map { p => CharacterStatsUpdate(p, previousLadder(p), currentLadder(p)) }
 
   private def findTeams(charUpdates: Set[CharacterStatsUpdate], currentLadder: CharacterLadder): Set[TeamUpdate] = {
-    val vectorizedFeatures = charUpdates.map(c => (c, Feature.calcVector(c, ClusteringEvaluatorApp.features))).toMap
+    val vectorizedFeatures = charUpdates.map(c => (c, Feature.calcVector(c, FeatureSettings.features))).toMap
 
     val result = for {
       cluster: Seq[CharacterStatsUpdate] <- clusterer.clusterize(vectorizedFeatures, axis.bracket.size)
