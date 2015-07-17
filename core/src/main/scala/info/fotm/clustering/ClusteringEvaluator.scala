@@ -6,6 +6,7 @@ import info.fotm.util.Statistics.Metrics
 import info.fotm.util.{Statistics, MathVector}
 
 class ClusteringEvaluator(features: List[Feature[CharacterStatsUpdate]]) extends App {
+
   def findTeams(clusterer: RealClusterer, updates: Seq[CharacterStatsUpdate], teamSize: Int): Set[Team] =
     if (updates.isEmpty)
       Set()
@@ -34,29 +35,29 @@ class ClusteringEvaluator(features: List[Feature[CharacterStatsUpdate]]) extends
     val lDiffs = lTeams.flatMap(_.members).toList.map { p => CharacterStatsUpdate(p, ladder(p), nextLadder(p)) }
     val eDiffs = eTeams.flatMap(_.members).toList.map { p => CharacterStatsUpdate(p, ladder(p), nextLadder(p)) }
 
+    // introduce "noise"
     val noisyWDiffs = wDiffs.drop(nLost / 2).dropRight(nLost / 2)
     val noisyLDiffs = lDiffs.drop(nLost / 2).dropRight(nLost / 2)
 
+    // we can only correctly guess these
+    val noiseFilteredIds = (noisyWDiffs ++ noisyLDiffs).map(_.id).toSet
+    val noiseFilteredTeams = teamsPlayed.filter(_.members.forall(noiseFilteredIds.contains))
+
     // algo evaluation: match output against teamsPlayed
-    val teamSize = teamsPlayed.head.members.size
+    val teamSize = ladder.axis.bracket.size
+
     val teams: Set[Team] =
       findTeams(clusterer, noisyWDiffs, teamSize) ++
         findTeams(clusterer, noisyLDiffs, teamSize) ++
         findTeams(clusterer, eDiffs, teamSize)
 
-    // remove contentions (penalize multiplexer and merged algos)
+    // remove contentions (penalize multiplexer and merged algos?)
     val characters = teams.flatMap(t => t.members).toList
     val charTeams: Map[CharacterId, Set[Team]] = characters.map(c => (c, teams.filter(t => t.members.contains(c)))).toMap
     val (certain, _) = charTeams.partition(kv => kv._2.size == 1)
 
-    // noiseless
-    //    val teams =
-    //      findTeams(clusterer, wDiffs, teamSize) ++
-    //        findTeams(clusterer, lDiffs, teamSize) ++
-    //        findTeams(clusterer, eDiffs, teamSize)
-
-    val ct = certain.values.flatten.toSet
-    Statistics.calcMetrics(ct, teamsPlayed)
+    val uncontended = certain.values.flatten.toSet
+    Statistics.calcMetrics(uncontended, noiseFilteredTeams)
   }
 
   def evaluate(clusterer: RealClusterer, data: Seq[(CharacterLadder, CharacterLadder, Set[Game])]): Double = {
