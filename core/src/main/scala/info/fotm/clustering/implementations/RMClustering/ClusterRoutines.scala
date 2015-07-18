@@ -3,6 +3,8 @@ package info.fotm.clustering.implementations.RMClustering
 import info.fotm.clustering.Clusterer._
 import info.fotm.util.MathVector
 
+import scala.collection.immutable.IndexedSeq
+
 object ClusterRoutines
 {
 
@@ -70,15 +72,16 @@ object ClusterRoutines
     if (clusterizations.isEmpty)
       Set()
     else {
-      val optClusterization = clusterizations.filter(c => c.size == approxCountOfGroups).minBy(estimateClusterization)
-      optClusterization
+      val bySize: Map[Int, IndexedSeq[Set[Cluster]]] = clusterizations.groupBy(c => Math.abs(c.size - approxCountOfGroups))
+      val closestClusterings = bySize(bySize.keys.min)
+      closestClusterings.minBy(estimateClusterization)
     }
   }
 
   def makeGraphFromClusters(clusters: List[Cluster], groupSize: Int): Graph[Int] =
   {
     val distances = clusters.map(x => clusters.map(y => distance(x, y)).toVector).toVector
-    val labels = (0 until clusters.length).map(i => (i, clusters(i).length - groupSize)).toMap
+    val labels = clusters.indices.map(i => (i, clusters(i).length - groupSize)).toMap
     new Graph[Int](distances, labels)
   }
 

@@ -1,10 +1,8 @@
 package info.fotm.clustering
 
 import info.fotm.clustering.ClusteringEvaluatorData.DataPoint
-import info.fotm.clustering.implementations.RMClustering.EqClusterer2
-import info.fotm.clustering.implementations.{HTClusterer3, ClosestClusterer}
-import info.fotm.util.MathVector
 import info.fotm.clustering.FeatureSettings._
+import info.fotm.clustering.implementations.ClosestClusterer
 
 object FeatureEvaluatorApp extends App {
 
@@ -13,14 +11,18 @@ object FeatureEvaluatorApp extends App {
     ladderSize = 5000,
     teamSize = 3,
     hopRatio = 0.05,
-    turnsPerWeek = 200)
+    turnsPerWeek = 300)
 
   val dataGen: ClusteringEvaluatorData = new ClusteringEvaluatorData(settings)
-  val start = settings.turnsPerWeek * 4 / 3
-  val end = start + 300 //2 * settings.turnsPerWeek
+  val start = settings.turnsPerWeek * 7 / 3
+  val end = start + 2 * settings.turnsPerWeek
   val data: Stream[DataPoint] = dataGen.updatesStream().slice(start, end)
 
   // uncomment following line for viewing ladder state
+  for {
+    (ladderUpdate, teams) <- data
+  } {
+  }
   //val (prevLadder, lastladder, _) = data.last
   //lastladder.rows.toList.sortBy(-_._2.stats.rating).map(_._2.stats).foreach(println)
 

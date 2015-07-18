@@ -1,12 +1,13 @@
 package info.fotm.clustering
 
 import info.fotm.api.models.LeaderboardRow
+import info.fotm.domain.Domain.Game
 import info.fotm.domain._
 
 import scala.util.Random
 
 object ClusteringEvaluatorData {
-  type DataPoint = (CharacterLadder, CharacterLadder, Set[(Team, Team)]) // previous, current, teamsPlayed
+  type DataPoint = (LadderUpdate, Set[Game]) // previous, current, teamsPlayed
   type DataSet = List[DataPoint]
 }
 
@@ -16,9 +17,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
 
   lazy val rng = new Random()
 
-  def genPlayer: CharacterSnapshot = genPlayer(1500)
-
-  def genPlayer(rating: Int): CharacterSnapshot = {
+  def genPlayer(rating: Int = 1500, factionId: Int = 1): CharacterSnapshot = {
     val id = java.util.UUID.randomUUID().toString
     val raw = LeaderboardRow(
       ranking = 1,
@@ -30,7 +29,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
       raceId = 1,
       classId = 1,
       specId = 1,
-      factionId = 1,
+      factionId = factionId,
       genderId = 1,
       seasonWins = 0,
       seasonLosses = 0,
@@ -43,7 +42,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
   val axis = Axis.all.find(a => a.bracket.size == settings.teamSize).get
 
   def genLadder(nPlayers: Int): CharacterLadder = {
-    val rows = (0 until nPlayers).map(i => genPlayer).map(c => (c.id, c)).toMap
+    val rows = (0 until nPlayers).map(i => genPlayer()).map(c => (c.id, c)).toMap
     CharacterLadder(axis, rows)
   }
 
@@ -54,7 +53,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
     val indices: List[Int] = sf.take(matchesPerTurn * 2).toList.sorted
 
     indices
-      .sliding(2, 2)
+      .grouped(2)
       .map { (s: List[Int]) =>
       val (team1, team2) = (sortedTeams(s(0)), sortedTeams(s(1)))
       val (rating1, rating2) = (TeamSnapshot(team1, ladder).rating, TeamSnapshot(team2, ladder).rating)
@@ -71,7 +70,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
   def pickGamesRandomly(ladder: CharacterLadder, teams: Seq[Team]): Seq[(Team, Team)] = {
     val shuffledTeams: Seq[Team] = rng.shuffle(teams)
     shuffledTeams
-      .sliding(2, 2)
+      .grouped(2)
       .map { s =>
         val (team1, team2) = (s(0), s(1))
         val (rating1, rating2) = (TeamSnapshot(team1, ladder).rating, TeamSnapshot(team2, ladder).rating)
@@ -137,7 +136,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
     val hr = hopRatioOpt.getOrElse(hopRatio)
 
     val pairs = for {
-      window: Seq[Team] <- teams.sortBy(t => TeamSnapshot(t, ladder).rating).sliding(2, 2)
+      window: Seq[Team] <- teams.sortBy(t => TeamSnapshot(t, ladder).rating).grouped(2)
       t1 = window.head
       t2 = window.last
     } yield {
@@ -179,7 +178,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
 
     val prevTeams: Seq[Team] = teamsOpt.getOrElse {
       val ids = ladder.rows.keys.toSeq
-      val result = ids.sliding(teamSize, teamSize).map(p => Team(p.toSet)).toSeq
+      val result = ids.grouped(teamSize).map(p => Team(p.toSet)).toSeq
       if (result.last.members.size == teamSize) result else result.init
     }
 
@@ -189,6 +188,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
 
     val nextLadder: CharacterLadder = matches.foldLeft(ladder) { (l, t) => play(l, t._1, t._2) }
 
-    (ladder, nextLadder, matches.toSet) #:: updatesStream(Some(nextLadder), Some(teams), hopTeams, pickGames, i + 1)
+    (LadderUpdate(ladder, nextLadder), matches.toSet) #::
+      updatesStream(Some(nextLadder), Some(teams), hopTeams, pickGames, i + 1)
   }
 }

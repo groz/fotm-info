@@ -3,19 +3,16 @@ package info.fotm.crawler
 import info.fotm.aether.Storage
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
-import info.fotm.clustering.implementations.{HTClusterer3, ClosestClusterer, HTClusterer2}
-import info.fotm.clustering.implementations.RMClustering.EqClusterer2
-import info.fotm.clustering.enhancers.{Summator, Verifier, Multiplexer, ClonedClusterer}
+import info.fotm.clustering.implementations.HTClusterer3
 import info.fotm.clustering._
 import info.fotm.domain._
 
 import akka.actor.{ActorSelection, ActorRef, Actor}
 import akka.event.{LoggingReceive, LoggingAdapter, Logging}
 import akka.pattern.pipe
-import info.fotm.util.ObservableReadStream
+import info.fotm.util.{Subscription, ObservableStream, MathVector, ObservableReadStream}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
 
 object CrawlerActor {
@@ -47,21 +44,36 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
     lt
   }
 
+  val evaluator = new ClusteringEvaluator(FeatureSettings.features)
+
+  private def hydrateTeam(ladderUpdate: LadderUpdate, team: Team): TeamUpdate = {
+    val id = team.members.head
+    val won = ladderUpdate.statsUpdates.find(_.id == id).get.won
+
+    val view = TeamView(team.members.map(ladderUpdate.current.rows))
+    TeamUpdate(view, won)
+  }
+
   val clusterer = RealClusterer.wrap(new HTClusterer3)
 
   val updatesObserver = new UpdatesQueue[CharacterLadder](historySize)
 
   // subscribe storage to ladder updates
-  val updatesSubscription = for {
-    (prev, next) <- updatesObserver
-    ladderUpdate = LadderUpdate(prev, next)
-    if ladderUpdate.distance == 1
-    teamUpdates: List[TeamUpdate] = processUpdate(ladderUpdate)
-    if teamUpdates.nonEmpty
-  } {
-    log.debug(s"Sending ${teamUpdates.size} teams to storage...")
-    storage ! Storage.Updates(axis, teamUpdates, ladderUpdate.charDiffs)
-  }
+  val teamsFound: ObservableReadStream[(LadderUpdate, Set[TeamUpdate])] =
+    for {
+      (prev, next) <- updatesObserver
+      ladderUpdate = LadderUpdate(prev, next)
+      if ladderUpdate.distance == 1
+      teams = evaluator.findTeamsInUpdate(ladderUpdate, clusterer)
+      if teams.nonEmpty
+      teamUpdates = teams.map(hydrateTeam(ladderUpdate, _))
+    } yield (ladderUpdate, teamUpdates)
+
+  val updatesSubscription =
+    for {(ladderUpdate, teamUpdates) <- teamsFound} {
+      log.debug(s"Sending ${teamUpdates.size} teams to storage...")
+      storage ! Storage.Updates(axis, teamUpdates.toSeq, ladderUpdate.charDiffs)
+    }
 
   def continue(recrawlRequested: Boolean, message: String = "") = {
     log.debug(s"continue with $message, recrawl: $recrawlRequested")
@@ -100,46 +112,5 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
         .recover { case _ => CrawlFailed }
 
       Future firstCompletedOf Seq(delay, query) pipeTo self
-  }
-
-  private def processUpdate(ladderUpdate: LadderUpdate): List[TeamUpdate] = {
-    import ladderUpdate._
-    // only take those with 1 game diff
-    val changed: Set[CharacterId] = commonIds.filter(k => previous(k).season.total + 1 == current(k).season.total)
-    val factions: Map[Int, Set[CharacterId]] = changed.groupBy(k => current.rows(k).view.factionId)
-    val factionNumbers: Map[Int, Int] = factions.map(g => (g._1, g._2.size))
-
-    // stats logging
-    log.debug(s"Total: ${current.rows.size}, changed: ${changed.size}")
-    log.debug(s"Factions: $factionNumbers")
-    log.debug(s"Distances: ${ladderUpdate.distances}")
-
-    // output teams
-    for {
-      (_, factionChars: Set[CharacterId]) <- factions.toList      // split by factions
-      features: Set[CharacterStatsUpdate] = extractFeatures(factionChars, previous, current)
-      (_, bucket: Set[CharacterStatsUpdate]) <- features.groupBy(_.won)   // further split by winners/losers
-      team <- findTeams(bucket, current)                          // find teams for each group
-    } yield team
-  }
-
-  def extractFeatures(chars: Set[CharacterId], previousLadder: CharacterLadder, currentLadder: CharacterLadder) =
-    chars.map { p => CharacterStatsUpdate(p, previousLadder(p), currentLadder(p)) }
-
-  private def findTeams(charUpdates: Set[CharacterStatsUpdate], currentLadder: CharacterLadder): Set[TeamUpdate] = {
-    val vectorizedFeatures = charUpdates.map(c => (c, Feature.calcVector(c, FeatureSettings.features))).toMap
-
-    val result = for {
-      cluster: Seq[CharacterStatsUpdate] <- clusterer.clusterize(vectorizedFeatures, axis.bracket.size)
-    } yield {
-      val won = cluster.head.won
-      val cs = cluster.map(_.id).map(c => currentLadder.rows(c)).toSet
-      val snapshot = TeamSnapshot(cs)
-      TeamUpdate(snapshot.view, won)
-    }
-
-    log.debug(s"Teams found: ${result.size}")
-
-    result
   }
 }

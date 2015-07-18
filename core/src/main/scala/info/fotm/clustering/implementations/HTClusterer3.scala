@@ -15,7 +15,8 @@ class HTClusterer3(addition: Option[Clusterer] = None) extends Clusterer {
   def clusterLinearization(as: Seq[(MathVector, Double)], bs: Seq[MathVector]): Seq[(MathVector, Double)] =
     if (bs.isEmpty) as
     else {
-      val distancesToAs: Seq[(MathVector, Double)] = bs.map(b => (b, distTo(b, as.map(_._1))))
+      val aVectors = as.map(_._1)
+      val distancesToAs = bs.view.map(b => (b, distTo(b, aVectors)))
       val (nearestB, dist) = distancesToAs.minBy(_._2)
       clusterLinearization(as :+(nearestB, dist), bs diff Seq(nearestB))
     }

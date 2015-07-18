@@ -9,5 +9,5 @@ class RandomClusterer extends Clusterer {
   val rng = new Random()
 
   override def clusterize(input: Cluster, groupSize: Int): Set[Cluster] =
-    rng.shuffle(input).sliding(groupSize, groupSize).toSet
+    rng.shuffle(input).grouped(groupSize).toSet
 }

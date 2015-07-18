@@ -26,6 +26,10 @@ object RealClusterer {
 
   }
 
+  lazy val identity = new RealClusterer {
+    override def clusterize[T](input: Map[T, MathVector], groupSize: Int): Set[Seq[T]] = Set(input.keys.toSeq)
+  }
+
 }
 
 trait RealClusterer {
