@@ -1,16 +1,16 @@
 package info.fotm.crawler
 
+import akka.actor.{Actor, ActorRef}
+import akka.event.{Logging, LoggingAdapter, LoggingReceive}
+import akka.pattern.pipe
 import info.fotm.aether.Storage
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
-import info.fotm.clustering.implementations.HTClusterer3
 import info.fotm.clustering._
+import info.fotm.clustering.implementations.HTClusterer3
 import info.fotm.domain._
+import info.fotm.util.ObservableReadStream
 
-import akka.actor.{ActorSelection, ActorRef, Actor}
-import akka.event.{LoggingReceive, LoggingAdapter, Logging}
-import akka.pattern.pipe
-import info.fotm.util.{Subscription, ObservableStream, MathVector, ObservableReadStream}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._

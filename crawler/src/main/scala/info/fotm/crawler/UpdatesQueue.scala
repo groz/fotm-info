@@ -1,7 +1,8 @@
 package info.fotm.crawler
 
-import akka.event.{NoLogging, LoggingAdapter}
+import akka.event.{LoggingAdapter, NoLogging}
 import info.fotm.util.ObservableStream
+
 import scala.collection.mutable
 
 class UpdatesQueue[T](maxSize: Int = -1)(implicit ordering: Ordering[T], log: LoggingAdapter = NoLogging)

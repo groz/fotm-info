@@ -36,7 +36,10 @@ class ClusteringEvaluator(features: List[Feature[CharacterStatsUpdate]]) extends
       val featureVectors: Seq[MathVector] = Feature.normalize(features, bucket)
       val featureMap: Map[CharacterId, MathVector] = bucket.map(_.id).zip(featureVectors)(breakOut)
       val clusters = clusterer.clusterize(featureMap, teamSize)
-      clusters.map(ps => Team(ps.toSet))
+      val teams = clusters.map(ps => Team(ps.toSet))
+
+      // remove overlapping teams (penalize multiplexer and merged algos?)
+      teams.filter(t => teams.count(_.members.intersect(t.members).nonEmpty) == 1)
     }
   }
 
@@ -53,8 +56,6 @@ class ClusteringEvaluator(features: List[Feature[CharacterStatsUpdate]]) extends
     val bucketFilter: BucketFilter = noiseFilter(nLost)
     val teamsFound: Set[Team] = findTeamsInUpdate(ladderUpdate, clusterer, bucketFilter)
 
-    // remove overlapping teams (penalize multiplexer and merged algos?)
-    val uncontended: Set[Team] = teamsFound.filter(t => teamsFound.count(_.members.intersect(t.members).nonEmpty) == 1)
     Statistics.calcMetrics(teamsFound, actualTeamsPlayed) // TODO: add noise filtering
   }
 

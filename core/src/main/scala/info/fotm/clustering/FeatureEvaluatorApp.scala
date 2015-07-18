@@ -2,6 +2,7 @@ package info.fotm.clustering
 
 import info.fotm.clustering.ClusteringEvaluatorData.DataPoint
 import info.fotm.clustering.FeatureSettings._
+import info.fotm.clustering.enhancers.{Verifier, ClonedClusterer}
 import info.fotm.clustering.implementations.ClosestClusterer
 
 object FeatureEvaluatorApp extends App {
@@ -19,17 +20,14 @@ object FeatureEvaluatorApp extends App {
   val data: Stream[DataPoint] = dataGen.updatesStream().slice(start, end)
 
   // uncomment following line for viewing ladder state
-  for {
-    (ladderUpdate, teams) <- data
-  } {
-  }
   //val (prevLadder, lastladder, _) = data.last
   //lastladder.rows.toList.sortBy(-_._2.stats.rating).map(_._2.stats).foreach(println)
 
   def estimate(fs: Seq[Feature[CharacterStatsUpdate]]): Double = {
-    val clusterer = RealClusterer.wrap(new ClosestClusterer())
+    //val clusterer = RealClusterer.wrap(new ClosestClusterer())
     //val clusterer = RealClusterer.wrap(new HTClusterer3)
     //val clusterer = RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2)))
+    val clusterer = new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer())) with Verifier
     val evaluator = new ClusteringEvaluator(fs.toList)
     1 - evaluator.evaluate(clusterer, data)
   }

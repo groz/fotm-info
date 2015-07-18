@@ -1,17 +1,15 @@
 package info.fotm.crawler
 
 import akka.actor._
-import akka.util.Timeout
 import dispatch.Http
 import info.fotm.aether.Storage
 import info.fotm.api.BattleNetAPI
-import info.fotm.domain._
-import scala.concurrent.{Future, Await}
-import scala.concurrent.duration._
 import info.fotm.api.models._
-import info.fotm.api._
+import info.fotm.domain._
 
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 object CrawlerApp extends App {
   val apiKey = "vntnwpsguf4pqak7e8y7tgn35795fqfj"
