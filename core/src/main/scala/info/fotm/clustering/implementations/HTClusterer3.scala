@@ -45,7 +45,7 @@ class HTClusterer3(addition: Option[Clusterer] = None) extends Clusterer {
     val avgDistance: Double = distances.sum / linearized.length
     val meanDistance: Double = Statistics.mean(distances)
 
-    val nSteps = 100
+    val nSteps = 10
     val stepSize = maxDistance / nSteps
 
     def searching(distance: Double, maxDistance: Double, result: Set[Cluster]): Set[Cluster] = {
@@ -59,13 +59,10 @@ class HTClusterer3(addition: Option[Clusterer] = None) extends Clusterer {
     if (maxDistance != 0) {
       val clusters = searching(meanDistance, maxDistance, Set())
       val correctlySized = clusters.filter(_.size == groupSize)
-      val rest = input diff correctlySized.flatten.toSeq
 
-      if (rest.isEmpty || addition.isEmpty) correctlySized
-      else {
-        val additionalClusterer = addition.get
-        val restClusters = additionalClusterer.clusterize(rest, groupSize)
-        correctlySized ++ restClusters
+      addition.fold(correctlySized) { clusterer =>
+        val rest = input diff correctlySized.flatten.toSeq
+        correctlySized ++ clusterer.clusterize(rest, groupSize)
       }
     } else {
       Set(input)

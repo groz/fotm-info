@@ -18,6 +18,12 @@ object CrawlerApp extends App {
 
   val storage = system.actorOf(Props[Storage], "storage")
 
+  // proxy to announce to
+  val storageProxy: ActorSelection =
+    system.actorSelection("akka.tcp://application@127.0.0.1:33200/user/storage-proxy")
+
+  storageProxy.tell(Storage.Announce, storage)
+
   val actorSetups = for {
     a <- Axis.all
   } yield {
@@ -27,7 +33,9 @@ object CrawlerApp extends App {
     }
 
   def spawnAll(system: ActorSystem): List[Cancellable] =
-    for ((name, props) <- actorSetups) yield {
+    for {
+      (name, props) <- actorSetups
+    } yield {
       val crawler = system.actorOf(props, name)
       system.scheduler.schedule(0.seconds, 10.seconds, crawler, CrawlerActor.Crawl)
     }
@@ -41,7 +49,7 @@ object MyApp extends App {
   val api = new BattleNetAPI(US, apiKey).WoW
 
   val lbFuture = api.leaderboard(Threes).map { lb =>
-    val gs = for { (specId, g) <- lb.rows.groupBy(_.specId) } yield (specId, g.size)
+    val gs = for {(specId, g) <- lb.rows.groupBy(_.specId)} yield (specId, g.size)
     gs.toList.sortBy(-_._2).foreach(println)
   }
 

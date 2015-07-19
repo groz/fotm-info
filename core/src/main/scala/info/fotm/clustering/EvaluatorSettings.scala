@@ -1,11 +1,15 @@
 package info.fotm.clustering
 
 final case class EvaluatorSettings(
-    matchesPerTurn: Int = 20,
+    matchesPerTurn: Int = 30,
     ladderSize: Int = 5000,
     teamSize: Int = 3,
     hopRatio: Double = 0.05,
-    turnsPerWeek: Int = 500)
+    turnsPerWeek: Int = 1000) {
+
+  val startTurn = turnsPerWeek * 7/3            // mid third week
+  val endTurn = startTurn + 1 * turnsPerWeek    // sim for 1 week
+}
 
 case object Defaults {
   lazy val settings = List(2, 3, 5, 10).map(size => (size, EvaluatorSettings(teamSize = size))).toMap

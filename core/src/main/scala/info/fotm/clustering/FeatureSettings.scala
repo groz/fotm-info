@@ -37,9 +37,10 @@ object FeatureSettings {
     //    Feature.const[CharacterStatsUpdate]
   )
 
-  lazy val startingWeights = MathVector(defaultFeatures.map(_.weight): _*)
+  //lazy val startingWeights = MathVector(defaultFeatures.map(_.weight): _*)
 
-  //val startingWeights = MathVector(10.0,4.947290554297682,3.9245008509864188,0,0,0,0,0,0,0,0,0,5.617074058685279,0,6.438833041471343,3.979327535042576,0,0)
+  val startingWeights = MathVector(10.0, 4.947290554297682, 3.9245008509864188, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.617074058685279, 0, 6.438833041471343, 3.979327535042576, 0, 0)
+  //val startingWeights = MathVector(0.6612193077213981,0.32712440354093253,0.2594955735841278,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.37141178205037045,0.0,0.4257480726215345,0.263120819791755,0.0,0.0)
 
   lazy val features = Feature.reweigh(defaultFeatures.zip(startingWeights.coords)).toList
 }

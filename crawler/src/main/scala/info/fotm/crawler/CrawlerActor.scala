@@ -44,8 +44,6 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
     lt
   }
 
-  val evaluator = new ClusteringEvaluator(FeatureSettings.features)
-
   private def hydrateTeam(ladderUpdate: LadderUpdate, team: Team): TeamUpdate = {
     val id = team.members.head
     val won = ladderUpdate.statsUpdates.find(_.id == id).get.won
@@ -54,6 +52,7 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
     TeamUpdate(view, won)
   }
 
+  val evaluator = new ClusteringEvaluator(FeatureSettings.features)
   val clusterer = RealClusterer.wrap(new HTClusterer3)
 
   val updatesObserver = new UpdatesQueue[CharacterLadder](historySize)

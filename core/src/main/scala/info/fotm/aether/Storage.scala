@@ -5,8 +5,10 @@ import akka.event.{Logging, LoggingReceive}
 import info.fotm.domain._
 
 object Storage {
+
   // init flows
   final case class Init(state: Map[Axis, Map[Team, TeamSnapshot]], chars: Map[CharacterId, CharacterSnapshot])
+
   case object InitFrom
 
   // input
@@ -14,14 +16,20 @@ object Storage {
 
   // output
   final case class GetTeamLadder(axis: Axis)
+
   final case class TeamLadderResponse(teamLadder: TeamLadder)
 
   // reactive, subscribes/unsubscribes sender to updates
   case object Subscribe
+
   case object Unsubscribe
+
+  // I'm online (again?)!
+  case object Announce
 }
 
 class Storage extends Actor {
+
   import Storage._
 
   val log = Logging(context.system, this.getClass)
@@ -29,8 +37,10 @@ class Storage extends Actor {
 
   override def receive: Receive = process(Map.empty, Map.empty, Set.empty)
 
-  def process(ladders: Map[Axis, Map[Team, TeamSnapshot]], chars: Map[CharacterId, CharacterSnapshot], subs: Set[ActorRef]): Receive = LoggingReceive {
-
+  def process(ladders: Map[Axis, Map[Team, TeamSnapshot]],
+              chars: Map[CharacterId, CharacterSnapshot],
+              subs: Set[ActorRef])
+  : Receive = LoggingReceive {
     case Updates(axis, teamUpdates, charUpdates: Set[CharacterDiff]) =>
       log.debug("Updates received. Processing...")
       val axisLadder: Map[Team, TeamSnapshot] = ladders.getOrElse(axis, Map.empty)
@@ -58,7 +68,7 @@ class Storage extends Actor {
 
     case GetTeamLadder(axis: Axis) =>
       ladders.get(axis).fold {
-        sender ! TeamLadderResponse(TeamLadder(axis, Map.empty))
+        sender ! TeamLadderResponse(TeamLadder(axis, Map.empty)) // axis not found
       } { ladder =>
         sender ! TeamLadderResponse(TeamLadder(axis, ladder))
       }
@@ -74,6 +84,10 @@ class Storage extends Actor {
 
     case Unsubscribe =>
       context.become(process(ladders, chars, subs - sender))
+
+    case Announce =>
+      sender ! InitFrom
+      sender ! Subscribe
   }
 
 }

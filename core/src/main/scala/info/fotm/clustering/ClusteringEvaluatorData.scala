@@ -188,6 +188,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
 
     val nextLadder: CharacterLadder = matches.foldLeft(ladder) { (l, t) => play(l, t._1, t._2) }
 
+    print(s":$i")
     (LadderUpdate(ladder, nextLadder), matches.toSet) #::
       updatesStream(Some(nextLadder), Some(teams), hopTeams, pickGames, i + 1)
   }

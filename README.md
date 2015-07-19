@@ -1,3 +1,7 @@
+## To do
+
+[Preproduction preparation checklist](https://github.com/Groz/fotm-info/issues/7)
+
 ## Test coverage:
 
 [scoverage](https://github.com/scoverage/sbt-scoverage)
