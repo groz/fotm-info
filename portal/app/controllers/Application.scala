@@ -7,6 +7,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import info.fotm.aether.Storage
 import info.fotm.domain.Axis
+import com.github.nscala_time.time.Imports._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
 
@@ -16,7 +17,9 @@ import scala.concurrent.duration._
 @Singleton
 class Application @Inject() (system: ActorSystem) extends Controller {
 
-  implicit val timeout: Timeout = 30.seconds
+  implicit val timeout: Timeout = new Timeout(Duration(30, SECONDS))
+
+  def interval = new Interval(DateTime.now - 1.month, DateTime.now)
 
   lazy val storage: ActorSelection =
     system.actorSelection("akka.tcp://crawlerSystem@127.0.0.1:33100/user/storage")
@@ -31,7 +34,7 @@ class Application @Inject() (system: ActorSystem) extends Controller {
     Axis(regionSlug, bracketSlug).fold {
       Future.successful(NotFound: Result)
     } { axis =>
-      val request = storageProxy ? Storage.QueryState(axis)
+      val request = storageProxy ? Storage.QueryState(axis, interval)
       request.mapTo[Storage.QueryStateResponse].map { (response: Storage.QueryStateResponse) =>
         Ok(views.html.index("Playing Now", response.axis, response.teamLadder, response.chars))
       }

@@ -5,4 +5,5 @@ final case class CharacterDiff(previous: CharacterSnapshot, current: CharacterSn
   val id = current.id
   val view = current.view
   val stats = current.stats
+  val ratingChange = current.stats.rating - previous.stats.rating
 }

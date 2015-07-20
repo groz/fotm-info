@@ -1,8 +1,6 @@
 package info.fotm.domain
 
 import info.fotm.api.models.Leaderboard
-import scala.collection.breakOut
-import scala.collection.immutable.IndexedSeq
 
 final case class CharacterLadder(axis: Axis, rows: Map[CharacterId, CharacterSnapshot])
   extends (CharacterId => CharacterStats) {
