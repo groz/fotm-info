@@ -31,18 +31,20 @@ class MathVector(val coords: Seq[Double]) {
 
   def /(x: Double) = this * (1.0 / x)
 
-  def distTo(that: MathVector): Double = {
+  def distImpl(that: MathVector, fn: Double => Double): Double = {
     val iter1 = coords.iterator
     val iter2 = that.coords.iterator
     var sum = 0.0
     while (iter1.hasNext) {
       val d: Double = iter1.next() - iter2.next()
-      sum += d * d
+      sum += fn(d)
     }
-    Math.sqrt(sum)
+    sum
   }
 
-  def distTo1(that: MathVector) = (this - that).coords.map(math.abs).sum
+  def distTo(that: MathVector): Double = Math.sqrt(distImpl(that, x => x * x))
+
+  def distTo1(that: MathVector): Double = distImpl(that, Math.abs)
 
   def distToInfty(that: MathVector) = (this - that).coords.maxBy(math.abs).abs
 

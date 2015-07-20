@@ -94,7 +94,7 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
         Some(ladder),
         Some(IndexedSeq(team1500, team1580)),
         identity,
-        _ => Seq(firstMatches))
+        _ => Set(firstMatches))
 
     val (ladderUpdate, matchesPlayed) = data.head
     ladderUpdate.previous.rows should contain theSameElementsAs ladder.rows
@@ -111,7 +111,7 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
         Some(ladder),
         Some(IndexedSeq(team1500, team1580)),
         identity,
-        _ => Seq(matches))
+        _ => Set(matches))
 
     val (previousUpdate, firstMatchesPlayed) = data.head
     val (currentUpdate, secondMatchesPlayed) = data.tail.head

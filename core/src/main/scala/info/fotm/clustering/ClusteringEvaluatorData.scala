@@ -51,7 +51,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
     CharacterLadder(axis, rows)
   }
 
-  def pickGamesFromBuckets(teamsWithRatings: IndexedSeq[(Team, Double)]): Seq[(Team, Team)] = {
+  def pickGamesFromBuckets(teamsWithRatings: IndexedSeq[(Team, Double)]): Set[(Team, Team)] = {
 
     val shuffled = rng.shuffle(teamsWithRatings.indices.toIndexedSeq)
     val indices = shuffled.take(matchesPerTurn * 2).sorted
@@ -66,7 +66,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
           (team2, team1)
       }
       .take(matchesPerTurn)
-      .toSeq
+      .toSet
   }
 
   def replacePlayer(team: Team, src: CharacterId, dst: CharacterId): Team = {
@@ -154,7 +154,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
                      ladderOpt: Option[CharacterLadder] = None,
                      teamsOpt: Option[IndexedSeq[Team]] = None,
                      hopTeams: IndexedSeq[Team] => IndexedSeq[Team] = hopTeamsRandomly(_, None),
-                     pickGames: IndexedSeq[(Team, Double)] => Seq[(Team, Team)] = pickGamesFromBuckets,
+                     pickGames: IndexedSeq[(Team, Double)] => Set[Game] = pickGamesFromBuckets,
                      i: Int = 0)
   : Stream[DataPoint] = {
 
@@ -170,19 +170,20 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
       if (result.last.members.size == teamSize) result else result.init
     }
 
-    val teamsWithRating: IndexedSeq[(Team, Double)] =
-      prevTeams.zip(prevTeams.view.map(ladder.calcTeamRating))
+    def withRating(teams: IndexedSeq[Team]): IndexedSeq[(Team, Double)] =
+      teams.zip(teams.map(ladder.calcTeamRating))
 
-    val sortedByRating: IndexedSeq[Team] = teamsWithRating.sortBy(_._2).map(_._1)
+    def sortByRating(teams: IndexedSeq[Team]): IndexedSeq[Team] =
+      withRating(teams).sortBy(_._2).map(_._1)
 
-    val teams = hopTeams(sortedByRating)
+    val teams = hopTeams(sortByRating(prevTeams))
 
-    val matches: Seq[(Team, Team)] = pickGames(teamsWithRating)
+    val matches = pickGames(withRating(teams))
 
     val nextLadder: CharacterLadder = matches.foldLeft(ladder) { (l, t) => play(l, t._1, t._2) }
 
     print(s":$i")
-    (LadderUpdate(ladder, nextLadder), matches.toSet) #::
+    (LadderUpdate(ladder, nextLadder), matches) #::
       updatesStream(Some(nextLadder), Some(teams), hopTeams, pickGames, i + 1)
   }
 }
