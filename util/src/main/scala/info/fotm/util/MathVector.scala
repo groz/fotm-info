@@ -1,9 +1,9 @@
 package info.fotm.util
 
 class MathVector(val coords: Seq[Double]) {
-  private def operation(that: MathVector, op: (Double, Double) => Double) = {
+  private def operation(that: MathVector, op: (Double, Double) => Double): MathVector = {
     require(this.dimension == that.dimension)
-    val seq = coords.toList.zip(that.coords.toList).map(c => op(c._1, c._2))
+    val seq = coords.view.zip(that.coords).map(c => op(c._1, c._2))
     MathVector(seq: _*)
   }
 
@@ -11,7 +11,7 @@ class MathVector(val coords: Seq[Double]) {
 
   lazy val length: Double = Math.sqrt(sqrlength)
 
-  lazy val sqrlength: Double = coords.map(Math.pow(_, 2)).sum
+  lazy val sqrlength: Double = coords.view.map(x => x * x).sum
 
   lazy val unary_- = MathVector(coords.map(-1 * _): _*)
 
@@ -31,7 +31,16 @@ class MathVector(val coords: Seq[Double]) {
 
   def /(x: Double) = this * (1.0 / x)
 
-  def distTo(that: MathVector) = (this - that).length
+  def distTo(that: MathVector): Double = {
+    val iter1 = coords.iterator
+    val iter2 = that.coords.iterator
+    var sum = 0.0
+    while (iter1.hasNext) {
+      val d: Double = iter1.next() - iter2.next()
+      sum += d * d
+    }
+    Math.sqrt(sum)
+  }
 
   def distTo1(that: MathVector) = (this - that).coords.map(math.abs).sum
 

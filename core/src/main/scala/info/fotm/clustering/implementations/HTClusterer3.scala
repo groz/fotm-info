@@ -4,13 +4,31 @@ import info.fotm.clustering.Clusterer
 import info.fotm.clustering.Clusterer.Cluster
 import info.fotm.util.{Statistics, MathVector}
 
+import scala.collection.mutable
+
 /*
 Hasan-Timur clusterer (minor mod+refactoring by Tagir)
  */
 class HTClusterer3(addition: Option[Clusterer] = None) extends Clusterer {
   // TODO: write tests for all separate methods
 
-  def distTo(v: MathVector, cluster: Seq[MathVector]): Double = cluster.map(_.distTo(v)).min
+  def distTo(v: MathVector, cluster: Seq[MathVector]): Double = cluster.view.map(_.distTo(v)).min
+
+  def fastLinearization(as: mutable.ListBuffer[(MathVector, Double)], bs: mutable.Set[MathVector]): Seq[(MathVector, Double)] = {
+    while(bs.nonEmpty) {
+      var (nearestB, dist) = (bs.head, Double.MaxValue)
+      for (b <- bs) {
+        val distToA = as.view.map(_._1.distTo(b)).min
+        if (distToA < dist) {
+          dist = distToA
+          nearestB = b
+        }
+      }
+      as += ((nearestB, dist))
+      bs -= nearestB
+    }
+    as.seq
+  }
 
   def clusterLinearization(as: Seq[(MathVector, Double)], bs: Seq[MathVector]): Seq[(MathVector, Double)] =
     if (bs.isEmpty) as
@@ -38,7 +56,8 @@ class HTClusterer3(addition: Option[Clusterer] = None) extends Clusterer {
   }
 
   def clusterize(input: Cluster, groupSize: Int): Set[Cluster] = {
-    val linearized: Seq[(MathVector, Double)] = clusterLinearization(Seq((input.head, 0.0)), input.tail)
+    //val linearized: Seq[(MathVector, Double)] = clusterLinearization(Seq((input.head, 0.0)), input.tail)
+    val linearized = fastLinearization(mutable.ListBuffer((input.head, 0.0)), mutable.Set[MathVector](input.tail: _*))
 
     val distances: Seq[Double] = linearized.map(_._2)
     val maxDistance: Double = distances.max
