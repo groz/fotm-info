@@ -6,7 +6,6 @@ import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
 import info.fotm.aether.Storage
-import info.fotm.aether.Storage.TeamLadderResponse
 import info.fotm.domain.Axis
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
@@ -32,9 +31,9 @@ class Application @Inject() (system: ActorSystem) extends Controller {
     Axis(regionSlug, bracketSlug).fold {
       Future.successful(NotFound: Result)
     } { axis =>
-      val request = storageProxy ? Storage.GetTeamLadder(axis)
-      request.mapTo[Storage.TeamLadderResponse].map { (response: TeamLadderResponse) =>
-        Ok(views.html.index("Teams", response.teamLadder))
+      val request = storageProxy ? Storage.QueryState(axis)
+      request.mapTo[Storage.QueryStateResponse].map { (response: Storage.QueryStateResponse) =>
+        Ok(views.html.index("Playing Now", response.axis, response.teamLadder, response.chars))
       }
     }
 

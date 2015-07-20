@@ -15,7 +15,7 @@ class ClusteringEvaluatorSpec extends FlatSpec with Matchers with ClusteringEval
 
     val evaluator = new ClusteringEvaluator(List(Feature.const[CharacterStatsUpdate]))
 
-    val metrics = evaluator.evaluateStep(RealClusterer.identity, ladder, nextLadder, games)
+    val metrics = evaluator.evaluateStep(RealClusterer.identity, LadderUpdate(ladder, nextLadder), games)
 
     metrics.truePositive should be(2)
     metrics.falsePositive should be(0)

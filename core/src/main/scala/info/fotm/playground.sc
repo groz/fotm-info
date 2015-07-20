@@ -1,19 +1,37 @@
-import info.fotm.util.MathVector
+import scala.collection.GenIterable
+import scala.collection.generic.CanBuildFrom
+import scala.collection.breakOut
+import scala.collection.immutable.IndexedSeq
 
-trait Binding[T] {
-  val boundValue: T
-}
+def batch[From[A] <: Traversable[A], A, To[_] <: Traversable[_]]
+    (from: From[A], batchSize: Int)
+    (implicit
+     bf: CanBuildFrom[Traversable[A], To[A], To[To[A]]],
+     wbf: CanBuildFrom[Traversable[A], A, To[A]])
+  : To[To[A]] = {
 
-trait Binding2[A, B] {
-  val a: A
-  val b: B
-}
+  val b = bf()
 
-def bind[T](v: MathVector, value: T): MathVector with Binding[T] =
-  new MathVector(v.coords) with Binding[T] {
-    val boundValue = value
+  var size = 0
+  var wb = wbf()
+
+  from.foreach { a =>
+    size += 1
+    wb += a
+
+    if (size == batchSize) {
+      size = 0
+      b += wb.result()
+      wb.clear()
+    }
   }
 
-val x: Option[Int] = Some(10)
+  if (size != 0)
+    b += wb.result()
 
-x.fold(false)(_ > 5)
+  b.result()
+}
+
+val lst: List[Int] = (0 to 10).toList
+
+batch[List, Int, List](lst, 3)(breakOut, breakOut)

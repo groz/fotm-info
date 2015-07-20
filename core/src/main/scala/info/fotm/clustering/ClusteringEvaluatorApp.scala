@@ -26,14 +26,14 @@ object ClusteringEvaluatorApp extends App {
     val clusterers: Map[String, RealClusterer] = Map(
       //        "Random" -> RealClusterer.wrap(new RandomClusterer),
         //"Closest" -> RealClusterer.wrap(new ClosestClusterer)
-      "HT3" -> RealClusterer.wrap(new HTClusterer3)
-//      ,
+      //"HT3" -> RealClusterer.wrap(new HTClusterer3),
+      //"HT3[RM]" -> RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2))),
+      "RM" -> RealClusterer.wrap(new EqClusterer2)
+    //      ,
 //      "HT2" -> RealClusterer.wrap(new HTClusterer2),
 //      "HT2 * V" -> new ClonedClusterer(RealClusterer.wrap(new HTClusterer2)) with Verifier,
 //      "HT3 * V" -> new ClonedClusterer(RealClusterer.wrap(new HTClusterer3)) with Verifier,
-//      "HT3[RM]" -> RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2))),
 //      "HT3[RM] * V" -> new ClonedClusterer(RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2)))) with Verifier,
-//      "RM" -> RealClusterer.wrap(new EqClusterer2),
 //      "RM * V" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer2)) with Verifier,
 //      createCMV(20, 3),
 //      "(HT3 + CM) * V" -> new Summator(

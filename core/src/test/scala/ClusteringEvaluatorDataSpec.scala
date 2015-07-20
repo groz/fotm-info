@@ -1,4 +1,5 @@
-import info.fotm.domain.{TeamSnapshot, CharacterLadder, Team}
+import info.fotm.domain.{LadderUpdate, TeamSnapshot, CharacterLadder, Team}
+import scala.collection.immutable.IndexedSeq
 import org.scalatest._
 
 class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with ClusteringEvaluatorSpecBase {
@@ -88,29 +89,37 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
 
   "prepare data" should "return correct first ladder" in {
     val firstMatches = (team1580, team1500)
-    val data: Stream[(CharacterLadder, CharacterLadder, Set[(Team, Team)])] =
-      updatesStream(Some(ladder), Some(Seq(team1500, team1580)), (ts, _) => ts, (_, _) => Seq(firstMatches))
+    val data: Stream[(LadderUpdate, Set[(Team, Team)])] =
+      updatesStream(
+        Some(ladder),
+        Some(IndexedSeq(team1500, team1580)),
+        identity,
+        _ => Seq(firstMatches))
 
-    val (prevLadder, currentLadder, matchesPlayed) = data.head
-    prevLadder.rows should contain theSameElementsAs ladder.rows
+    val (ladderUpdate, matchesPlayed) = data.head
+    ladderUpdate.previous.rows should contain theSameElementsAs ladder.rows
 
-    team1500.members.map(currentLadder).foreach { _.rating should be(1488) }
-    team1580.members.map(currentLadder).foreach { _.rating should be(1592) }
+    team1500.members.map(ladderUpdate.current).foreach { _.rating should be(1488) }
+    team1580.members.map(ladderUpdate.current).foreach { _.rating should be(1592) }
     matchesPlayed should contain theSameElementsAs Seq(firstMatches)
   }
 
   it should "make correct transition to second ladder" in {
     val matches = (team1580, team1500)
-    val data: Stream[(CharacterLadder, CharacterLadder, Set[(Team, Team)])] =
-      updatesStream(Some(ladder), Some(Seq(team1500, team1580)), (ts, _) => ts, (_, _) => Seq(matches))
+    val data: Stream[(LadderUpdate, Set[(Team, Team)])] =
+      updatesStream(
+        Some(ladder),
+        Some(IndexedSeq(team1500, team1580)),
+        identity,
+        _ => Seq(matches))
 
-    val (initLadder, firstLadder, firstMatchesPlayed) = data.head
-    val (prevLadder, currentLadder, secondMatchesPlayed) = data.tail.head
+    val (previousUpdate, firstMatchesPlayed) = data.head
+    val (currentUpdate, secondMatchesPlayed) = data.tail.head
 
-    prevLadder.rows should contain theSameElementsAs firstLadder.rows
+    currentUpdate.previous.rows should contain theSameElementsAs previousUpdate.current.rows
 
-    team1500.members.map(currentLadder).foreach { _.rating should be(1477) }
-    team1580.members.map(currentLadder).foreach { _.rating should be(1603) }
+    team1500.members.map(currentUpdate.current).foreach { _.rating should be(1477) }
+    team1580.members.map(currentUpdate.current).foreach { _.rating should be(1603) }
     secondMatchesPlayed should contain theSameElementsAs Seq(matches)
   }
 
@@ -133,19 +142,19 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
   }
 
   "hop teams" should "exhange players between 1500 and 1580 teams" in {
-    val hopped = hopTeams(team1500, team1580)
-    hopped(0).members.intersect(team1580.members).size should be(1)
-    hopped(1).members.intersect(team1500.members).size should be(1)
+    val (t1, t2) = hopTeams(team1500, team1580)
+    t1.members.intersect(team1580.members).size should be(1)
+    t2.members.intersect(team1500.members).size should be(1)
   }
 
   it should "handle exchange within the same team" in {
-    val hopped = hopTeams(team1500, team1500)
-    hopped(0).members.size should be(3)
-    hopped(1) should be(hopped(0))
+    val (t1, t2) = hopTeams(team1500, team1500)
+    t1.members.size should be(3)
+    t2 should be(t1)
   }
 
   "hopTeamsRandomly" should "preserve the number of teams" in {
-    hopTeamsRandomly(Seq(team1500, team1580), ladder).size should be(2)
+    hopTeamsRandomly(IndexedSeq(team1500, team1580)).size should be(2)
   }
 
   it should "correctly swap players between teams" in {

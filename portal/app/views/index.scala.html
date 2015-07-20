@@ -1,6 +1,7 @@
-@import info.fotm.domain.TeamLadder
+@import info.fotm.aether.Storage.{TeamLadderAxis, CharSnapshotsAxis}
+@import info.fotm.domain.Axis
 
-@(message: String, teamLadder: TeamLadder)
+@(message: String, axis: Axis, teamLadder: TeamLadderAxis, chars: CharSnapshotsAxis)
 
 @main("FotM") {
 
