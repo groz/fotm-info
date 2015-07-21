@@ -1,8 +1,8 @@
-@import info.fotm.aether.Storage.TeamLadderAxis
+@import info.fotm.domain.TeamSnapshot
 
-@(teamLadder: TeamLadderAxis)
+@(teams: Seq[TeamSnapshot])
 
-@for((team, snapshot) <- teamLadder) {
+@for(snapshot <- teams) {
     @teamView(snapshot)
     <br/>
 }

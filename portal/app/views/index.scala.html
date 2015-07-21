@@ -1,11 +1,12 @@
-@import info.fotm.aether.Storage.{TeamLadderAxis, CharSnapshotsAxis}
 @import info.fotm.domain.Axis
+@import info.fotm.domain.TeamSnapshot
+@import info.fotm.domain.CharacterSnapshot
 
-@(message: String, axis: Axis, teamLadder: TeamLadderAxis, chars: CharSnapshotsAxis)
+@(message: String, axis: Axis, teams: Seq[TeamSnapshot], chars: Seq[CharacterSnapshot])
 
 @main("FotM") {
 
     <h1>@message</h1>
 
-    @teamLadderView(teamLadder)
+    @teamLadderView(teams)
 }

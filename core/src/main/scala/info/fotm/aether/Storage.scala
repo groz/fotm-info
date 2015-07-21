@@ -2,7 +2,6 @@ package info.fotm.aether
 
 import akka.actor.{Actor, ActorRef}
 import akka.event.{Logging, LoggingReceive}
-import com.github.nscala_time.time.Imports
 import com.github.nscala_time.time.Imports._
 import info.fotm.domain._
 
@@ -15,7 +14,10 @@ object Storage {
   type CharSnapshotsAxis = Map[CharacterId, CharacterSnapshot]
 
   // init flows
-  final case class Init(ladders: Map[Axis, TeamLadderAxis], chars: Map[Axis, CharSnapshotsAxis])
+  final case class Init(ladders: Map[Axis, TeamLadderAxis],
+                        chars: Map[Axis, CharSnapshotsAxis],
+                        teamsSeen: Map[Axis, Seen[Team]],
+                        charsSeen: Map[Axis, Seen[CharacterId]])
 
   case object InitFrom
 
@@ -25,7 +27,7 @@ object Storage {
   // output
   final case class QueryState(axis: Axis, interval: Interval)
 
-  final case class QueryStateResponse(axis: Axis, teamLadder: TeamLadderAxis, chars: CharSnapshotsAxis)
+  final case class QueryStateResponse(axis: Axis, teams: Seq[TeamSnapshot], chars: Seq[CharacterSnapshot])
 
   // reactive, subscribes/unsubscribes sender to updates
   case object Subscribe
@@ -47,16 +49,15 @@ class Storage extends Actor {
   override def receive: Receive = process(Map.empty, Map.empty, Map.empty, Map.empty, Set.empty)
 
   def process(
-      ladders   : Map[Axis, TeamLadderAxis],
-      chars     : Map[Axis, CharSnapshotsAxis],
-      teamsSeen : Map[Axis, Seen[Team]],
-      charsSeen : Map[Axis, Seen[CharacterId]],
-      subs      : Set[ActorRef])
-    : Receive = LoggingReceive {
+               ladders: Map[Axis, TeamLadderAxis],
+               chars: Map[Axis, CharSnapshotsAxis],
+               teamsSeen: Map[Axis, Seen[Team]],
+               charsSeen: Map[Axis, Seen[CharacterId]],
+               subs: Set[ActorRef])
+  : Receive = LoggingReceive {
 
-    case Updates(axis, teamUpdates: Seq[TeamUpdate], charUpdates) =>
+    case msg@Updates(axis, teamUpdates: Seq[TeamUpdate], charUpdates) =>
       log.debug("Updates received. Processing...")
-
       val updateTime: DateTime = DateTime.now
 
       val ladderAxis: TeamLadderAxis = ladders.getOrElse(axis, Map.empty)
@@ -88,8 +89,8 @@ class Storage extends Actor {
 
       val teamsSeenThisTurn = teamUpdates.map(update => Team(update.view.snapshots.map(_.id))).toSet
 
-      val newTeamsSeenAxis = teamsSeenAxis.insert(updateTime, teamsSeenThisTurn)
-      val newCharsSeenAxis = charsSeenAxis.insert(updateTime, charUpdates.map(_.id))
+      val newTeamsSeenAxis = teamsSeenAxis + ((updateTime, teamsSeenThisTurn))
+      val newCharsSeenAxis = charsSeenAxis + ((updateTime, charUpdates.map(_.id)))
 
       val newTeamsSeenState = teamsSeen.updated(axis, newTeamsSeenAxis)
       val newCharsSeenState = charsSeen.updated(axis, newCharsSeenAxis)
@@ -97,26 +98,35 @@ class Storage extends Actor {
       context.become(process(newLaddersState, newCharsState, newTeamsSeenState, newCharsSeenState, subs))
 
       for (sub <- subs)
-        sub ! Updates(axis, teamUpdates, charUpdates)
+        sub ! msg
 
     case QueryState(axis: Axis, interval: Interval) =>
-      // TODO: implement interval lookup
-      // TODO: implement returning empty state for axis not found
-      ladders.get(axis).foreach { ladder =>
-        sender ! QueryStateResponse(axis, ladder, chars.getOrElse(axis, Map.empty))
-      }
+      val response = for {
+        ladderAxis <- ladders.get(axis)
+        charsAxis <- chars.get(axis)
+        teamsSeenAxis <- teamsSeen.get(axis)
+        charsSeenAxis <- charsSeen.get(axis)
+      } yield {
+          val teamIds = teamsSeenAxis.from(interval.start).until(interval.end + 1.second).values.flatten.toSet
+          val teams = teamIds.map(ladderAxis).toSeq
+          val charIds = charsSeenAxis.from(interval.start).until(interval.end + 1.second).values.flatten.toSet
+          val chars = charIds.map(charsAxis).toSeq
+          QueryStateResponse(axis, teams, chars)
+        }
 
-    case Init(laddersState, charsState) =>
-      context.become(process(laddersState, charsState, teamsSeen, charsSeen, subs))
+      sender ! response.getOrElse(QueryStateResponse(axis, Seq.empty, Seq.empty))
+
+    case Init(laddersState, charsState, teamsSeenState, charsSeenState) =>
+      context.become(process(laddersState, charsState, teamsSeenState, charsSeenState, subs))
 
     case InitFrom =>
-      sender ! Init(ladders, chars)
+      sender ! Init(ladders, chars, teamsSeen, charsSeen)
 
     case Subscribe =>
-      context.become(process(ladders, chars, teamsSeen, charsSeen,subs + sender))
+      context.become(process(ladders, chars, teamsSeen, charsSeen, subs + sender))
 
     case Unsubscribe =>
-      context.become(process(ladders, chars, teamsSeen, charsSeen,subs - sender))
+      context.become(process(ladders, chars, teamsSeen, charsSeen, subs - sender))
 
     case Announce =>
       sender ! InitFrom

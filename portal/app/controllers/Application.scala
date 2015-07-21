@@ -12,7 +12,7 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.{Duration, SECONDS}
 
 @Singleton
 class Application @Inject() (system: ActorSystem) extends Controller {
@@ -36,7 +36,7 @@ class Application @Inject() (system: ActorSystem) extends Controller {
     } { axis =>
       val request = storageProxy ? Storage.QueryState(axis, interval)
       request.mapTo[Storage.QueryStateResponse].map { (response: Storage.QueryStateResponse) =>
-        Ok(views.html.index("Playing Now", response.axis, response.teamLadder, response.chars))
+        Ok(views.html.index("Playing Now", response.axis, response.teams, response.chars))
       }
     }
 
