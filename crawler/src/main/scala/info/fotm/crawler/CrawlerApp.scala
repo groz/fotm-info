@@ -2,10 +2,12 @@ package info.fotm.crawler
 
 import akka.actor._
 import dispatch.Http
-import info.fotm.aether.Storage
+import info.fotm.aether.Storage.PersistedStorageState
+import info.fotm.aether.{PersistedAxisState, FilePersisted, Storage}
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
 import info.fotm.domain._
+import play.api.libs.json.Json
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -16,7 +18,13 @@ object CrawlerApp extends App {
 
   val system = ActorSystem("crawlerSystem")
 
-  val storage = system.actorOf(Props(classOf[Storage], None), "storage")
+  val filePersisted = {
+    import JsonFormatters._
+    implicit val pssFmt = Json.format[PersistedAxisState]
+    new FilePersisted[PersistedStorageState]("storage.txt")
+  }
+
+  val storage = system.actorOf(Props(classOf[Storage], Some(filePersisted)), "storage")
 
   // proxy to announce to
   val storageProxy: ActorSelection =
