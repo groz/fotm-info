@@ -16,7 +16,7 @@ object CrawlerApp extends App {
 
   val system = ActorSystem("crawlerSystem")
 
-  val storage = system.actorOf(Props[Storage], "storage")
+  val storage = system.actorOf(Props(classOf[Storage], None), "storage")
 
   // proxy to announce to
   val storageProxy: ActorSelection =

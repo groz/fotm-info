@@ -26,7 +26,7 @@ final case class CharacterSnapshot(id: CharacterId, view: CharacterView, stats: 
 }
 
 object CharacterSnapshot {
-  def apply(raw: LeaderboardRow) = new CharacterSnapshot(raw)
+  def fromRaw(raw: LeaderboardRow) = new CharacterSnapshot(raw)
 }
 
 

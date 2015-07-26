@@ -20,7 +20,7 @@ object CharacterLadder {
   def apply(axis: Axis, raw: Leaderboard): CharacterLadder = {
     val rows = for {
       row <- raw.rows
-      charInfo = CharacterSnapshot(row)
+      charInfo = CharacterSnapshot.fromRaw(row)
     } yield (charInfo.id, charInfo)
     CharacterLadder(axis, rows.toMap)
   }

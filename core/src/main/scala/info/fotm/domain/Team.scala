@@ -1,18 +1,18 @@
 package info.fotm.domain
 
-final case class TeamSnapshot private (team: Team, view: TeamView, stats: Stats) {
+final case class TeamSnapshot /* private */ (team: Team, view: TeamView, stats: Stats) {
   lazy val rating = view.rating
 }
 
 object TeamSnapshot {
-  def apply(snapshots: Set[CharacterSnapshot]): TeamSnapshot = {
+  def fromSnapshots(snapshots: Set[CharacterSnapshot]): TeamSnapshot = {
     val team = Team(snapshots.map(_.id))
     new TeamSnapshot(team, TeamView(snapshots), Stats.empty)
   }
 
-  def apply(team: Team, characterLadder: CharacterLadder): TeamSnapshot = {
+  def fromLadder(team: Team, characterLadder: CharacterLadder): TeamSnapshot = {
     val snapshots = team.members.map(t => characterLadder.rows(t))
-    TeamSnapshot(snapshots)
+    TeamSnapshot.fromSnapshots(snapshots)
   }
 }
 

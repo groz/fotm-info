@@ -25,13 +25,13 @@ class Application @Inject() (system: ActorSystem) extends Controller {
     system.actorSelection("akka.tcp://crawlerSystem@127.0.0.1:33100/user/storage")
 
   // init proxy and subscribe to storage updates
-  lazy val storageProxy = system.actorOf(Props[Storage], "storage-proxy")
+  lazy val storageProxy = system.actorOf(Props(classOf[Storage], None), "storage-proxy")
   storage.tell(Storage.InitFrom, storageProxy)
   storage.tell(Storage.Subscribe, storageProxy)
 
-  def index(regionSlug: String, bracketSlug: String) = Action.async {
+  def index(regionSlug: String, bracketSlug: String): Action[AnyContent] = Action.async {
 
-    Axis(regionSlug, bracketSlug).fold {
+    Axis.parse(regionSlug, bracketSlug).fold {
       Future.successful(NotFound: Result)
     } { axis =>
       val request = storageProxy ? Storage.QueryState(axis, interval)

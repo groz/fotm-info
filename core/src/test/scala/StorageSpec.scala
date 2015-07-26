@@ -1,4 +1,4 @@
-import akka.actor.ActorSystem
+import akka.actor.{Props, ActorSystem}
 import akka.pattern.ask
 import akka.testkit.TestActorRef
 import akka.util.Timeout
@@ -50,7 +50,6 @@ Testing workflows:
 
  */
 
-// TODO: fix race condition that shouldn't occur because TestActorRef is supposed to use synchronous dispatcher
 class StorageSpec extends FlatSpec with Matchers {
 
   implicit lazy val system = ActorSystem()
@@ -59,7 +58,7 @@ class StorageSpec extends FlatSpec with Matchers {
   val previousSnapshot: CharacterSnapshot = new ClusteringEvaluatorData().genPlayer(1500)
   val currentSnapshot: CharacterSnapshot = previousSnapshot
 
-  val currentTeam = TeamSnapshot(Set(currentSnapshot)).copy(stats = Stats.empty.win)
+  val currentTeam = TeamSnapshot.fromSnapshots(Set(currentSnapshot)).copy(stats = Stats.empty.win)
   val nextTeam = currentTeam.copy(stats = Stats.empty.win.loss)
 
   val teamUpdates: Seq[TeamUpdate] = Seq(TeamUpdate(currentTeam.view, won = true))
@@ -68,10 +67,11 @@ class StorageSpec extends FlatSpec with Matchers {
 
   val axis = Axis.all.head
 
+  def createStorageActor = TestActorRef(Props(new Storage()))
+
   "Updates" should "correctly populate Storage" in {
     // 1
-    val storageActorRef = TestActorRef[Storage]
-    val storageActor = storageActorRef.underlyingActor
+    val storageActorRef = createStorageActor
 
     storageActorRef ! Storage.Updates(axis, teamUpdates, charUpdates)
 
@@ -87,8 +87,7 @@ class StorageSpec extends FlatSpec with Matchers {
 
   it should "correctly handle time intervals" in {
     // 1a
-    val storageActorRef = TestActorRef[Storage]
-    val storageActor = storageActorRef.underlyingActor
+    val storageActorRef = createStorageActor
 
     val now = DateTime.now // there were no updates before this time
 
@@ -104,8 +103,7 @@ class StorageSpec extends FlatSpec with Matchers {
 
   it should "show last of consecutive updates" in {
     // 1b
-    val storageActorRef = TestActorRef[Storage]
-    val storageActor = storageActorRef.underlyingActor
+    val storageActorRef = createStorageActor
 
     storageActorRef ! Storage.Updates(axis, teamUpdates, charUpdates)
     storageActorRef ! Storage.Updates(axis, nextTeamUpdates, charUpdates)
@@ -122,7 +120,7 @@ class StorageSpec extends FlatSpec with Matchers {
 
   it should "respond with empty if Axis is not found or axis is empty" in {
     // 1b
-    val storageActorRef = TestActorRef[Storage]
+    val storageActorRef = createStorageActor
 
     val now = DateTime.now
 
@@ -136,21 +134,20 @@ class StorageSpec extends FlatSpec with Matchers {
 
   "InitFrom" should "respond with Init(state)" in {
     // 2
-    val storageActorRef = TestActorRef[Storage]
-    val storageActor = storageActorRef.underlyingActor
+    val storageActorRef = createStorageActor
 
     storageActorRef ! Storage.Updates(axis, teamUpdates, charUpdates)
 
     val queryFuture = storageActorRef ? Storage.InitFrom
     val Success(response: Storage.Init) = queryFuture.value.get
 
-    response.ladders should be(Map(axis -> Map(currentTeam.team -> currentTeam)))
-    response.chars should be(Map(axis -> Map(currentSnapshot.id -> currentSnapshot)))
+    response.state(axis).teams should be(Map(currentTeam.team -> currentTeam))
+    response.state(axis).chars should be(Map(currentSnapshot.id -> currentSnapshot))
   }
 
   "Subscribe" should "subscribe sender to updates" in {
-    val storageActorRef = TestActorRef[Storage]
-    val storageProxyActorRef = TestActorRef[Storage]
+    val storageActorRef = createStorageActor
+    val storageProxyActorRef = createStorageActor
 
     storageActorRef.tell(Storage.Subscribe, storageProxyActorRef)
     storageActorRef ! Storage.Updates(axis, teamUpdates, charUpdates)
@@ -167,10 +164,10 @@ class StorageSpec extends FlatSpec with Matchers {
   }
 
   "Announce" should "populate proxy" in {
-    val storageActorRef = TestActorRef[Storage]
+    val storageActorRef = createStorageActor
     storageActorRef ! Storage.Updates(axis, teamUpdates, charUpdates)
 
-    val storageProxyActorRef = TestActorRef[Storage]
+    val storageProxyActorRef = createStorageActor
     storageProxyActorRef.tell(Storage.Announce, storageActorRef)
 
     val now = DateTime.now

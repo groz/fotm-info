@@ -1,23 +1,23 @@
 package info.fotm.aether
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths}
+
 import akka.actor.{Actor, ActorRef}
 import akka.event.{Logging, LoggingReceive}
 import com.github.nscala_time.time.Imports._
+import info.fotm.aether.Storage.PersistedStorageState
 import info.fotm.domain._
+import play.api.libs.json.{Format, Json}
+import scala.collection.breakOut
 
 import scala.collection.immutable.TreeMap
 
 object Storage {
-  // tables
-  type Seen[T] = TreeMap[DateTime, Set[T]]
-  type TeamLadderAxis = Map[Team, TeamSnapshot]
-  type CharSnapshotsAxis = Map[CharacterId, CharacterSnapshot]
+  type PersistedStorageState = Seq[(Axis, PersistedAxisState)]
 
   // init flows
-  final case class Init(ladders: Map[Axis, TeamLadderAxis],
-                        chars: Map[Axis, CharSnapshotsAxis],
-                        teamsSeen: Map[Axis, Seen[Team]],
-                        charsSeen: Map[Axis, Seen[CharacterId]])
+  final case class Init(state: Map[Axis, StorageAxisState])
 
   case object InitFrom
 
@@ -39,36 +39,98 @@ object Storage {
 
 }
 
-class Storage extends Actor {
+case class StorageAxisState(
+  teams    : Map[Team, TeamSnapshot] = Map.empty,
+  chars    : Map[CharacterId, CharacterSnapshot] = Map.empty,
+  teamsSeen: TreeMap[DateTime, Set[Team]] = TreeMap.empty,
+  charsSeen: TreeMap[DateTime, Set[CharacterId]] = TreeMap.empty
+)
 
+// TODO: add JSON formatter for active state to avoid the need for Persisted/Active differentiation
+
+case class PersistedAxisState(
+  teams    : Set[TeamSnapshot],
+  chars    : Set[CharacterSnapshot],
+  teamsSeen: Seq[(DateTime, Set[Team])],
+  charsSeen: Seq[(DateTime, Set[CharacterId])]
+) {
+  def toActiveState: StorageAxisState = StorageAxisState(
+    teams.map(t => (t.team, t)).toMap,
+    chars.map(c => (c.id, c)).toMap,
+    TreeMap.empty[DateTime, Set[Team]] ++ teamsSeen,
+    TreeMap.empty[DateTime, Set[CharacterId]] ++ charsSeen
+  )
+}
+
+object PersistedAxisState {
+  def fromActiveState(activeState: StorageAxisState) = {
+    val teams = activeState.teams.values.toSet
+    val chars = activeState.chars.values.toSet
+    val teamsSeen = activeState.teamsSeen.toSeq
+    val charsSeen = activeState.charsSeen.toSeq
+    PersistedAxisState(teams, chars, teamsSeen, charsSeen)
+  }
+}
+
+trait Persisted[S] {
+  def save(state: S): Unit
+  def fetch(): Option[S]
+}
+
+class NullPersisted[S] extends Persisted[S] {
+  override def save(state: S): Unit = {}
+  override def fetch(): Option[S] = None
+}
+
+class FilePersisted[S](fileName: String)(implicit fmt: Format[S]) extends Persisted[S] {
+
+  override def save(state: S): Unit = {
+    val text = Json.toJson(state).toString()
+    Files.write(Paths.get(fileName), text.getBytes(StandardCharsets.UTF_8))
+  }
+
+  override def fetch(): Option[S] =
+    if (Files.exists(Paths.get(fileName))) {
+      val text = scala.io.Source.fromFile(fileName).mkString
+      Some(Json.parse(text).as[S])
+    } else {
+      None
+    }
+}
+
+class Storage(persistanceOpt: Option[Persisted[PersistedStorageState]] = None) extends Actor {
   import Storage._
 
+  val persistance = persistanceOpt.getOrElse(new NullPersisted[PersistedStorageState])
+
   val log = Logging(context.system, this.getClass)
-  // TODO: save/load state on init
 
-  override def receive: Receive = process(Map.empty, Map.empty, Map.empty, Map.empty, Set.empty)
+  override def receive: Receive = {
+    val initState: Map[Axis, StorageAxisState] = persistance.fetch().fold {
+      Axis.all.map(a => (a, StorageAxisState())).toMap
+    } { state => (
+        for ((axis, persistedState) <- state)
+        yield (axis, persistedState.toActiveState)
+      )(breakOut)
+    }
+    process(initState, Set.empty)
+  }
 
-  def process(
-               ladders: Map[Axis, TeamLadderAxis],
-               chars: Map[Axis, CharSnapshotsAxis],
-               teamsSeen: Map[Axis, Seen[Team]],
-               charsSeen: Map[Axis, Seen[CharacterId]],
-               subs: Set[ActorRef])
-  : Receive = LoggingReceive {
+  def process(state: Map[Axis, StorageAxisState], subs: Set[ActorRef]): Receive = LoggingReceive {
 
     case msg@Updates(axis, teamUpdates: Seq[TeamUpdate], charUpdates) =>
       log.debug("Updates received. Processing...")
       val updateTime: DateTime = DateTime.now
 
-      val ladderAxis: TeamLadderAxis = ladders.getOrElse(axis, Map.empty)
+      val currentAxis = state(axis)
 
       val updatedTeamSnapshots: Seq[TeamSnapshot] = for {
         update: TeamUpdate <- teamUpdates
         team = Team(update.view.snapshots.map(_.id))
-        snapshotOption = ladderAxis.get(team)
+        snapshotOption = currentAxis.teams.get(team)
       } yield {
           val snapshot = snapshotOption.fold {
-            TeamSnapshot(update.view.snapshots)
+            TeamSnapshot.fromSnapshots(update.view.snapshots)
           } {
             _.copy(view = update.view)
           }
@@ -76,57 +138,47 @@ class Storage extends Actor {
           else snapshot.copy(stats = snapshot.stats.loss)
         }
 
-      val newLadderAxis: TeamLadderAxis = ladderAxis ++ updatedTeamSnapshots.map(ts => (ts.team, ts))
-
-      val charsAxis: CharSnapshotsAxis = chars.getOrElse(axis, Map.empty)
-      val newCharsAxis: CharSnapshotsAxis = charsAxis ++ charUpdates.map(cu => (cu.id, cu.current))
-
-      val newLaddersState = ladders.updated(axis, newLadderAxis)
-      val newCharsState = chars.updated(axis, newCharsAxis)
-
-      val teamsSeenAxis: Seen[Team] = teamsSeen.getOrElse(axis, TreeMap.empty)
-      val charsSeenAxis: Seen[CharacterId] = charsSeen.getOrElse(axis, TreeMap.empty)
+      val updatedTeamsState = currentAxis.teams ++ updatedTeamSnapshots.map(ts => (ts.team, ts))
+      val updatedCharsState = currentAxis.chars ++ charUpdates.map(cu => (cu.id, cu.current))
 
       val teamsSeenThisTurn = teamUpdates.map(update => Team(update.view.snapshots.map(_.id))).toSet
 
-      val newTeamsSeenAxis = teamsSeenAxis + ((updateTime, teamsSeenThisTurn))
-      val newCharsSeenAxis = charsSeenAxis + ((updateTime, charUpdates.map(_.id)))
+      val updatedTeamsSeenState = currentAxis.teamsSeen + ((updateTime, teamsSeenThisTurn))
+      val updatedCharsSeenState = currentAxis.charsSeen + ((updateTime, charUpdates.map(_.id)))
 
-      val newTeamsSeenState = teamsSeen.updated(axis, newTeamsSeenAxis)
-      val newCharsSeenState = charsSeen.updated(axis, newCharsSeenAxis)
+      val updatedState = StorageAxisState(updatedTeamsState, updatedCharsState, updatedTeamsSeenState, updatedCharsSeenState)
 
-      context.become(process(newLaddersState, newCharsState, newTeamsSeenState, newCharsSeenState, subs))
+      persistance.save { (
+          for ((axis, activeState) <- state)
+          yield (axis, PersistedAxisState.fromActiveState(activeState))
+        )(breakOut)
+      }
+
+      context.become(process(state.updated(axis, updatedState), subs))
 
       for (sub <- subs)
         sub ! msg
 
     case QueryState(axis: Axis, interval: Interval) =>
-      val response = for {
-        ladderAxis <- ladders.get(axis)
-        charsAxis <- chars.get(axis)
-        teamsSeenAxis <- teamsSeen.get(axis)
-        charsSeenAxis <- charsSeen.get(axis)
-      } yield {
-          val teamIds = teamsSeenAxis.from(interval.start).until(interval.end + 1.second).values.flatten.toSet
-          val teams = teamIds.map(ladderAxis).toSeq
-          val charIds = charsSeenAxis.from(interval.start).until(interval.end + 1.second).values.flatten.toSet
-          val chars = charIds.map(charsAxis).toSeq
-          QueryStateResponse(axis, teams, chars)
-        }
+      val currentAxis = state(axis)
+      val teamIds = currentAxis.teamsSeen.from(interval.start).until(interval.end + 1.second).values.flatten.toSet
+      val teams = teamIds.map(currentAxis.teams).toSeq
+      val charIds = currentAxis.charsSeen.from(interval.start).until(interval.end + 1.second).values.flatten.toSet
+      val chars = charIds.map(currentAxis.chars).toSeq
 
-      sender ! response.getOrElse(QueryStateResponse(axis, Seq.empty, Seq.empty))
+      sender ! QueryStateResponse(axis, teams, chars)
 
-    case Init(laddersState, charsState, teamsSeenState, charsSeenState) =>
-      context.become(process(laddersState, charsState, teamsSeenState, charsSeenState, subs))
+    case Init(initState) =>
+      context.become(process(initState, subs))
 
     case InitFrom =>
-      sender ! Init(ladders, chars, teamsSeen, charsSeen)
+      sender ! Init(state)
 
     case Subscribe =>
-      context.become(process(ladders, chars, teamsSeen, charsSeen, subs + sender))
+      context.become(process(state, subs + sender))
 
     case Unsubscribe =>
-      context.become(process(ladders, chars, teamsSeen, charsSeen, subs - sender))
+      context.become(process(state, subs - sender))
 
     case Announce =>
       sender ! InitFrom

@@ -41,7 +41,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
       weeklyWins = 0,
       weeklyLosses = 0
     )
-    CharacterSnapshot(raw)
+    CharacterSnapshot.fromRaw(raw)
   }
 
   val axis = Axis.all.find(a => a.bracket.size == settings.teamSize).get
@@ -75,7 +75,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
   }
 
   def calcRating(charId: CharacterId, team: Team, won: Boolean)(ladder: CharacterLadder): Int = {
-    val teamRating = TeamSnapshot(team, ladder).rating
+    val teamRating = TeamSnapshot.fromLadder(team, ladder).rating
     val charInfo = ladder(charId)
     if (won) {
       charInfo.rating + calcRatingChange(charInfo.rating, teamRating)

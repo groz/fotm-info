@@ -6,16 +6,16 @@ class ClusteringEvaluatorDataSpec extends FlatSpec with Matchers with Clustering
   import gen._
 
   "Team rating" should "be mean of players' ratings" in {
-    TeamSnapshot(team1580, ladder).rating should be(1580)
+    TeamSnapshot.fromLadder(team1580, ladder).rating should be(1580)
   }
 
   it should "be mean of players' ratings 2" in {
-    TeamSnapshot(team1500, ladder).rating should be(1500)
+    TeamSnapshot.fromLadder(team1500, ladder).rating should be(1500)
   }
 
   it should "be mean of players' ratings 3" in {
     val team = Team(Seq(player1500, player1580).map(_.id).toSet)
-    TeamSnapshot(team, ladder).rating should be (1540)
+    TeamSnapshot.fromLadder(team, ladder).rating should be (1540)
   }
 
   //def calcRatingChange(winnerRating: Double, loserRating: Double): Int = {
