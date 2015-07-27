@@ -1,4 +1,6 @@
-# Dev 
+# Dev
+ 
+[![Build Status](https://travis-ci.org/Groz/fotm-info.svg)](https://travis-ci.org/Groz/fotm-info)
 
 ## To do
 

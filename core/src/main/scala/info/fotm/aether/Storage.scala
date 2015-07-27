@@ -1,16 +1,13 @@
 package info.fotm.aether
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
-
 import akka.actor.{Actor, ActorRef}
 import akka.event.{Logging, LoggingReceive}
 import com.github.nscala_time.time.Imports._
 import info.fotm.aether.Storage.PersistedStorageState
 import info.fotm.domain._
-import play.api.libs.json.{Format, Json}
-import scala.collection.breakOut
+import info.fotm.util.{NullPersisted, Persisted}
 
+import scala.collection.breakOut
 import scala.collection.immutable.TreeMap
 
 object Storage {
@@ -70,32 +67,6 @@ object PersistedAxisState {
     val charsSeen = activeState.charsSeen.toSeq
     PersistedAxisState(teams, chars, teamsSeen, charsSeen)
   }
-}
-
-trait Persisted[S] {
-  def save(state: S): Unit
-  def fetch(): Option[S]
-}
-
-class NullPersisted[S] extends Persisted[S] {
-  override def save(state: S): Unit = {}
-  override def fetch(): Option[S] = None
-}
-
-class FilePersisted[S](fileName: String)(implicit fmt: Format[S]) extends Persisted[S] {
-
-  override def save(state: S): Unit = {
-    val text = Json.toJson(state).toString()
-    Files.write(Paths.get(fileName), text.getBytes(StandardCharsets.UTF_8))
-  }
-
-  override def fetch(): Option[S] =
-    if (Files.exists(Paths.get(fileName))) {
-      val text = scala.io.Source.fromFile(fileName).mkString
-      Some(Json.parse(text).as[S])
-    } else {
-      None
-    }
 }
 
 class Storage(persistanceOpt: Option[Persisted[PersistedStorageState]] = None) extends Actor {

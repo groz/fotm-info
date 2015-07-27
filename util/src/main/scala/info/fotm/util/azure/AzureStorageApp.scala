@@ -10,7 +10,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object AzureStorageApp extends App {
 
   def createStorage(container: String) = {
-    implicit val str2rawGZipBase64 = Bijection.build[String, GZippedBase64String](s => GZippedBase64String(s))(_.str)
     implicit val keyIO: Bijection[String, String] = Bijection.identity[String]
     implicit val valueIO: Bijection[String, String] = str2GZippedBase64 andThen str2rawGZipBase64.inverse
 

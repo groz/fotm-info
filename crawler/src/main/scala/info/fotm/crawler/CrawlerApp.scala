@@ -1,12 +1,14 @@
 package info.fotm.crawler
 
 import akka.actor._
+import com.twitter.bijection.Bijection
 import dispatch.Http
 import info.fotm.aether.Storage.PersistedStorageState
-import info.fotm.aether.{PersistedAxisState, FilePersisted, Storage}
+import info.fotm.aether.{PersistedAxisState, Storage}
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
 import info.fotm.domain._
+import info.fotm.util.{Compression, FilePersisted}
 import play.api.libs.json.Json
 
 import scala.concurrent.Await
@@ -21,7 +23,22 @@ object CrawlerApp extends App {
   val filePersisted = {
     import JsonFormatters._
     implicit val pssFmt = Json.format[PersistedAxisState]
-    new FilePersisted[PersistedStorageState]("storage.txt")
+
+    val obj2json: Bijection[PersistedStorageState, String] =
+      Bijection.build[PersistedStorageState, String] { obj =>
+        Json.toJson(obj).toString()
+      } { str =>
+        Json.parse(str).as[PersistedStorageState]
+      }
+
+    def compressSerializer[A](ser: Bijection[A, String]) = {
+        ser andThen
+          Compression.str2GZippedBase64 andThen
+          Compression.str2rawGZipBase64.inverse andThen
+          Compression.str2bytes
+    }
+
+    new FilePersisted[PersistedStorageState]("storage.txt", compressSerializer(obj2json))
   }
 
   val storage = system.actorOf(Props(classOf[Storage], Some(filePersisted)), "storage")
