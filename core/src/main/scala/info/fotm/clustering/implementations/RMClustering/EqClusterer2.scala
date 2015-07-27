@@ -25,11 +25,16 @@ class EqClusterer2 extends Clusterer
       else
       {
         val positiveVertices = getPositiveVertices(graph)
-        val dijkstraAlg = new DijkstraAlg(graph)
-        val paths = dijkstraAlg.findShortestPathsFrom(positiveVertices)
-        val optPath = findOptimalPath(graph, paths)
-        val newClusters = movePointAlongPath(clusters, optPath)
-        movePoint(newClusters)
+        if (positiveVertices.isEmpty)
+          clusters
+        else
+        {
+          val dijkstraAlg = new DijkstraAlg(graph)
+          val paths = dijkstraAlg.findShortestPathsFrom(positiveVertices)
+          val optPath = findOptimalPath(graph, paths)
+          val newClusters = movePointAlongPath(clusters, optPath)
+          movePoint(newClusters)
+        }
       }
     }
 
