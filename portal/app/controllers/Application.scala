@@ -15,7 +15,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, SECONDS}
 
 @Singleton
-class Application @Inject() (system: ActorSystem) extends Controller {
+class Application @Inject()(system: ActorSystem) extends Controller {
 
   implicit val timeout: Timeout = new Timeout(Duration(30, SECONDS))
 
