@@ -58,4 +58,15 @@ class StatisticsSpec extends FlatSpec with Matchers {
     normalized should contain theSameElementsInOrderAs (expected)
   }
 
+  it should "set columns to zero for equal numbers" in {
+    val input = Seq(
+      MathVector(10),
+      MathVector(10)
+    )
+
+    val normalized = normalize(input)
+    normalized(0)(0) should equal(0)
+    normalized(1)(0) should equal(0)
+  }
+
 }

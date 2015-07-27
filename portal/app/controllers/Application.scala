@@ -5,6 +5,7 @@ import javax.inject._
 import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
+import com.github.nscala_time.time.Imports
 import info.fotm.aether.Storage
 import info.fotm.domain.Axis
 import com.github.nscala_time.time.Imports._
@@ -19,7 +20,7 @@ class Application @Inject()(system: ActorSystem) extends Controller {
 
   implicit val timeout: Timeout = new Timeout(Duration(30, SECONDS))
 
-  def interval = new Interval(DateTime.now - 1.month, DateTime.now)
+  def interval: Imports.Interval = new Interval(DateTime.now - 1.month, DateTime.now)
 
   lazy val storage: ActorSelection =
     system.actorSelection("akka.tcp://crawlerSystem@127.0.0.1:33100/user/storage")

@@ -1,5 +1,3 @@
-import java.nio.charset.StandardCharsets
-
 import info.fotm.util.Compression
 import org.scalatest.{Matchers, FlatSpec}
 import com.twitter.bijection._

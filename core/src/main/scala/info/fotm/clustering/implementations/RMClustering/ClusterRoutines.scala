@@ -7,9 +7,6 @@ import scala.collection.immutable.IndexedSeq
 
 object ClusterRoutines
 {
-
-
-
   def merge(clusters: Set[Cluster], num: Int = 0, prevDev: Double = Double.MaxValue): Set[Cluster] =
   {
     if (clusters.size == 1)

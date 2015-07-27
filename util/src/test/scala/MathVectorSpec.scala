@@ -77,4 +77,20 @@ class MathVectorSpec extends FlatSpec with Matchers {
     val v3 = MathVector(2, 1)
     ((v1 distTo v2) + (v2 distTo v3) > (v1 distTo v3)) should equal(true)
   }
+
+  "toString" should "correctly print vector" in {
+    MathVector(1, 2).toString should equal("MathVector(1.0,2.0)")
+  }
+
+  "apply" should "correctly yield required element" in {
+    MathVector(-1, 2)(0) should equal(-1)
+  }
+
+  "update" should "correctly reset required element" in {
+    MathVector(0, 1, 2).update(2, -1) should equal(MathVector(0, 1, -1))
+  }
+
+  "implicit conversion" should "correctly support ops for scalar on the left side" in {
+    (2.0 * MathVector(2)) should equal (MathVector(4.0))
+  }
 }

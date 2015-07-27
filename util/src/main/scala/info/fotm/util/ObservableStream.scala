@@ -50,7 +50,9 @@ trait ObservableStream[T] extends ObservableReadStream[T] with ObservableWriteSt
 
   def filter(p: T => Boolean) = new ObservableStream[T] {
     val sub = self.weaksub(t => if (p(t)) publish(t))
-  }
+  }.asInstanceOf[ObservableReadStream[T]]
+
+  // TODO: make map expose ObservableReadStream
 
   def map[U](f: T => U) = new ObservableStream[U] {
     val sub = self.weaksub(f andThen publish)
@@ -58,7 +60,9 @@ trait ObservableStream[T] extends ObservableReadStream[T] with ObservableWriteSt
 
   def flatMap[U](f: T => ObservableStream[U]) = new ObservableStream[U] {
     val refs = scala.collection.mutable.Set.empty[Subscription]
-    val sub = self.map(f).weaksub { refs += _.weaksub(publish) }
-  }
+    val sub = self.map(f).weaksub {
+      refs += _.weaksub(publish)
+    }
+  }.asInstanceOf[ObservableReadStream[U]]
 }
 
