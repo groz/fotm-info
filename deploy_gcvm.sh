@@ -20,5 +20,5 @@ curl https://sdk.cloud.google.com | bash
 /home/travis/google-cloud-sdk/bin/gcloud compute \
                --project "fotm-info" \
                ssh fotm-canary-1 --zone "us-central1-f" \
-               --ssh-key-file google_compute_engine.ssh \
+               --ssh-key-file google_compute_engine \
                --command "cd fotm-info && git pull && git submodule update --recursive && chmod +x run_gcvm.sh && ./run_gcvm.sh"
