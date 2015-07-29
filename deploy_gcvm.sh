@@ -1,8 +1,14 @@
 #!/bin/bash
 
 # This script is to be run from Travis CI.
-# It's just a trigger for Cloud VM to pull all data and execute local script "run.sh"
+# It's just a trigger for Cloud VM to pull git repo and execute local script "run.sh"
+# The reason to do 'git pull' in here and not in the 'run_gcvm.sh' is to pull the
+# latest version of 'run_gcvm.sh' itself.
+#
+# TODO: It might be better to move to Travis CI script command in .travis.yml
 
-echo Starting shell script
-gcloud compute --project "fotm-info" ssh --zone "us-central1-f" "fotm-canary-1" --command "cd fotm-info && git pull && ./run_gcvm.sh"
-echo Shell script complete.
+echo Triggering deployment script on Google Cloud VM instance...
+
+gcloud compute --project "fotm-info" \
+               ssh fotm-canary-1 --zone "us-central1-f" \
+               --command "cd fotm-info && git pull && git submodule update --recursive && chmod +x run_gcvm.sh && ./run_gcvm.sh"

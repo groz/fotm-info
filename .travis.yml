@@ -6,7 +6,9 @@ scala:
 jdk:
   - oraclejdk8
 
-script: sbt ++$TRAVIS_SCALA_VERSION clean coverage test && sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
+#script: sbt ++$TRAVIS_SCALA_VERSION clean coverage test && sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
+
+script: ./deploy_gcvm.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
