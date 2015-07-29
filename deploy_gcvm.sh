@@ -20,4 +20,4 @@ curl https://sdk.cloud.google.com | bash
 /home/travis/google-cloud-sdk/bin/gcloud compute \
                --project "fotm-info" \
                ssh fotm-canary-1 --zone "us-central1-f" \
-               --command "cd fotm-info && git pull && git submodule update --recursive && chmod +x run_gcvm.sh && ./run_gcvm.sh"
+               --command "rm -rf fotm-info && git clone https://github.com/Groz/fotm-info && cd fotm-info && git submodule init && git submodule update --recursive && chmod +x run_gcvm.sh && ./run_gcvm.sh"
