@@ -14,7 +14,7 @@ export CLOUDSDK_CORE_DISABLE_PROMPTS=1
 curl https://sdk.cloud.google.com | bash
 
 /home/travis/google-cloud-sdk/bin/gcloud auth \
-               activate-service-account "${GC_SERVICE_ACCOUNT}"
+               activate-service-account "${GC_SERVICE_ACCOUNT}" \
                --key-file fotm-info-a084c3f559c5.json
 
 /home/travis/google-cloud-sdk/bin/gcloud compute \
