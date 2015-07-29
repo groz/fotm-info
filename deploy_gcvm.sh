@@ -9,6 +9,8 @@
 
 echo Triggering deployment script on Google Cloud VM instance...
 
+export CLOUDSDK_CORE_DISABLE_PROMPTS=1
+
 curl https://sdk.cloud.google.com | bash
 
 gcloud compute --project "fotm-info" \
