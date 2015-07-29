@@ -19,5 +19,4 @@ after_success:
 
 before_install:
 - openssl aes-256-cbc -K $encrypted_e3249f0070eb_key -iv $encrypted_e3249f0070eb_iv
-  -in secrets.tar.enc -out secrets.tar -d
-- tar xvf secrets.tar
+  -in fotm-info-a084c3f559c5.json.enc -out fotm-info-a084c3f559c5.json -d
