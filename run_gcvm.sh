@@ -5,7 +5,7 @@
 echo Starting deployment script from Google Cloud VM instance...
 
 # find all running sbt processes & kill them
-ps aux | grep [s]bt-launch | awk '{print $2}' | xargs kill -9
+ps aux | grep [s]bt-launch | awk '{print $2}' | xargs kill -KILL 
 
 # clean running_pid
 rm portal/target/universal/stage/RUNNING_PID
