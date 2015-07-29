@@ -13,6 +13,8 @@ export CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
 curl https://sdk.cloud.google.com | bash
 
+exec -l $SHELL
+
 gcloud compute --project "fotm-info" \
                ssh fotm-canary-1 --zone "us-central1-f" \
                --command "cd fotm-info && git pull && git submodule update --recursive && chmod +x run_gcvm.sh && ./run_gcvm.sh"
