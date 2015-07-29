@@ -6,9 +6,19 @@ scala:
 jdk:
   - oraclejdk8
 
+env:
+  global:
+    secure: TjB9ee+EMm0GIoRlRxXxPgF6X9fyBhn5CgKoiPPm7d8zMlyhszEuntJQFqWF9nvvcTgElhf9+KAjBGoAzD23SCPEwv3yX0QPjHhy8f5pOoSaQ19E+B0Rgr9Y0DQjPDHxHjEMzFP19vRme497UIUlxkYXW8IhlxmF0/HOz/5gscDVnregED4EqaOvSTJoerPn3rI9Ln1W1LbXYDD6G22OISXeRh6il4xF5/MMmy+fvyx7cslLZWUfWyVrIV5TAfYn6TPWshxS7f1d1njMQQgNN2H7JiRxM+GQC9mTFsQCZsH8QUGcf7Kd8R8BeSqNRGKz34cP88wvdGbAaaUWrGR9ImdeUI7GYZUUEQVTSNDVo2vcy1pm4c8KLs6Tqr4ZFJ8sVRcRyn7Qj2OJWAuMdNuuOKN5lyDsqkb8K4MvgqTfCzYw36PbW7iCQeuquv7iDefoQOh5bTtUpNm+wwASlJ3moiCoX9fowcEay5YbL2b1gp3+DopyeC+1xT4OLy3HvjkyCe2RljTete7+bwRqHtRu8v5xPtkbgsoSKUw5Y5MxCj6Y0lMP+wlrP80ur6+qp2BAejQE8u04YyltpcArW0rl98B73WzS6ywjuXdcrbKheCi/O2OniaVhZh9PvQwIqhyNqTRoRqC6F+K8lwDFhPVo54UckdKBF02pIaWYlZrvgEI=
+
 #script: sbt ++$TRAVIS_SCALA_VERSION clean coverage test && sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
 
 script: ./deploy_gcvm.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+
+before_install:
+- openssl aes-256-cbc -K $encrypted_e3249f0070eb_key -iv $encrypted_e3249f0070eb_iv
+  -in google_compute_engine.ssh.enc -out google_compute_engine.ssh -d
+- openssl aes-256-cbc -K $encrypted_e3249f0070eb_key -iv $encrypted_e3249f0070eb_iv
+  -in fotm-info-a084c3f559c5.json.enc -out fotm-info-a084c3f559c5.json -d

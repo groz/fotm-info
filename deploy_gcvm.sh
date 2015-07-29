@@ -13,7 +13,12 @@ export CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
 curl https://sdk.cloud.google.com | bash
 
+/home/travis/google-cloud-sdk/bin/gcloud auth \
+               activate-service-account "${GC_SERVICE_ACCOUNT}" \
+               --key-file fotm-info-a084c3f559c5.json
+
 /home/travis/google-cloud-sdk/bin/gcloud compute \
                --project "fotm-info" \
                ssh fotm-canary-1 --zone "us-central1-f" \
+               --ssh-key-file google_compute_engine.ssh \
                --command "cd fotm-info && git pull && git submodule update --recursive && chmod +x run_gcvm.sh && ./run_gcvm.sh"
