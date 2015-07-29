@@ -14,6 +14,7 @@ export CLOUDSDK_CORE_DISABLE_PROMPTS=1
 curl https://sdk.cloud.google.com | bash
 
 . ~/.bashrc
+ls ~/.bashrc
 
 gcloud compute --project "fotm-info" \
                ssh fotm-canary-1 --zone "us-central1-f" \
