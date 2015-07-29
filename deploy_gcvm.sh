@@ -9,6 +9,8 @@
 
 echo Triggering deployment script on Google Cloud VM instance...
 
+curl https://sdk.cloud.google.com | bash
+
 gcloud compute --project "fotm-info" \
                ssh fotm-canary-1 --zone "us-central1-f" \
                --command "cd fotm-info && git pull && git submodule update --recursive && chmod +x run_gcvm.sh && ./run_gcvm.sh"
