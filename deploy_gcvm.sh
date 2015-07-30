@@ -10,7 +10,7 @@ curl https://sdk.cloud.google.com | bash
 
 /home/travis/google-cloud-sdk/bin/gcloud auth \
                activate-service-account "${GC_SERVICE_ACCOUNT}" \
-               --key-file fotm-info-project-b8031120a9c7.json
+               --key-file fotm-info-project-b8031120a9c7.json \
                --project "fotm-info"
 
 /home/travis/google-cloud-sdk/bin/gcloud compute copy-files crawler/target/scala-2.11/crawler-assembly-1.0-SNAPSHOT.jar portal/target/universal/portal-1.0-SNAPSHOT.zip run_gcvm.sh \
