@@ -8,11 +8,13 @@ jdk:
 
 env:
   global:
-    secure: TjB9ee+EMm0GIoRlRxXxPgF6X9fyBhn5CgKoiPPm7d8zMlyhszEuntJQFqWF9nvvcTgElhf9+KAjBGoAzD23SCPEwv3yX0QPjHhy8f5pOoSaQ19E+B0Rgr9Y0DQjPDHxHjEMzFP19vRme497UIUlxkYXW8IhlxmF0/HOz/5gscDVnregED4EqaOvSTJoerPn3rI9Ln1W1LbXYDD6G22OISXeRh6il4xF5/MMmy+fvyx7cslLZWUfWyVrIV5TAfYn6TPWshxS7f1d1njMQQgNN2H7JiRxM+GQC9mTFsQCZsH8QUGcf7Kd8R8BeSqNRGKz34cP88wvdGbAaaUWrGR9ImdeUI7GYZUUEQVTSNDVo2vcy1pm4c8KLs6Tqr4ZFJ8sVRcRyn7Qj2OJWAuMdNuuOKN5lyDsqkb8K4MvgqTfCzYw36PbW7iCQeuquv7iDefoQOh5bTtUpNm+wwASlJ3moiCoX9fowcEay5YbL2b1gp3+DopyeC+1xT4OLy3HvjkyCe2RljTete7+bwRqHtRu8v5xPtkbgsoSKUw5Y5MxCj6Y0lMP+wlrP80ur6+qp2BAejQE8u04YyltpcArW0rl98B73WzS6ywjuXdcrbKheCi/O2OniaVhZh9PvQwIqhyNqTRoRqC6F+K8lwDFhPVo54UckdKBF02pIaWYlZrvgEI=
+  - secure: TjB9ee+EMm0GIoRlRxXxPgF6X9fyBhn5CgKoiPPm7d8zMlyhszEuntJQFqWF9nvvcTgElhf9+KAjBGoAzD23SCPEwv3yX0QPjHhy8f5pOoSaQ19E+B0Rgr9Y0DQjPDHxHjEMzFP19vRme497UIUlxkYXW8IhlxmF0/HOz/5gscDVnregED4EqaOvSTJoerPn3rI9Ln1W1LbXYDD6G22OISXeRh6il4xF5/MMmy+fvyx7cslLZWUfWyVrIV5TAfYn6TPWshxS7f1d1njMQQgNN2H7JiRxM+GQC9mTFsQCZsH8QUGcf7Kd8R8BeSqNRGKz34cP88wvdGbAaaUWrGR9ImdeUI7GYZUUEQVTSNDVo2vcy1pm4c8KLs6Tqr4ZFJ8sVRcRyn7Qj2OJWAuMdNuuOKN5lyDsqkb8K4MvgqTfCzYw36PbW7iCQeuquv7iDefoQOh5bTtUpNm+wwASlJ3moiCoX9fowcEay5YbL2b1gp3+DopyeC+1xT4OLy3HvjkyCe2RljTete7+bwRqHtRu8v5xPtkbgsoSKUw5Y5MxCj6Y0lMP+wlrP80ur6+qp2BAejQE8u04YyltpcArW0rl98B73WzS6ywjuXdcrbKheCi/O2OniaVhZh9PvQwIqhyNqTRoRqC6F+K8lwDFhPVo54UckdKBF02pIaWYlZrvgEI=
+  - secure: oIaZvWzqYjUAwnP17VuGnsC7dboMPhLa0t3P/28SieRX7XsQ0eB/pjc2b5RBRwq1TiN7+qK3DeJHO38LjVM/LPQkSjrEE6R4G3hDHdDev8z0woFKZAkSvcoTIPGV07k4Hz/VXAXCJwnIC57Bt6rpH7zZ3+MNYHfmrW8ijWN2v8qR2KOOpXtNTT3NCsmo2xXwEtYP8rIXCRlIp1kXAvEn9MXYcL/0SiZMNGivdlBE9sRhVgnNlymOEmbrzKBU2MNynU/wDWY2CQ4d9lbp0HQmzqXdKBDXC0jACEV2RmlcHG+bnzakMg7IyLKuRn2fkypgwprj9VIstzm6UfZ7dvzmZ3RsIAlBwC8IoBBA4j6mrlipGPSIoQeyzRwfK4Zrh9fyWcgO0crvkul+zYFxpLXJ0fP1ppApRsDyossnNLlme3QbLb6jwwdULo52YBclaQZtOR1hGoOhqBJoD5zV8KX2HS5o2u9JZezSvntxBOMtC8br+No+OpiFpwkd//RQD230bGh4vR3RlaZf/xWvK8xPD3gNyxl/pC8DUX8eCl5PKQDT8vTPO7GyFkqMXJ39OwXiMzEJ0ubKra+VTzywFaNIy6lvBSbs2b8TpYJ/8dCKSbpmsakB9+049/nIkn+e227+FPjODSvJGhOB+EblB1hKkOa460Ol/pS2HUOdGTkbFkw=
 
-script: sbt ++$TRAVIS_SCALA_VERSION clean coverage test && sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
-
-#script: ./deploy_gcvm.sh
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION clean coverage test && sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
+  - sbt "crawler/assembly" && sbt "portal/dist"
+  - ./deploy_gcvm.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
@@ -21,5 +23,5 @@ before_install:
 - openssl aes-256-cbc -K $encrypted_e3249f0070eb_key -iv $encrypted_e3249f0070eb_iv
   -in secrets.tar.enc -out secrets.tar -d
 - tar xvf secrets.tar
-- cp google_compute_engine $HOME/.ssh/.
-- cp google_compute_engine.pub $HOME/.ssh/.
+- mv google_compute_engine $HOME/.ssh/.
+- mv google_compute_engine.pub $HOME/.ssh/.

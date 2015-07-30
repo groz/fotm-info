@@ -1,11 +1,6 @@
 #!/bin/bash
 
 # This script is to be run from Travis CI.
-# It's just a trigger for Cloud VM to pull git repo and execute local script "run.sh"
-# The reason to do 'git pull' in here and not in the 'run_gcvm.sh' is to pull the
-# latest version of 'run_gcvm.sh' itself.
-#
-# TODO: It might be better to move to Travis CI script command in .travis.yml
 
 echo Triggering deployment script on Google Cloud VM instance...
 
@@ -17,7 +12,10 @@ curl https://sdk.cloud.google.com | bash
                activate-service-account "${GC_SERVICE_ACCOUNT}" \
                --key-file fotm-info-a084c3f559c5.json
 
+/home/travis/google-cloud-sdk/bin/gcloud compute copy-files crawler/target/scala-2.11/crawler-assembly-1.0-SNAPSHOT.jar portal/target/universal/portal-1.0-SNAPSHOT.zip run_gcvm.sh \
+              fotm-canary-1:~/deployment --zone "us-central1-f"
+
 /home/travis/google-cloud-sdk/bin/gcloud compute \
                --project "fotm-info" \
                ssh fotm-canary-1 --zone "us-central1-f" \
-               --command "rm -rf fotm-info && git clone https://github.com/Groz/fotm-info && cd fotm-info && git submodule init && git submodule update --recursive && chmod +x run_gcvm.sh && ./run_gcvm.sh"
+               --command "chmod +x deployment/run_gcvm.sh && deployment/run_gcvm.sh"
