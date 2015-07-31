@@ -8,8 +8,9 @@ env:
   - secure: pTVs9kg3bz14JeEvP92k8Q6vxr36KptTQzVRNnmbWbtjccBY3BHd2mon45XJ4Zyn6H+DyPULTMmqXulXrgwTEAy1CetsTko/z7mF7O7i0SXMH17EBYIJRbrq0kbQyO0jS0D3g9DCJmzXpC7pZTqPfNrOZxuFM54pxXOC2+EDK3uRD8ruXByUzUTi+5VToc4mZH7lQZByQeIe9MmkxBvfRtIVeAIKd1rCdRjvSPWe7sOBBXbmGl3JdwVK/68jsX2Q4Bay5AKqOz64p8YJTQ5iRdEowL6s7cq91DxJC+ygbtHR+xIlz8FS4OuPKk0t0UB0jUh+kcvq5pIKWt0ne2VaYMC1buhLkQ7UCR9a/7CMyfqBaOQQX0eIFnjKbo+RSHh3gHrIn6hvHvr/55GfsjCr0rXf8n279QxLSRPWduAaJjTotl9TNYLWb+Xn2e96boHxYhtuSxxH1/6epRwwtq2UNVJPhV3WuvOSZ0imnaG5z9bmYyozHSh92clJtN45tyD0jZYy0ccGdpZRi5A85iaQPqaFO8rHwn2HQ1ggwVXBWfup/1uf/vKwyHKFXMwa9kQ4crS8InOQk7U7XHoEK4H4Mlpt/wc1lES3gO1D3r6NurZ82+L4oJIcdUftThwpPaf8jA+1hehICJmZSRg5DT3/NQQ9mwP8bkt+jxMAwACiZUI=
   - secure: fi5PA+nSd8gPduM1r0bs/tsHANikcNLj05rcROfgXqhA916OJMIvQBgM86uq0adml89BLlsvnMqM81LWelXhdV7BtEmdGV7hfBFwnsFCPzqx3VhaYgMAsMfpSmnaoVqZ4ivTCbLToWjMZoViKZt7AZLMxR58UGFqR5s4v+iH/X1rIjTos42ZEWERT+yLd/KgxWyNO9ys3OzD8NlqQoEugWEXC0B5ihDnocaPc7m4g8ftHIfXTfs+QZptHjCtf63B4apDueo8GLUYWKl9El0LcbUuh7IZnnKLdHKKPESezBNUaswefRQgt1gNCmUZmULS5nMAaU2fzhRjE8SIZSuvVqxRJByz2hR8igDdd0FYeD9W0akVKPCQXJPG1HXutC6QKkCu6GGXhTt7cOnobQCQFl7ekdexBPFeZSUk6K1KLWYDstJtwW/0qAPhraRCzgvQ0bRK79qgH1TFA25jvGVY+QP7+xq2FopIwTXP3/2wXGEvUkGLmrL+KKtodOJN+9C332LIkXL9v0+TbE6wpByQb/8vBlnQChetVhBzGWz+8OCb/v20ymIzSseJfxUKqlNeD+7yhxf/1sAiurMuJ3P3cZQbLjD4D2giD1/ExuCmnqPFCozeXrD/jwXwtzcN2UYSVhEaMzZgeC6DIXL6qs1hAOgvqxMZiAfSIeIQUhxcXec=
 script:
-- mkdir revision && mkdir revision/artifact
-- touch revision/artifact/test.txt
+- sbt ++$TRAVIS_SCALA_VERSION clean coverage test && sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
+- sbt "crawler/assembly" && sbt "portal/dist"
+- scripts/aws/bundle.sh
 after_success:
 - bash <(curl -s https://codecov.io/bash)
 deploy:
@@ -21,4 +22,4 @@ deploy:
   region: eu-west-1
   bucket: fotm-info-staging-bucket/latest
   skip_cleanup: true
-  local_dir: revision
+  local_dir: revision/artifact
