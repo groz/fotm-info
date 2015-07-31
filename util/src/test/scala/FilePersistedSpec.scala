@@ -9,7 +9,7 @@ class FilePersistedSpec extends FlatSpec with Matchers {
     val text = "hello, here's a string"
     val f = new FilePersisted("tmp.txt", str2bytes)
     f.save(text)
-    f.fetch() should be(Some(text))
+    f.fetch().contains(text) should be(true)
   }
 
   "fetch" should "get None if there's no such file" in {
