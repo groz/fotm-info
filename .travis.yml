@@ -14,8 +14,9 @@ after_success:
 - bash <(curl -s https://codecov.io/bash)
 deploy:
   provider: s3
-  access_key_id: AKIAJJDOJH2BLXP52OUA
-  secret_access_key: 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
+  access_key_id: AKIAIRLZWB7XPRQJLISA
+  secret_access_key:
+    secure: Jkt3vws3eOnMY0QOiUnrw6SiRYIK4fFqijeKw0wIou04KaaVzYRx+ISwXp73jOF1HpU0BZTMP2ZoXFPbp1CyBcjW4nvLpj99CB/IKMMTAUwZDSt0pheMS019zHli40GqXjRdECskL2K60LvNsip+vxObWcxP9xksIG6Mg5ezJXeMFYgkoxJLFKEWNk+KOFoABPr6oPn/cF56gRUQWGZXE88ABZ8rL5Cpd5f+FyTOZUr3AqR7g3va+oy9wPTOGfbCVApweHsa0FmG7JReMxscC4VuQU++H+DJmnSY9YIb4Jt2cWcOv5Xp3VucaWg3xgMV4Lzpq1wRWQvg2I5QnfTSjC1H197hQwkrD/D9V/C/PKbFBqmUq4vaUGEdxAFtzksrdM04gOIv80E7RCXqRqU82a0rWx3PN9pluqBud18FpTjCCu5s+1ui8rVGUkmlfKeyaTpgb5CUbPUzySRuY/g6yUmDrZBT2ZPKaHohoxUpzgxVCrLuojP2e3tbdKaf28qtCgjOVzsnEgb2AKoQ5KaFQeGTLWEr2G6NBJjm0vaocNY9Oyp9fxY1CfE3Xgm5We9e7mPeRD8Uhvb3PhRmkR5So4vOknQUwzD9aztmcu8bwC3g843Ya4cWr6GSKThnUJaaiq+JohpKpfyreOofkGEYFQZVRRVPpRev840IzFBvyfc=
   region: eu-west-1
   bucket: fotm-info-staging-bucket
   skip_cleanup: true
