@@ -1,5 +1,8 @@
 version: 0.0
 os: linux
+files:
+  - source: /
+    destination: /fotm-app
 hooks:
   BeforeInstall:
     - location: scripts/setup_instance.sh
