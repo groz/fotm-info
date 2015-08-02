@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# http://docs.aws.amazon.com/codedeploy/latest/userguide/app-spec-ref.html
+
 # this file is to be executed from CI environment
 # it prepares revision/artifact/revision.zip file to be deployed to S3
 # and used by AWS CloudDeploy
