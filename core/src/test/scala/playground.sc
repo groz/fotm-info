@@ -1,3 +1,6 @@
+import info.fotm.clustering.Clusterer._
+import info.fotm.util.MathVector
+
 import scala.collection.immutable.Queue
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -27,14 +30,10 @@ val c = Future { 3 }
 
 a.onComplete((x: Try[Int]) => x)
 Await.result(a, Duration.Zero)
-
 scala.io.Source.fromURL("http://www.google.com").mkString
-
 def countWords(text: String): Map[String, Int] =
   text.split("\\W+").groupBy(identity).map(kv => (kv._1, kv._2.size))
-
 countWords("privet, menya privet zovut")
-
 def loadFileAsync(name: String): Future[String] = Future {
   scala.io.Source.fromFile(name).mkString
 }
@@ -49,7 +48,6 @@ def loadFromDb(id: Int): Future[String] = Future {
 
 
 val filesToParse = Seq("first.txt", "second.txt", "third.txt")
-
 val futures: Seq[Future[String]] = filesToParse.map(path => loadFileAsync(path))
 
 val seed = Map.empty[String, Int].withDefaultValue(0)
@@ -59,3 +57,11 @@ val result = Future.fold(futures)(seed) { (dict, text) =>
     d.updated(w, d(w) + 1)
   }
 }
+
+val clusters: List[Cluster] = List(
+  Seq(MathVector(0, 0), MathVector(1, 1)),
+  Seq(MathVector(5, 6), MathVector(6, 7), MathVector(8, 8)),
+  Seq(MathVector(10, 2), MathVector(11, 3)),
+  Seq(MathVector(1, 11))
+)
+clusters ++ Seq(Seq())

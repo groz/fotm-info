@@ -77,6 +77,9 @@ object ClusterRoutines
 
   def makeGraphFromClusters(clusters: List[Cluster], groupSize: Int): Graph[Int] =
   {
+    if (clusters.exists(c => c.isEmpty))
+      throw new IllegalArgumentException("Clusters can't contain empty one")
+
     val distances = clusters.map(x => clusters.map(y => distance(x, y)).toVector).toVector
     val labels = clusters.indices.map(i => (i, clusters(i).length - groupSize)).toMap
     new Graph[Int](distances, labels)

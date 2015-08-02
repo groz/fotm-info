@@ -56,7 +56,7 @@ class EqClusterer2 extends Clusterer
     val kDiv2 = new KMeansDiv2Clusterer(cs => cs.maxBy(_.length))
     val divClusters = kDiv2.clusterize(merged, initClusterization.size)
 
-    val eqClusters = movePoint(divClusters.toList).toSet
+    val eqClusters = movePoint(divClusters.filter(c => !c.isEmpty).toList).toSet
 
     val tuned = new FineTuner(groupSize).fineTuning(eqClusters)
 
