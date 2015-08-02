@@ -16,3 +16,8 @@ hooks:
     - location: scripts/stop.sh
       timeout: 300
       runas: root
+  ValidateService:
+    - location: scripts/validate_portal.sh
+      timeout: 300
+
+curl 127.0.0.1
