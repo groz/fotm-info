@@ -19,3 +19,4 @@ hooks:
   ValidateService:
     - location: scripts/validate_portal.sh
       timeout: 300
+      runas: root
