@@ -4,7 +4,7 @@ import akka.actor._
 import com.twitter.bijection.Bijection
 import dispatch.Http
 import info.fotm.aether.Storage.PersistedStorageState
-import info.fotm.aether.{PersistedAxisState, Storage}
+import info.fotm.aether.{AetherRoutes, PersistedAxisState, Storage}
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
 import info.fotm.domain._
@@ -31,7 +31,7 @@ object CrawlerApp extends App {
         Json.parse(str).as[PersistedStorageState]
       }
 
-    def compressSerializer[A](ser: Bijection[A, String]) = {
+    def compressSerializer[A](ser: Bijection[A, String]): Bijection[A, Array[Byte]] = {
         ser andThen
           Compression.str2GZippedBase64 andThen
           Compression.str2rawGZipBase64.inverse andThen
@@ -41,12 +41,10 @@ object CrawlerApp extends App {
     new FilePersisted[PersistedStorageState]("storage.txt", compressSerializer(obj2json))
   }
 
-  val storage = system.actorOf(Props(classOf[Storage], Some(filePersisted)), "storage")
+  val storage = system.actorOf(Props(classOf[Storage], Some(filePersisted)), AetherRoutes.storageActorName)
 
   // proxy to announce to
-  val storageProxy: ActorSelection =
-    system.actorSelection("akka.tcp://application@127.0.0.1:33200/user/storage-proxy")
-
+  val storageProxy: ActorSelection = system.actorSelection(AetherRoutes.storageProxyPath)
   storageProxy.tell(Storage.Announce, storage)
 
   val actorSetups = for {

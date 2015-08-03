@@ -1,6 +1,6 @@
 package info.fotm.aether
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{Actor, ActorIdentity, ActorRef}
 import akka.event.{Logging, LoggingReceive}
 import com.github.nscala_time.time.Imports._
 import info.fotm.aether.Storage.PersistedStorageState
@@ -11,12 +11,13 @@ import scala.collection.breakOut
 import scala.collection.immutable.TreeMap
 
 object Storage {
+  val identifyMsgId = "storage"
+  val Identify = akka.actor.Identify(identifyMsgId)
+
   type PersistedStorageState = Seq[(Axis, PersistedAxisState)]
 
   // init flows
   final case class Init(state: Map[Axis, StorageAxisState])
-
-  case object InitFrom
 
   // input
   final case class Updates(axis: Axis, teamUpdates: Seq[TeamUpdate], charUpdates: Set[CharacterDiff])
@@ -142,18 +143,17 @@ class Storage(persistanceOpt: Option[Persisted[PersistedStorageState]] = None) e
     case Init(initState) =>
       context.become(process(initState, subs))
 
-    case InitFrom =>
-      sender ! Init(state)
-
     case Subscribe =>
+      sender ! Init(state)
       context.become(process(state, subs + sender))
 
     case Unsubscribe =>
       context.become(process(state, subs - sender))
 
     case Announce =>
-      sender ! InitFrom
       sender ! Subscribe
-  }
 
+    case ActorIdentity(correlationId, refOpt) if correlationId == identifyMsgId =>
+      refOpt.foreach { _ ! Subscribe }
+  }
 }
