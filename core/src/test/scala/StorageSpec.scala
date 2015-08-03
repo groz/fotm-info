@@ -31,11 +31,11 @@ Testing workflows:
 √ 1c) Should respond with empty if the axis was not found
 
 √ 2) Init workflow:
-    When sent InitFrom, it should reply with Init(state)
+    When sent Identify, it should reply with Init(state) and Subscribe to udpates
 
     Messages:
     final case class Init(ladders: Map[Axis, TeamLadderAxis], chars: Map[Axis, CharSnapshotsAxis])
-    case object InitFrom
+    val Identify
 
 √ 3) Subscribe workflow
     Subscriber should receive Updates when the original gets them
@@ -132,17 +132,25 @@ class StorageSpec extends FlatSpec with Matchers {
     response.teams.size should be(0)
   }
 
-  "InitFrom" should "respond with Init(state)" in {
+  "Identify" should "send all data back to the proxy" in {
     // 2
     val storageActorRef = createStorageActor
+    val storageProxyActorRef = createStorageActor
 
+    // populate storage
     storageActorRef ! Storage.Updates(axis, teamUpdates, charUpdates)
 
-    val queryFuture = storageActorRef ? Storage.InitFrom
-    val Success(response: Storage.Init) = queryFuture.value.get
+    // lookup storage from proxy
+    storageActorRef.tell(Storage.Identify, storageProxyActorRef)
 
-    response.state(axis).teams should be(Map(currentTeam.team -> currentTeam))
-    response.state(axis).chars should be(Map(currentSnapshot.id -> currentSnapshot))
+    // check that proxy received all the data that is in storage
+    val now = DateTime.now
+    val queryFuture = storageProxyActorRef ? Storage.QueryState(axis, new Interval(now - 1.month, now))
+    val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
+
+    response.axis should be(axis)
+    response.chars should contain theSameElementsAs Seq(currentSnapshot)
+    response.teams should contain theSameElementsAs Seq(currentTeam)
   }
 
   "Subscribe" should "subscribe sender to updates" in {

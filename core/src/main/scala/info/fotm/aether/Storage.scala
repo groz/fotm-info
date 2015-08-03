@@ -153,7 +153,7 @@ class Storage(persistanceOpt: Option[Persisted[PersistedStorageState]] = None) e
     case Announce =>
       sender ! Subscribe
 
-    case ActorIdentity(correlationId, refOpt) if correlationId == identifyMsgId =>
-      refOpt.foreach { _ ! Subscribe }
+    case ActorIdentity(correlationId, storageRefOpt) if correlationId == identifyMsgId =>
+      storageRefOpt.foreach { storageRef => storageRef ! Subscribe }
   }
 }
