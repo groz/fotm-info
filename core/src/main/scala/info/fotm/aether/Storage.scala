@@ -23,7 +23,9 @@ object Storage {
   final case class Init(state: Map[Axis, StorageAxisState])
 
   // input
-  final case class Updates(axis: Axis, teamUpdates: Seq[TeamUpdate], charUpdates: Set[CharacterDiff])
+  final case class Updates(axis: Axis, teamUpdates: Seq[TeamUpdate], charUpdates: Set[CharacterDiff]) {
+    override val toString = s"Updates($axis, teams: ${teamUpdates.size}, chars: ${charUpdates.size})"
+  }
 
   // output
   final case class QueryState(axis: Axis, interval: Interval)
@@ -76,12 +78,12 @@ object PersistedAxisState {
 class Storage(persistenceOpt: Option[Persisted[PersistedStorageState]] = None) extends Actor {
   import Storage._
 
-  val persistance = persistenceOpt.getOrElse(new NullPersisted[PersistedStorageState])
+  val persistence = persistenceOpt.getOrElse(new NullPersisted[PersistedStorageState])
 
   val log = Logging(context.system, this.getClass)
 
   override def receive: Receive = {
-    val initState: Map[Axis, StorageAxisState] = persistance.fetch().fold {
+    val initState: Map[Axis, StorageAxisState] = persistence.fetch().fold {
       Axis.all.map(a => (a, StorageAxisState())).toMap
     } { state => (
         for ((axis, persistedState) <- state)
@@ -123,7 +125,7 @@ class Storage(persistenceOpt: Option[Persisted[PersistedStorageState]] = None) e
 
       val updatedState = StorageAxisState(updatedTeamsState, updatedCharsState, updatedTeamsSeenState, updatedCharsSeenState)
 
-      persistance.save { (
+      persistence.save { (
           for ((axis, activeState) <- state)
           yield (axis, PersistedAxisState.fromActiveState(activeState))
         )(breakOut)
@@ -157,6 +159,7 @@ class Storage(persistenceOpt: Option[Persisted[PersistedStorageState]] = None) e
       sender ! Subscribe
 
     case ActorIdentity(correlationId, storageRefOpt) if correlationId == identifyMsgId =>
+      log.debug(s"Storage actor identity: $storageRefOpt")
       storageRefOpt.foreach { storageRef => storageRef ! Subscribe }
   }
 }

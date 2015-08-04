@@ -17,10 +17,7 @@ import scala.concurrent.duration._
 
 object CrawlerApp extends App {
   val apiKey = "vntnwpsguf4pqak7e8y7tgn35795fqfj"
-
-  val crawlerSystemName = AetherRoutes.crawlerSystemPath.name
-  val config = AetherRoutes.config
-  val system = ActorSystem(crawlerSystemName, config.getConfig(crawlerSystemName).withFallback(config))
+  val system = ActorSystem(AetherRoutes.crawlerSystemPath.name, AetherRoutes.crawlerConfig)
 
   val filePersisted = {
     import JsonFormatters._
@@ -43,7 +40,7 @@ object CrawlerApp extends App {
     new FilePersisted[PersistedStorageState]("storage.txt", compressSerializer(obj2json))
   }
 
-  val storage = system.actorOf(Props(classOf[Storage], Some(filePersisted)), AetherRoutes.storageActorName)
+  val storage = system.actorOf(Storage.props(Some(filePersisted)), AetherRoutes.storageActorName)
 
   // proxy to announce to
   val storageProxy: ActorSelection = system.actorSelection(AetherRoutes.storageProxyPath)
