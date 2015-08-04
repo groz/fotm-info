@@ -9,7 +9,7 @@ env:
   - secure: fi5PA+nSd8gPduM1r0bs/tsHANikcNLj05rcROfgXqhA916OJMIvQBgM86uq0adml89BLlsvnMqM81LWelXhdV7BtEmdGV7hfBFwnsFCPzqx3VhaYgMAsMfpSmnaoVqZ4ivTCbLToWjMZoViKZt7AZLMxR58UGFqR5s4v+iH/X1rIjTos42ZEWERT+yLd/KgxWyNO9ys3OzD8NlqQoEugWEXC0B5ihDnocaPc7m4g8ftHIfXTfs+QZptHjCtf63B4apDueo8GLUYWKl9El0LcbUuh7IZnnKLdHKKPESezBNUaswefRQgt1gNCmUZmULS5nMAaU2fzhRjE8SIZSuvVqxRJByz2hR8igDdd0FYeD9W0akVKPCQXJPG1HXutC6QKkCu6GGXhTt7cOnobQCQFl7ekdexBPFeZSUk6K1KLWYDstJtwW/0qAPhraRCzgvQ0bRK79qgH1TFA25jvGVY+QP7+xq2FopIwTXP3/2wXGEvUkGLmrL+KKtodOJN+9C332LIkXL9v0+TbE6wpByQb/8vBlnQChetVhBzGWz+8OCb/v20ymIzSseJfxUKqlNeD+7yhxf/1sAiurMuJ3P3cZQbLjD4D2giD1/ExuCmnqPFCozeXrD/jwXwtzcN2UYSVhEaMzZgeC6DIXL6qs1hAOgvqxMZiAfSIeIQUhxcXec=
 script:
 - sbt ++$TRAVIS_SCALA_VERSION clean coverage test && sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
-- sbt "crawler/assembly" && sbt "portal/dist"
+- sbt ++$TRAVIS_SCALA_VERSION "crawler/assembly" && sbt ++$TRAVIS_SCALA_VERSION "portal/dist"
 - scripts/aws/bundle.sh
 after_success:
 - bash <(curl -s https://codecov.io/bash)
