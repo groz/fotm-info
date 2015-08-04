@@ -15,6 +15,9 @@
   <logger name="play" level="INFO" />
   <logger name="application" level="DEBUG" />
 
+  <!-- Set logging for all Akka library classes-->
+  <logger name="akka" level="DEBUG" />
+
   <root level="ERROR">
     <appender-ref ref="STDOUT" />
   </root>

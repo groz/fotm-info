@@ -18,7 +18,9 @@ import scala.concurrent.duration._
 object CrawlerApp extends App {
   val apiKey = "vntnwpsguf4pqak7e8y7tgn35795fqfj"
 
-  val system = ActorSystem("crawlerSystem")
+  val crawlerSystemName = AetherRoutes.crawlerSystemPath.name
+  val config = AetherRoutes.config
+  val system = ActorSystem(crawlerSystemName, config.getConfig(crawlerSystemName).withFallback(config))
 
   val filePersisted = {
     import JsonFormatters._

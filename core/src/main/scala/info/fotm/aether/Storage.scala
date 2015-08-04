@@ -1,6 +1,6 @@
 package info.fotm.aether
 
-import akka.actor.{Actor, ActorIdentity, ActorRef}
+import akka.actor.{Props, Actor, ActorIdentity, ActorRef}
 import akka.event.{Logging, LoggingReceive}
 import com.github.nscala_time.time.Imports._
 import info.fotm.aether.Storage.PersistedStorageState
@@ -11,6 +11,9 @@ import scala.collection.breakOut
 import scala.collection.immutable.TreeMap
 
 object Storage {
+  def props(persistanceOpt: Option[Persisted[PersistedStorageState]] = None): Props =
+    Props(classOf[Storage], persistanceOpt)
+
   val identifyMsgId = "storage"
   val Identify = akka.actor.Identify(identifyMsgId)
 
@@ -70,10 +73,10 @@ object PersistedAxisState {
   }
 }
 
-class Storage(persistanceOpt: Option[Persisted[PersistedStorageState]] = None) extends Actor {
+class Storage(persistenceOpt: Option[Persisted[PersistedStorageState]] = None) extends Actor {
   import Storage._
 
-  val persistance = persistanceOpt.getOrElse(new NullPersisted[PersistedStorageState])
+  val persistance = persistenceOpt.getOrElse(new NullPersisted[PersistedStorageState])
 
   val log = Logging(context.system, this.getClass)
 
