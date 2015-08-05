@@ -1,9 +1,12 @@
 #!/bin/bash
 
-# stop running portal app
-cat /fotm-app/portal-1.0-SNAPSHOT/RUNNING_PID | xargs kill
+if [ "$DEPLOYMENT_GROUP_NAME" == "fotm-portal" ]
+then
+  kill $(cat /fotm-app/portal-1.0-SNAPSHOT/RUNNING_PID)
+  rm -f /fotm-app/portal-1.0-SNAPSHOT/RUNNING_PID
+fi
 
-# delete RUNNING_PID file if it exists
-rm -f /fotm-app/portal-1.0-SNAPSHOT/RUNNING_PID
-
-# should we do 'rm -rf /fotm-app'?
+if [ "$DEPLOYMENT_GROUP_NAME" == "fotm-crawler" ]
+then
+  ps aux | grep "[c]rawler" | awk '{print $2}' | xargs kill
+fi

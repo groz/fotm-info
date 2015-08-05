@@ -5,7 +5,7 @@ files:
     destination: /fotm-app
 hooks:
   BeforeInstall:
-    - location: scripts/setup_instance.sh
+    - location: scripts/before_install.sh
       timeout: 300
       runas: root
   ApplicationStart:
@@ -17,6 +17,6 @@ hooks:
       timeout: 300
       runas: root
   ValidateService:
-    - location: scripts/validate_portal.sh
+    - location: scripts/validate.sh
       timeout: 300
       runas: root
