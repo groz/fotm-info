@@ -5,7 +5,7 @@ then
   echo "Provide at least one argument: app name [fotm-crawler|fotm-portal]"
   exit 1
 else
-  TAG_KEY="fotm-crawler"
+  TAG_KEY=$1
 fi
 
 if [ -z "$2" ]

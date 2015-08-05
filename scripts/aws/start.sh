@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # http://docs.aws.amazon.com/codedeploy/latest/userguide/app-spec-ref.html#app-spec-ref-hooks
+export FOTM_ENV=prod-env
 
 if [ "$DEPLOYMENT_GROUP_NAME" == "fotm-portal" ]
 then
