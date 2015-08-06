@@ -32,12 +32,3 @@ object AetherRoutes {
   val storagePath = crawlerSystemPath.locate(storageActorName)
   val storageProxyPath = portalSystemPath.locate(storageProxyActorName)
 }
-
-/*
-TODO:
-  StorageActor running in Crawler.
-  StorageProxyActor running in Portal.
-
-  They should be deployed according to config (overriden for env).
-  They should know the paths of each other.
- */

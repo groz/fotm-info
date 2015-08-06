@@ -5,7 +5,7 @@
 # add --ignore-application-stop-failures to `aws deploy` lines if stop script is broken
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-sbt "crawler/assembly" && sbt "portal/dist" &&
+sbt crawler/dist portal/dist &&
 $DIR/bundle.sh &&
 aws s3 cp revision/artifact/revision.zip s3://fotm-info-staging-bucket/latest/revision.zip &&
 aws deploy create-deployment --application-name fotm-info --deployment-group-name fotm-portal  --s3-location bucket=fotm-info-staging-bucket,bundleType=zip,key=latest/revision.zip --ignore-application-stop-failures &&

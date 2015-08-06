@@ -1,14 +1,7 @@
 lazy val commonSettings = Seq(
   organization := "info.fotm",
   version := "1.0-SNAPSHOT",
-  scalaVersion := "2.11.7",
-  assemblyMergeStrategy in assembly := {
-    case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
-    case x =>
-      val oldStrategy = (assemblyMergeStrategy in assembly).value
-      oldStrategy(x)
-  },
-  test in assembly := {}
+  scalaVersion := "2.11.7"
 )
 
 name := "fotm"

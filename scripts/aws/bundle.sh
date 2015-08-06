@@ -11,7 +11,7 @@ rm -rf revision
 mkdir -p revision/artifact
 
 # copy portal & crawler binaries into revision dir
-cp crawler/target/scala-2.11/crawler-assembly-1.0-SNAPSHOT.jar revision/
+unzip crawler/target/universal/crawler-1.0-SNAPSHOT.zip -d revision
 unzip portal/target/universal/portal-1.0-SNAPSHOT.zip -d revision
 
 # copy scripts

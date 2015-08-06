@@ -1,3 +1,5 @@
+import NativePackagerHelper._
+
 libraryDependencies ++= Seq(
   "net.databinder.dispatch" %% "dispatch-core" % "0.11.2",
   "ch.qos.logback" % "logback-classic" % "1.1.3",
@@ -18,4 +20,18 @@ javaOptions ++= Seq(
   "-XX:+CMSClassUnloadingEnabled"
 )
 
+enablePlugins(JavaServerAppPackaging)
+
 mainClass in Compile := Some("info.fotm.crawler.CrawlerApp")
+
+mappings in Universal ++= {
+  // optional example illustrating how to copy additional directory
+  directory("scripts") ++
+  // copy configuration files to config directory
+  contentOf("src/main/resources").toMap.mapValues("config/" + _)
+}
+
+// add 'config' directory first in the classpath of the start script,
+// an alternative is to set the config file locations via CLI parameters
+// when starting the application
+scriptClasspath := Seq("../config/") ++ scriptClasspath.value
