@@ -7,8 +7,8 @@ import info.fotm.aether.Storage
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
 import info.fotm.clustering._
-import info.fotm.clustering.implementations.HTClusterer3
-import info.fotm.clustering.implementations.RMClustering.EqClusterer2
+import info.fotm.clustering.implementations.HTClusterer
+import info.fotm.clustering.implementations.RMClustering.RMClusterer
 import info.fotm.domain._
 import info.fotm.util.ObservableReadStream
 
@@ -54,7 +54,7 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
   }
 
   val evaluator = new ClusteringEvaluator(FeatureSettings.features)
-  val clusterer = RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2)))
+  val clusterer = RealClusterer.wrap(new HTClusterer(Some(new RMClusterer)))
 
   val updatesObserver = new UpdatesQueue[CharacterLadder](historySize)
 

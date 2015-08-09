@@ -1,114 +1,55 @@
 package info.fotm.clustering.implementations.RMClustering
 
 import info.fotm.clustering.Clusterer
-import info.fotm.clustering.Clusterer.{V, Cluster}
+import info.fotm.clustering.Clusterer.Cluster
+import info.fotm.util.{Rng, RandomNumberGenerator, Statistics, MathVector}
 
-//import scala.util.Random
 // https://en.wikipedia.org/wiki/K-means_clustering
-class KMeansClusterer extends Clusterer {
+class KMeansClusterer(rng: RandomNumberGenerator) extends Clusterer {
+  def this() = this(new Rng())
 
-  val rng = new scala.util.Random(100)
+  def clusterize(input: Seq[MathVector], nClusters: Int): Set[Cluster] = {
+    require(nClusters >= 1)
 
-  def clusterize(input: Cluster, clustersCount: Int): Set[Cluster] =
-  {
-    val means = initialize_plusplus(input, clustersCount)
-    process(Set(input),means)
+    if (input.isEmpty)
+      Set.empty
+    else if (nClusters == 1)
+      Set(input)
+    else {
+      val means = initialize_plusplus(input, nClusters)
+      process(Set(input), means)
+    }
   }
 
-  def clusterize(input: Cluster, clustersCount: Int, initCenters: Seq[V]): Set[Cluster] =
-  {
-    require(clustersCount == initCenters.length)
-    process(Set(input), initCenters)
-  }
+  def process(clusters: Set[Cluster], centroids: Seq[MathVector]): Set[Cluster] = {
+    val newClusters: Set[Cluster] = assign(clusters.flatten.toSeq, centroids)
 
-  def process(clusters: Set[Cluster], means: Seq[V]): Set[Cluster] =
-  {
-    val newClusters = assignment(clusters,means)
-
-    if (newClusters!=clusters)
-    {
-      val newMeans = update(newClusters)
-      process(newClusters,newMeans)
+    if (newClusters != clusters) {
+      val newCentroids = calcCentroids(newClusters)
+      process(newClusters, newCentroids)
     }
     else
       newClusters
   }
 
-  /** *
-    * Produces initial means
-    * @param input
-    * @param clustersCount
-    * @return
-    */
-  def initialize(input: Cluster, clustersCount: Int): Seq[V] =
-  {
-    rng.shuffle(input).take(clustersCount)
-  }
-
-  //=====================Plus Plus section=======================
-  def initialize_plusplus(input: Cluster, clustersCount: Int): Seq[V] =
-  {
+  def initialize_plusplus(input: Cluster, nClusters: Int): Seq[MathVector] = {
     val firstCenterIndex = rng.nextInt(input.length)
     val centers = input(firstCenterIndex) :: Nil
-    findCenters(input.filterNot(x => x == centers(0)), centers, clustersCount)
+    findCenters(input diff centers, centers, nClusters)
   }
 
-  /**
-   * Adds one center to centers from input using a weighted probability distribution
-   * @param input
-   * @param centers
-   * @param centersCount
-   * @return
-   */
-  def findCenters(input: Cluster, centers: List[V], centersCount: Int): Seq[V] =
-  {
-    if (centers.length < centersCount && input.length > 0)
-    {
-      //? Странно, что fold тут требует, чтобы startValue был supertype коллекции input
-      //? https://coderwall.com/p/4l73-a/scala-fold-foldleft-and-foldright
-      // inputDistancesToCenters(i) is a probability of i-th point from input to be a center
-      val inputDistancesToCenters = input.map(x => centers.foldLeft(Double.MaxValue){
-                                      (acc,c) => acc.min(distance(c,x))
-                                    })
-      val newCenter = getRandomValue(input, inputDistancesToCenters)
-      findCenters(input.filterNot(x => x == newCenter), newCenter :: centers, centersCount)
+  def findCenters(input: Cluster, centers: List[MathVector], nCenters: Int): Seq[MathVector] = {
+    if (centers.length < nCenters && input.nonEmpty) {
+      val inputDistancesToCenters = input.map(_ distTo centers)
+      val newCenter = Statistics.randomWeightedValue(input, inputDistancesToCenters, rng.nextDouble())
+      findCenters(input diff Seq(newCenter), newCenter :: centers, nCenters)
     }
     else
       centers
   }
 
-  def getRandomValue(input: Cluster, probabilities: Seq[Double]): V =
-  {
-    // overflow protection coefficient
-    val max = probabilities.max
+  def assign(input: Seq[MathVector], centroids: Seq[MathVector]): Set[Cluster] =
+    input.groupBy(v => centroids.minBy(_ distTo v)).values.toSet
 
-    // make distribution function from probabilities: (5,2,4,5) -> (5,7,11,16)/max = (5,7,11,16)/5
-    val distribution = probabilities.foldLeft(List[Double](0)){
-      (list,x) => list.head + x / max :: list
-    }.init.reverse
-
-    val randomInterval = distribution.last
-    val rand = rng.nextDouble() * randomInterval
-
-    // getting index corresponding to rand and return element from input with this index
-    input(distribution.span(x => x < rand)._1.length)
-  }
-  //=====================/Plus Plus section=======================
-
-
-  def assignment(input: Set[Cluster], means: Seq[V]): Set[Cluster] =
-  {
-    input.toSeq.flatten.groupBy(v=>means.minBy(distance(_,v))).mapValues(s=>s.toVector).values.toSet
-  }
-
-  def update(clusters: Set[Cluster]): Seq[V] =
-  {
-    clusters.map(c=> div(c.reduce(sumOf),c.length)).toSeq
-  }
-
-  def distance(v1: V, v2: V): Double = v1.distTo1(v2) //v1.zip(v2).map(x=>Math.pow(x._1-x._2,2)).sum
-
-  def sumOf(v1: V, v2: V): V = v1 + v2 //v1.zip(v2).map({case(x1,x2)=>x1+x2})
-
-  def div(v: V, byValue: Double): V = v/ byValue // v.map(x=>x/byValue)
+  def calcCentroids(clusters: Set[Cluster]): Seq[MathVector] = clusters.map(MathVector.avg).toSeq
 }

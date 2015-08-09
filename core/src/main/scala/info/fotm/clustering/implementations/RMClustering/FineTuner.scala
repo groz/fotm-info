@@ -6,22 +6,18 @@ import info.fotm.clustering.Clusterer._
 /**
  * Created by Admin on 05.07.2015.
  */
-class FineTuner(groupSize: Int)
-{
+class FineTuner(groupSize: Int) {
 
-  case class LabeledCluster(cluster: Cluster, triedWith: Set[Cluster] = Set())
-  {
+  case class LabeledCluster(cluster: Cluster, triedWith: Set[Cluster] = Set()) {
     val excludeClusters = triedWith + cluster
   }
 
-  def fineTuning2(clusters: Set[Cluster]): Set[Cluster] =
-  {
+  def fineTuning2(clusters: Set[Cluster]): Set[Cluster] = {
     fineTuningStep2(clusters.map(LabeledCluster(_))).map(_.cluster)
 
   }
 
-  def fineTuningStep2(labClusters: Set[LabeledCluster]): Set[LabeledCluster] =
-  {
+  def fineTuningStep2(labClusters: Set[LabeledCluster]): Set[LabeledCluster] = {
     val devPointsMap = labClusters.map(c => c -> maxDeviatePoint(c.cluster)).toMap
     val clusters = labClusters.map(_.cluster)
     val devClosestClusters = devPointsMap.map(x =>
@@ -30,8 +26,7 @@ class FineTuner(groupSize: Int)
 
     if (testedPoints.isEmpty)
       labClusters
-    else
-    {
+    else {
       val (devPoint, devCluster, distToClosestCluster) =
         testedPoints.map(x => (x._2, x._1,
           distance(x._2, (x._1.cluster.toSet - x._2).toSeq) -
@@ -39,13 +34,11 @@ class FineTuner(groupSize: Int)
           )
         ).maxBy(y => (y._2.cluster.length, y._3))
 
-      if (devCluster.cluster.length > groupSize && distToClosestCluster < 0)
-      {
+      if (devCluster.cluster.length > groupSize && distToClosestCluster < 0) {
         // drop this suspicious item from group
         fineTuningStep2(labClusters - devCluster + (LabeledCluster(devCluster.cluster.filter(_ != devPoint))))
       }
-      else if (distToClosestCluster >= 0)
-      {
+      else if (distToClosestCluster >= 0) {
         val (x, y) = (devCluster.cluster, devClosestClusters(devPoint))
         val (u, v) = movePoint(devPoint, x, y)
         // if nothing changed, we mark cluster x to exclude it from consideration
@@ -63,8 +56,7 @@ class FineTuner(groupSize: Int)
     }
   }
 
-  def movePoint(p: V, from: Cluster, to: Cluster): (Cluster, Cluster) =
-  {
+  def movePoint(p: V, from: Cluster, to: Cluster): (Cluster, Cluster) = {
     val newCluster1 = from.filter(_ != p)
     val newCluster2 = to :+ p
     if (from.length > groupSize ||
@@ -75,16 +67,13 @@ class FineTuner(groupSize: Int)
       (from, to)
   }
 
-
   //================================
 
-  def fineTuning(clusters: Set[Cluster]): Set[Cluster] =
-  {
+  def fineTuning(clusters: Set[Cluster]): Set[Cluster] = {
     fineTuningStep(clusters.map(LabeledCluster(_))).map(_.cluster)
   }
 
-  def fineTuningStep(labClusters: Set[LabeledCluster]): Set[LabeledCluster] =
-  {
+  def fineTuningStep(labClusters: Set[LabeledCluster]): Set[LabeledCluster] = {
     val devPointsMap = labClusters.map(c => c -> maxDeviatePoint(c.cluster)).toMap
     val clusters = labClusters.map(_.cluster)
     val devClosestClusters = devPointsMap.map(x =>
@@ -94,8 +83,7 @@ class FineTuner(groupSize: Int)
 
     if (testedPoints.isEmpty)
       labClusters
-    else
-    {
+    else {
 
 
       val (devPoint, devCluster, distToClosestCluster) =
@@ -104,8 +92,7 @@ class FineTuner(groupSize: Int)
           )
         ).maxBy(y => y._3)
 
-      if (distToClosestCluster >= 0)
-      {
+      if (distToClosestCluster >= 0) {
         val (x, y) = (devCluster.cluster, devClosestClusters(devPoint))
         val (u, v) = exchangePoint(x, y)
         // if nothing changed, we mark cluster x to exclude it from consideration
@@ -123,21 +110,18 @@ class FineTuner(groupSize: Int)
     }
   }
 
-  def maxDeviatePoint(cluster: Cluster): V =
-  {
+  def maxDeviatePoint(cluster: Cluster): V = {
     cluster.maxBy(x => distance(x, (cluster.toSet - x).toSeq))
   }
 
-  def closestClusterAmong(clusters: Set[Cluster], to: V): Cluster =
-  {
+  def closestClusterAmong(clusters: Set[Cluster], to: V): Cluster = {
     if (clusters.isEmpty)
       Seq()
     else
       clusters.minBy(distance(to, _))
   }
 
-  def exchangePoint(withDevPoint: Cluster, other: Cluster): (Cluster, Cluster) =
-  {
+  def exchangePoint(withDevPoint: Cluster, other: Cluster): (Cluster, Cluster) = {
     val devPoint = maxDeviatePoint(withDevPoint)
     val withoutDevPoint = withDevPoint.filter(p => p != devPoint)
     val fromOther = closestVector(other, withoutDevPoint)
@@ -153,5 +137,4 @@ class FineTuner(groupSize: Int)
     else
       (withDevPoint, other)
   }
-
 }

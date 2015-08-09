@@ -3,7 +3,7 @@ package info.fotm.clustering
 import info.fotm.clustering.ClusteringEvaluatorData.DataPoint
 import info.fotm.clustering.FeatureSettings.features
 import info.fotm.clustering.enhancers._
-import info.fotm.clustering.implementations.RMClustering.EqClusterer2
+import info.fotm.clustering.implementations.RMClustering.RMClusterer
 import info.fotm.clustering.implementations._
 
 object ClusteringEvaluatorApp extends App {
@@ -14,36 +14,38 @@ object ClusteringEvaluatorApp extends App {
     val dataGen: ClusteringEvaluatorData = new ClusteringEvaluatorData(settings)
     val data: Stream[DataPoint] = dataGen.updatesStream().slice(settings.startTurn, settings.endTurn)
 
-    def createCMV(turns: Int, threshold: Int): (String, RealClusterer) = {
-      s"C * M($turns, $threshold) * V" ->
-        new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier {
-          override lazy val multiplexTurns = turns
-          override lazy val multiplexThreshold = threshold
-        }
+    def createCMV(turns: Int, threshold: Int) = {
+      new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier {
+        override lazy val multiplexTurns = turns
+        override lazy val multiplexThreshold = threshold
+      }
     }
 
-    val clusterers: Map[String, RealClusterer] = Map(
+    val clusterers: Map[String, () => RealClusterer] = Map(
       //"Random" -> RealClusterer.wrap(new RandomClusterer),
-      //"Closest" -> RealClusterer.wrap(new ClosestClusterer)
-      //"HT3" -> RealClusterer.wrap(new HTClusterer3)
-      "HT3[RM]" -> RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2)))
-      //"RM" -> RealClusterer.wrap(new EqClusterer2)
-//      "HT3 * V" -> new ClonedClusterer(RealClusterer.wrap(new HTClusterer3)) with Verifier,
-//      "HT3[RM] * V" -> new ClonedClusterer(RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2)))) with Verifier,
-//      "RM * V" -> new ClonedClusterer(RealClusterer.wrap(new EqClusterer2)) with Verifier,
-//      createCMV(20, 3),
-//      "(HT3 + CM) * V" -> new Summator(
-//        RealClusterer.wrap(new HTClusterer3),
-//        new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
-//      ) with Verifier,
-//      "(HT3[RM] + CM) * V" -> new Summator(
-//        RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2))),
-//        new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer
-//      ) with Verifier
+      //      "Closest" -> (() => RealClusterer.wrap(new ClosestClusterer)),
+      //"HT3[RM]" -> (() => RealClusterer.wrap(new HTClusterer(Some(new RMClusterer)))),
+      //      "Closest x Seen" -> (() => new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with SeenEnhancer),
+      //"HT3[RM] x Seen" -> (() => new ClonedClusterer(RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2)))) with SeenEnhancer),
+      "RM" -> (() => RealClusterer.wrap(new RMClusterer)),
+      "RM x Seen" -> (() => new ClonedClusterer(RealClusterer.wrap(new RMClusterer)) with SeenEnhancer)
+//      "CxV(20, 3)" -> (() => createCMV(20, 3)),
+//      "CxSeen(20, 3)" -> (() =>
+//        new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with SeenEnhancer {
+//          override lazy val multiplexTurns = 20
+//          override lazy val multiplexThreshold = 3
+//        }
+//        ),
+//      "C(20, 3)" -> (() =>
+//        new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer {
+//          override lazy val multiplexTurns = 20
+//          override lazy val multiplexThreshold = 3
+//        }
+//        )
     )
 
-    for ((name, clusterer) <- clusterers) {
-      val result = evaluator.evaluate(clusterer, data)
+    for ((name, clustererBuilder) <- clusterers) {
+      val result = evaluator.evaluate(clustererBuilder(), data)
       println(s"$name = $result")
     }
   }

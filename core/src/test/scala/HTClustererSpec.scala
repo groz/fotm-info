@@ -1,14 +1,14 @@
-import info.fotm.clustering.implementations.HTClusterer3
+import info.fotm.clustering.implementations.HTClusterer
 import info.fotm.util.MathVector
 import org.scalatest._
 
 /**
  * Created by Hasan on 29.07.2015.
  */
-class HTClusterer3Spec extends FlatSpec with Matchers with ClustererSpecBase {
-  var htc3 = new HTClusterer3()
+class HTClustererSpec extends FlatSpec with Matchers with ClustererSpecBase {
+  var htc3 = new HTClusterer()
 
-  "HTC3.distTo" should "equals to sqrt(2)" in {
+  "distTo" should "equal to sqrt(2)" in {
     val a = new MathVector(Seq(0, 0))
     val v1 = new MathVector(Seq(1, 1))
     val v2 = new MathVector(Seq(-1, 1))
@@ -26,8 +26,8 @@ class HTClusterer3Spec extends FlatSpec with Matchers with ClustererSpecBase {
     }
   }
 
-  "HTC3.clusterize" should "works correctly" in {
-    val x = new HTClusterer3()
+  "clusterize" should "works correctly" in {
+    val x = new HTClusterer()
     val x11 = new MathVector(List(1.1, 1.0))
     val x12 = new MathVector(List(1.0, 1.1))
     val x13 = new MathVector(List(0.9, 1.1))

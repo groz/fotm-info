@@ -55,7 +55,7 @@ class StatisticsSpec extends FlatSpec with Matchers {
     )
 
     val normalized = normalize(input)
-    normalized should contain theSameElementsInOrderAs (expected)
+    normalized should contain theSameElementsInOrderAs expected
   }
 
   it should "set columns to zero for equal numbers" in {
@@ -69,4 +69,21 @@ class StatisticsSpec extends FlatSpec with Matchers {
     normalized(1)(0) should equal(0)
   }
 
+  "randomWeightedValue" should "return first value for 0" in {
+    randomWeightedValue(Seq('a, 'b), Seq(1, 2), 0) should equal('a)
+  }
+
+  it should "return last value for 1" in {
+    randomWeightedValue(Seq('a, 'b, 'c), Seq(1, 2, 1), 1.0) should equal('c)
+  }
+
+  it should "return correct value for x" in {
+    randomWeightedValue(Seq('a, 'b, 'c), Seq(1, 5, 5), 0.5) should equal('b)
+  }
+
+  it should "return single element" in {
+    randomWeightedValue(Seq('a), Seq(1), 0.5) should equal('a)
+    randomWeightedValue(Seq('a), Seq(1), 0) should equal('a)
+    randomWeightedValue(Seq('a), Seq(1), 1) should equal('a)
+  }
 }

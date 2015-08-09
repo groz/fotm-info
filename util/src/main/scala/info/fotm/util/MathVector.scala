@@ -46,21 +46,24 @@ class MathVector(val coords: Seq[Double]) {
 
   def distTo1(that: MathVector): Double = distImpl(that, Math.abs)
 
-  def distToInfty(that: MathVector) = (this - that).coords.maxBy(math.abs).abs
+  def distToInfty(that: MathVector): Double = (this - that).coords.maxBy(math.abs).abs
 
-  def sqrDistTo(that: MathVector) = (this - that).sqrlength
+  def sqrDistTo(that: MathVector): Double = (this - that).sqrlength
 
   def normalize: MathVector = MathVector(coords.map(x => x / length): _*)
 
-  def update(n: Int, x: Double) = MathVector(coords.patch(n, Seq(x), 1): _*)
+  def update(n: Int, x: Double): MathVector = MathVector(coords.patch(n, Seq(x), 1): _*)
 
-  def apply(n: Int) = coords(n)
+  def apply(n: Int): Double = coords(n)
+
+  def distTo(vectors: Iterable[MathVector]): Double = vectors.map(_ distTo this).min
 }
 
 object MathVector {
   def apply(coords: Double*) = new MathVector(coords)
   def avg(vectors: Iterable[MathVector]) = vectors.reduce(_ + _) / vectors.size
   implicit def doubleToMathVectorAsScalar(i: Double): MathVectorAsScalar = new MathVectorAsScalar(i)
+  implicit def doubleToMathVector(i: Double): MathVector = MathVector(i)
 }
 
 class MathVectorAsScalar(i: Double) {

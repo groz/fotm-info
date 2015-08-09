@@ -9,7 +9,7 @@ import scala.collection.mutable
 /*
 Hasan-Timur clusterer (minor mod+refactoring by Tagir)
  */
-class HTClusterer3(addition: Option[Clusterer] = None) extends Clusterer {
+class HTClusterer(addition: Option[Clusterer] = None) extends Clusterer {
   // TODO: write tests for all separate methods
 
   def distTo(v: MathVector, cluster: Seq[MathVector]): Double = cluster.view.map(_.distTo(v)).min

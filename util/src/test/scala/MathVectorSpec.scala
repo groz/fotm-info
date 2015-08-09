@@ -93,4 +93,12 @@ class MathVectorSpec extends FlatSpec with Matchers {
   "implicit conversion" should "correctly support ops for scalar on the left side" in {
     (2.0 * MathVector(2)) should equal (MathVector(4.0))
   }
+
+  "distTo(cluster)" should "return correct result for cluster of 1 element" in {
+    MathVector(1) distTo Seq(MathVector(2)) should be(1)
+  }
+
+  it should "return correct result for generic case" in {
+    MathVector(1) distTo Seq(MathVector(10), MathVector(5)) should be(4)
+  }
 }

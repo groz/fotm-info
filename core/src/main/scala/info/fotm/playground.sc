@@ -4,7 +4,7 @@ import scala.collection.generic.CanBuildFrom
 import scala.collection.breakOut
 import scala.collection.immutable.IndexedSeq
 import info.fotm.clustering.implementations._
-  val x = new HTClusterer3()
+  val x = new HTClusterer()
   val x11 = new MathVector(List(1.1, 1.0))
   val x12 = new MathVector(List(1.0, 1.1))
   val x13 = new MathVector(List(0.9, 1.1))

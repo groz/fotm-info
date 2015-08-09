@@ -16,4 +16,3 @@ trait Clusterer {
      instead of using RealClusterer
   */
 }
-

@@ -41,4 +41,19 @@ object Statistics {
 
     scaled.transpose.map(row => MathVector(row: _*))
   }
+
+  /**
+   * Gets random value from the sequence according to weights
+   * @param input   Sequence of elements
+   * @param weights Weights
+   * @param rnd     Random number in [0.0, 1.0)
+   * @tparam T      Type of sequence elements
+   * @return        Random value according to probabilites
+   */
+  def randomWeightedValue[T](input: Seq[T], weights: Seq[Double], rnd: Double): T = {
+    val distribution = weights.scanLeft(0.0) {_ + _}.tail
+    val rand: Double = rnd * distribution.last
+    val idx: Int = distribution.takeWhile(_ < rand).size
+    input(idx)
+  }
 }
