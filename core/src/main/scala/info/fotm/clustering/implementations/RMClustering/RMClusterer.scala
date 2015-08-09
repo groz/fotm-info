@@ -4,7 +4,6 @@ import info.fotm.clustering.Clusterer
 import info.fotm.clustering.Clusterer._
 import ClusterRoutines._
 
-
 class RMClusterer extends Clusterer {
 
   def clusterize(input: Cluster, groupSize: Int): Set[Cluster] = {

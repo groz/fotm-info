@@ -44,11 +44,9 @@ class MathVector(val coords: Seq[Double]) {
 
   def distTo(that: MathVector): Double = Math.sqrt(distImpl(that, x => x * x))
 
-  def distTo1(that: MathVector): Double = distImpl(that, Math.abs)
+  def manhattanDist(that: MathVector): Double = distImpl(that, Math.abs)
 
-  def distToInfty(that: MathVector): Double = (this - that).coords.maxBy(math.abs).abs
-
-  def sqrDistTo(that: MathVector): Double = (this - that).sqrlength
+  def distToInfty(that: MathVector): Double = (this - that).coords.map(math.abs).max
 
   def normalize: MathVector = MathVector(coords.map(x => x / length): _*)
 

@@ -14,7 +14,6 @@ class FineTuner(groupSize: Int) {
 
   def fineTuning2(clusters: Set[Cluster]): Set[Cluster] = {
     fineTuningStep2(clusters.map(LabeledCluster(_))).map(_.cluster)
-
   }
 
   def fineTuningStep2(labClusters: Set[LabeledCluster]): Set[LabeledCluster] = {
@@ -36,7 +35,7 @@ class FineTuner(groupSize: Int) {
 
       if (devCluster.cluster.length > groupSize && distToClosestCluster < 0) {
         // drop this suspicious item from group
-        fineTuningStep2(labClusters - devCluster + (LabeledCluster(devCluster.cluster.filter(_ != devPoint))))
+        fineTuningStep2(labClusters - devCluster + LabeledCluster(devCluster.cluster.filter(_ != devPoint)))
       }
       else if (distToClosestCluster >= 0) {
         val (x, y) = (devCluster.cluster, devClosestClusters(devPoint))

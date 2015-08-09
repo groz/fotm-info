@@ -18,8 +18,14 @@ object ClusterRoutines {
         clusters
       }
       else {
-        val pairs = cartesianProd(clusters, clusters).filter(p => p._1 != p._2)
+        val pairs = for {
+          x <- clusters
+          y <- clusters
+          if x != y
+        } yield (x, y)
+
         val (c1, c2) = pairs.minBy(p => distance(p._1, p._2) - deviations(p._1))
+
         if (distance(c1, c2) < 1.05 * deviations(c1)) {
           // TODO: add check if the clusters are the same before and after mergeAndDivide
           val mergingClusters = Set(c1, c2)
@@ -38,30 +44,21 @@ object ClusterRoutines {
     clusterer.clusterize(clusters.toSeq.flatMap(c => c), count)
   }
 
-  def onePointMerge(clusters: Set[Cluster]): Set[Cluster] = {
-    val oneClusterOpt = clusters.find(c => c.length == 1)
-    if (!oneClusterOpt.isDefined)
-      clusters
-    else {
-      val oneCluster = oneClusterOpt.get
+  def onePointMerge(clusters: Set[Cluster]): Set[Cluster] = clusters.find(_.length == 1) match {
+    case None => clusters
+    case Some(oneCluster) =>
       val other = clusters - oneCluster
       val target = other.minBy(distance(oneCluster, _))
       onePointMerge((other - target) + (target ++ oneCluster))
-    }
   }
 
   def makeInitialClusterization(input: Cluster, groupSize: Int): Set[Cluster] = {
     val approxCountOfGroups = input.length / groupSize
     val kmeansClusterer = new KMeansDiv2Clusterer
-    val clusterizations = (1 to 2).map(j => kmeansClusterer.clusterize(input, approxCountOfGroups))
-    // TODO: remove this workaround against StackOverflow
-    if (clusterizations.isEmpty)
-      Set()
-    else {
-      val bySize: Map[Int, IndexedSeq[Set[Cluster]]] = clusterizations.groupBy(c => Math.abs(c.size - approxCountOfGroups))
-      val closestClusterings = bySize(bySize.keys.min)
-      closestClusterings.minBy(estimateClusterization)
-    }
+    val clusterizations = (1 to 5).map(j => kmeansClusterer.clusterize(input, approxCountOfGroups))
+    val bySize: Map[Int, IndexedSeq[Set[Cluster]]] = clusterizations.groupBy(c => Math.abs(c.size - approxCountOfGroups))
+    val closestClusterings = bySize(bySize.keys.min)
+    closestClusterings.minBy(estimateClusterization)
   }
 
   def makeGraphFromClusters(clusters: List[Cluster], groupSize: Int): Graph[Int] = {
@@ -101,10 +98,9 @@ object ClusterRoutines {
       .map(c => c._1) ::: pathOfClustersRenewed
   }
 
-
   def estimateClusterization(clusters: Set[Cluster]): Double = {
     val listOfClusters = clusters.toList
-    val centers = listOfClusters.map(getClusterGeometricCenter)
+    val centers = listOfClusters.map(MathVector.avg)
     listOfClusters.zip(centers).foldLeft(0.0)((acc, x) => acc + meanAbsDeviation(x._1, x._2))
   }
 
@@ -113,7 +109,7 @@ object ClusterRoutines {
   }
 
   def meanAbsDeviation(cluster: Cluster): Double = {
-    meanAbsDeviation(cluster, getClusterGeometricCenter(cluster))
+    meanAbsDeviation(cluster, MathVector.avg(cluster))
   }
 
   def meanDistToClosest(cluster: Cluster): Double =
@@ -137,57 +133,16 @@ object ClusterRoutines {
   }
 
   /* ================================================ */
-  def cartesianProd[TX, TY](colX: Iterable[TX], colY: Iterable[TY]): Iterable[(TX, TY)] = {
-    for {
-      x <- colX
-      y <- colY
-    } yield (x, y)
-  }
-
-  def difference(a: Int, b: Int): Int = {
-    if (a < b) 0 else a - b
-  }
-
-  def pathesComparer(graph: Graph[Int], path1: GraphPath, path2: GraphPath): Boolean = {
-    if (path1.maxRoute(graph) != path2.maxRoute(graph)) path1.maxRoute(graph) < path2.maxRoute(graph)
-    else path1.length < path2.length
-  }
-
-
-  /*=========================================================================*/
-
-  def closestVector(v: V, to: Cluster): V = {
-    to.minBy(x => distance(x, v))
-  }
+  def closestVector(v: V, to: Cluster): V = to.minBy(x => distance(x, v))
 
   //closest to cluster 'to' vector from cluster 'from'
-  def closestVector(from: Cluster, to: Cluster): V = {
-    from.minBy(x => distance(x, to.minBy(y => distance(x, y))))
-  }
+  def closestVector(from: Cluster, to: Cluster): V = from.minBy(x => distance(x, to.minBy(y => distance(x, y))))
 
-  def closestVectors(c1: Cluster, c2: Cluster): Seq[V] = {
-    c1.sortBy(x => distance(x, c2.minBy(y => distance(x, y))))
-  }
+  def distance(v: V, cluster: Cluster): Double = cluster.map(x => distance(x, v)).min
 
-  def distance(v: V, cluster: Cluster): Double = {
-    cluster.map(x => distance(x, v)).min
-  }
+  def distance(c1: Cluster, c2: Cluster): Double = distance(c1.minBy(x => distance(x, c2)), c2)
 
-  def distance(c1: Cluster, c2: Cluster): Double = {
-    distance(c1.minBy(x => distance(x, c2)), c2)
-  }
+  def getClusterCenter(cl: Cluster): V = closestVector(MathVector.avg(cl), cl)
 
-  def getClusterGeometricCenter(cl: Cluster): V = {
-    MathVector.avg(cl)
-  }
-
-  def getClusterCenter(cl: Cluster): V = {
-    closestVector(getClusterGeometricCenter(cl), cl)
-  }
-
-  def distanceBetweenCenters(c1: Cluster, c2: Cluster): Double = {
-    distance(getClusterCenter(c1), getClusterCenter(c2))
-  }
-
-  def distance(a: V, b: V): Double = a distTo1 b
+  def distance(a: V, b: V): Double = a manhattanDist b
 }
