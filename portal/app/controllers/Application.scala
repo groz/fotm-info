@@ -6,7 +6,7 @@ import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
 import com.github.nscala_time.time.Imports
-import info.fotm.aether.{AetherRoutes, Storage}
+import info.fotm.aether.{AetherConfig, Storage}
 import info.fotm.domain.Axis
 import com.github.nscala_time.time.Imports._
 import play.api.Logger
@@ -19,16 +19,16 @@ import scala.concurrent.duration.{Duration, SECONDS}
 @Singleton
 class Application @Inject()(system: ActorSystem) extends Controller {
 
-  Logger.info(">>> Storage path: " + AetherRoutes.storagePath)
-  Logger.info(">>> Proxy path: " + AetherRoutes.storageProxyPath)
+  Logger.info(">>> Storage path: " + AetherConfig.storagePath)
+  Logger.info(">>> Proxy path: " + AetherConfig.storageProxyPath)
 
   implicit val timeout: Timeout = new Timeout(Duration(30, SECONDS))
 
   def interval: Imports.Interval = new Interval(DateTime.now - 1.month, DateTime.now)
 
   // init proxy and subscribe to storage updates
-  lazy val storage: ActorSelection = system.actorSelection(AetherRoutes.storagePath)
-  lazy val storageProxy = system.actorOf(Props(classOf[Storage], None), AetherRoutes.storageProxyActorName)
+  lazy val storage: ActorSelection = system.actorSelection(AetherConfig.storagePath)
+  lazy val storageProxy = system.actorOf(Storage.props, AetherConfig.storageProxyActorName)
   storage.tell(Storage.Identify, storageProxy)
 
   def healthCheck = Action {
@@ -40,7 +40,8 @@ class Application @Inject()(system: ActorSystem) extends Controller {
       val request = storageProxy ? Storage.QueryState(axis, interval)
 
       request.mapTo[Storage.QueryStateResponse].map { (response: Storage.QueryStateResponse) =>
-        Ok(views.html.index("Playing Now", response.axis, response.teams, response.chars))
+        import info.fotm.util.Compression._
+        Ok(views.html.index(AetherConfig.storagePersistence[String].toString, response.axis, response.teams, response.chars))
       }
     }
   }

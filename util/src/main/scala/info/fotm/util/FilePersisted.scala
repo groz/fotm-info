@@ -4,7 +4,7 @@ import java.nio.file.{Files, Paths}
 
 import com.twitter.bijection.Bijection
 
-class FilePersisted[S](fileName: String, serializer: Bijection[S, Array[Byte]]) extends Persisted[S] {
+class FilePersisted[S](fileName: String)(implicit serializer: Bijection[S, Array[Byte]]) extends Persisted[S] {
 
   override def save(state: S): Unit = {
     Files.write(Paths.get(fileName), serializer(state))

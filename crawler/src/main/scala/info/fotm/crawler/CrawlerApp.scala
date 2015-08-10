@@ -4,7 +4,7 @@ import akka.actor._
 import com.twitter.bijection.Bijection
 import dispatch.Http
 import info.fotm.aether.Storage.PersistedStorageState
-import info.fotm.aether.{AetherRoutes, PersistedAxisState, Storage}
+import info.fotm.aether.{AetherConfig, PersistedAxisState, Storage}
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
 import info.fotm.domain._
@@ -17,33 +17,12 @@ import scala.concurrent.duration._
 
 object CrawlerApp extends App {
   val apiKey = "vntnwpsguf4pqak7e8y7tgn35795fqfj"
-  val system = ActorSystem(AetherRoutes.crawlerSystemPath.name, AetherRoutes.crawlerConfig)
+  val system = ActorSystem(AetherConfig.crawlerSystemPath.name, AetherConfig.crawlerConfig)
 
-  val filePersisted = {
-    import JsonFormatters._
-    implicit val pssFmt = Json.format[PersistedAxisState]
-
-    val obj2json: Bijection[PersistedStorageState, String] =
-      Bijection.build[PersistedStorageState, String] { obj =>
-        Json.toJson(obj).toString()
-      } { str =>
-        Json.parse(str).as[PersistedStorageState]
-      }
-
-    def compressSerializer[A](ser: Bijection[A, String]): Bijection[A, Array[Byte]] = {
-        ser andThen
-          Compression.str2GZippedBase64 andThen
-          Compression.str2rawGZipBase64.inverse andThen
-          Compression.str2bytes
-    }
-
-    new FilePersisted[PersistedStorageState]("storage.txt", compressSerializer(obj2json))
-  }
-
-  val storage = system.actorOf(Storage.props(Some(filePersisted)), AetherRoutes.storageActorName)
+  val storage = system.actorOf(Storage.props, AetherConfig.storageActorName)
 
   // proxy to announce to
-  val storageProxy: ActorSelection = system.actorSelection(AetherRoutes.storageProxyPath)
+  val storageProxy: ActorSelection = system.actorSelection(AetherConfig.storageProxyPath)
   storageProxy.tell(Storage.Announce, storage)
 
   val actorSetups = for {

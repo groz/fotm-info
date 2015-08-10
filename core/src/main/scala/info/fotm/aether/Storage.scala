@@ -3,24 +3,36 @@ package info.fotm.aether
 import akka.actor.{Props, Actor, ActorIdentity, ActorRef}
 import akka.event.{Logging, LoggingReceive}
 import com.github.nscala_time.time.Imports._
+import com.twitter.bijection.Bijection
 import info.fotm.aether.Storage.PersistedStorageState
 import info.fotm.domain._
-import info.fotm.util.{NullPersisted, Persisted}
+import info.fotm.util.{FilePersisted, Compression, NullPersisted, Persisted}
+import play.api.libs.json.Json
 
 import scala.collection.breakOut
 import scala.collection.immutable.TreeMap
 
 object Storage {
-  def props(persistanceOpt: Option[Persisted[PersistedStorageState]] = None): Props =
-    Props(classOf[Storage], persistanceOpt)
+  val props: Props = Props[Storage]
+
+  implicit val serializer: Bijection[PersistedStorageState, Array[Byte]] = {
+    import JsonFormatters._
+    implicit val pssFmt = Json.format[PersistedAxisState]
+
+    Bijection.build[PersistedStorageState, String] { obj =>
+      Json.toJson(obj).toString()
+    } { str =>
+      Json.parse(str).as[PersistedStorageState]
+    } andThen
+      Compression.str2GZippedBase64 andThen
+      Compression.str2rawGZipBase64.inverse andThen
+      Compression.str2bytes
+  }
 
   val identifyMsgId = "storage"
   val Identify = akka.actor.Identify(identifyMsgId)
 
   type PersistedStorageState = Seq[(Axis, PersistedAxisState)]
-
-  // init flows
-  final case class Init(state: Map[Axis, StorageAxisState])
 
   // input
   final case class Updates(axis: Axis, teamUpdates: Seq[TeamUpdate], charUpdates: Set[CharacterDiff]) {
@@ -43,20 +55,20 @@ object Storage {
 }
 
 case class StorageAxisState(
-  teams    : Map[Team, TeamSnapshot] = Map.empty,
-  chars    : Map[CharacterId, CharacterSnapshot] = Map.empty,
-  teamsSeen: TreeMap[DateTime, Set[Team]] = TreeMap.empty,
-  charsSeen: TreeMap[DateTime, Set[CharacterId]] = TreeMap.empty
-)
+                             teams: Map[Team, TeamSnapshot] = Map.empty,
+                             chars: Map[CharacterId, CharacterSnapshot] = Map.empty,
+                             teamsSeen: TreeMap[DateTime, Set[Team]] = TreeMap.empty,
+                             charsSeen: TreeMap[DateTime, Set[CharacterId]] = TreeMap.empty
+                             )
 
 // TODO: add JSON formatter for active state to avoid the need for Persisted/Active differentiation
 
 case class PersistedAxisState(
-  teams    : Set[TeamSnapshot],
-  chars    : Set[CharacterSnapshot],
-  teamsSeen: Seq[(DateTime, Set[Team])],
-  charsSeen: Seq[(DateTime, Set[CharacterId])]
-) {
+                               teams: Set[TeamSnapshot],
+                               chars: Set[CharacterSnapshot],
+                               teamsSeen: Seq[(DateTime, Set[Team])],
+                               charsSeen: Seq[(DateTime, Set[CharacterId])]
+                               ) {
   def toActiveState: StorageAxisState = StorageAxisState(
     teams.map(t => (t.team, t)).toMap,
     chars.map(c => (c.id, c)).toMap,
@@ -75,10 +87,10 @@ object PersistedAxisState {
   }
 }
 
-class Storage(persistenceOpt: Option[Persisted[PersistedStorageState]] = None) extends Actor {
+class Storage extends Actor {
   import Storage._
 
-  val persistence = persistenceOpt.getOrElse(new NullPersisted[PersistedStorageState])
+  val persistence = AetherConfig.storagePersistence[PersistedStorageState]
 
   val log = Logging(context.system, this.getClass)
 
@@ -86,7 +98,7 @@ class Storage(persistenceOpt: Option[Persisted[PersistedStorageState]] = None) e
     val initState: Map[Axis, StorageAxisState] = persistence.fetch().fold {
       Axis.all.map(a => (a, StorageAxisState())).toMap
     } { state => (
-        for ((axis, persistedState) <- state)
+      for ((axis, persistedState) <- state)
         yield (axis, persistedState.toActiveState)
       )(breakOut)
     }
@@ -125,10 +137,11 @@ class Storage(persistenceOpt: Option[Persisted[PersistedStorageState]] = None) e
 
       val updatedState = StorageAxisState(updatedTeamsState, updatedCharsState, updatedTeamsSeenState, updatedCharsSeenState)
 
-      persistence.save { (
+      persistence.save {
+        (
           for ((axis, activeState) <- state)
-          yield (axis, PersistedAxisState.fromActiveState(activeState))
-        )(breakOut)
+            yield (axis, PersistedAxisState.fromActiveState(activeState))
+          )(breakOut)
       }
 
       context.become(process(state.updated(axis, updatedState), subs))
@@ -145,11 +158,7 @@ class Storage(persistenceOpt: Option[Persisted[PersistedStorageState]] = None) e
 
       sender ! QueryStateResponse(axis, teams, chars)
 
-    case Init(initState) =>
-      context.become(process(initState, subs))
-
     case Subscribe =>
-      sender ! Init(state)
       context.become(process(state, subs + sender))
 
     case Unsubscribe =>
