@@ -24,7 +24,7 @@ class Application @Inject()(system: ActorSystem) extends Controller {
 
   implicit val timeout: Timeout = new Timeout(Duration(30, SECONDS))
 
-  def interval: Imports.Interval = new Interval(DateTime.now - 1.month, DateTime.now)
+  val period = 30.minutes
 
   // init proxy and subscribe to storage updates
   lazy val storage: ActorSelection = system.actorSelection(AetherConfig.storagePath)
@@ -37,11 +37,12 @@ class Application @Inject()(system: ActorSystem) extends Controller {
 
   def index(region: String, bracket: String): Action[AnyContent] = Action.async {
     Axis.parse(region, bracket).fold(Future.successful(NotFound: Result)) { axis =>
+      val interval = new Interval(DateTime.now - period, DateTime.now)
       val request = storageProxy ? Storage.QueryState(axis, interval)
 
       request.mapTo[Storage.QueryStateResponse].map { (response: Storage.QueryStateResponse) =>
         import info.fotm.util.Compression._
-        Ok(views.html.index(AetherConfig.storagePersistence[String].toString, response.axis, response.teams, response.chars))
+        Ok(views.html.index(bracket + AetherConfig.storagePersistence[String].toString, response.axis, response.teams, response.chars))
       }
     }
   }

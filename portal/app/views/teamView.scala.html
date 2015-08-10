@@ -1,7 +1,8 @@
 @import info.fotm.domain.TeamSnapshot
-
 @(teamSnapshot: TeamSnapshot)
 
+@teamSnapshot.rating
+@teamSnapshot.stats
 @for(c <- teamSnapshot.view.snapshots) {
     @characterView(c)
 }

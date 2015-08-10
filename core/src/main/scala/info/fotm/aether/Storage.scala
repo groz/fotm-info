@@ -150,13 +150,17 @@ class Storage extends Actor {
         sub ! msg
 
     case QueryState(axis: Axis, interval: Interval) =>
-      val currentAxis = state(axis)
-      val teamIds = currentAxis.teamsSeen.from(interval.start).until(interval.end + 1.second).values.flatten.toSet
-      val teams = teamIds.map(currentAxis.teams).toSeq
-      val charIds = currentAxis.charsSeen.from(interval.start).until(interval.end + 1.second).values.flatten.toSet
-      val chars = charIds.map(currentAxis.chars).toSeq
+      val currentAxis: StorageAxisState = state(axis)
+      val teamIds: Set[Team] = currentAxis.teamsSeen.from(interval.start).until(interval.end + 1.second).values.flatten.toSet
+      val teams: Seq[TeamSnapshot] = teamIds.map(currentAxis.teams).toSeq
 
-      sender ! QueryStateResponse(axis, teams, chars)
+      val charIds: Set[CharacterId] = currentAxis.charsSeen.from(interval.start).until(interval.end + 1.second).values.flatten.toSet
+
+      // filter out chars seen in teams that are sent back
+      val charsInTeams: Set[CharacterId] = teamIds.flatMap(_.members)
+      val chars: Seq[CharacterSnapshot] = (charIds diff charsInTeams).map(currentAxis.chars).toSeq
+
+      sender ! QueryStateResponse(axis, teams.sortBy(-_.rating), chars.sortBy(-_.stats.rating))
 
     case Subscribe =>
       context.become(process(state, subs + sender))

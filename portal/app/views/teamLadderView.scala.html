@@ -3,6 +3,7 @@
 @(teams: Seq[TeamSnapshot])
 
 @for(snapshot <- teams) {
-    @teamView(snapshot)
+  <img src='@routes.Assets.versioned(s"images/factions/faction_${snapshot.view.snapshots.head.view.factionId}.png")'/>
+  @teamView(snapshot)
     <br/>
 }

@@ -1,7 +1,6 @@
 package info.fotm.util
 
 import com.twitter.bijection.{GZippedBase64String, Bijection}
-import java.nio.charset.StandardCharsets.UTF_8
 
 object Compression {
 

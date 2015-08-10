@@ -1,0 +1,8 @@
+@import info.fotm.domain.CharacterSnapshot
+
+@(chars: Seq[CharacterSnapshot])
+
+@for(c <- chars) {
+    @characterView(c)
+    <br/>
+}

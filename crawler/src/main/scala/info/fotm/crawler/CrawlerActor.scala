@@ -7,6 +7,7 @@ import info.fotm.aether.Storage
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
 import info.fotm.clustering._
+import info.fotm.clustering.enhancers.ClonedClusterer
 import info.fotm.clustering.implementations.HTClusterer
 import info.fotm.clustering.implementations.RMClustering.RMClusterer
 import info.fotm.domain._
@@ -17,13 +18,19 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 object CrawlerActor {
+
   case object Crawl
+
   case class LeaderboardReceived(leaderboard: Leaderboard)
+
   case object CrawlFailed
+
   case object CrawlTimedOut
+
 }
 
 class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor {
+
   import CrawlerActor._
 
   val historySize = 20
@@ -54,7 +61,7 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
   }
 
   val evaluator = new ClusteringEvaluator(FeatureSettings.features)
-  val clusterer = RealClusterer.wrap(new HTClusterer(Some(new RMClusterer)))
+  val clusterer = new ClonedClusterer(RealClusterer.wrap(new HTClusterer(Some(new RMClusterer)))) with SeenEnhancer
 
   val updatesObserver = new UpdatesQueue[CharacterLadder](historySize)
 
@@ -103,14 +110,14 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
     case Crawl =>
       context.become(crawling(false))
 
-      val delay = akka.pattern.after(requestTimeout, using = context.system.scheduler) {
-        Future.successful(CrawlTimedOut)
-      }
-
       val query = api.leaderboard(axis.bracket)
         .map(LeaderboardReceived)
-        .recover { case _ => CrawlFailed }
+        .recover {
+          case ex: Throwable =>
+            log.error(s"$ex")
+            CrawlFailed
+        }
 
-      Future firstCompletedOf Seq(delay, query) pipeTo self
+      query pipeTo self
   }
 }
