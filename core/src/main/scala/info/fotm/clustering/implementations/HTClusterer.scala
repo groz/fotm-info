@@ -9,7 +9,7 @@ import scala.collection.mutable
 /*
 Hasan-Timur clusterer (minor mod+refactoring by Tagir)
  */
-class HTClusterer(addition: Option[Clusterer] = None) extends Clusterer {
+class HTClusterer(leftoverClusterer: Option[Clusterer] = None) extends Clusterer {
   // TODO: write tests for all separate methods
 
   def distTo(v: MathVector, cluster: Seq[MathVector]): Double = cluster.view.map(_.distTo(v)).min
@@ -77,9 +77,9 @@ class HTClusterer(addition: Option[Clusterer] = None) extends Clusterer {
 
     if (maxDistance != 0) {
       val clusters = searching(meanDistance, maxDistance, Set())
-      val correctlySized = clusters.filter(_.size == groupSize)
+      val correctlySized: Set[Cluster] = clusters.filter(_.size == groupSize)
 
-      addition.fold(correctlySized) { clusterer =>
+      leftoverClusterer.fold(correctlySized) { clusterer =>
         val rest = input diff correctlySized.flatten.toSeq
         correctlySized ++ clusterer.clusterize(rest, groupSize)
       }

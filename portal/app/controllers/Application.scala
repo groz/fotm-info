@@ -42,7 +42,8 @@ class Application @Inject()(system: ActorSystem) extends Controller {
 
       request.mapTo[Storage.QueryStateResponse].map { (response: Storage.QueryStateResponse) =>
         import info.fotm.util.Compression._
-        Ok(views.html.index(bracket + AetherConfig.storagePersistence[String].toString, response.axis, response.teams, response.chars))
+        val slug = s"${response.axis}"
+        Ok(views.html.index(slug + AetherConfig.storagePersistence[String].toString, response.axis, response.teams, response.chars))
       }
     }
   }

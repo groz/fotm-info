@@ -7,22 +7,30 @@ import ClusterRoutines._
 class RMClusterer extends Clusterer {
 
   def clusterize(input: Cluster, groupSize: Int): Set[Cluster] = {
+    require(groupSize > 0)
 
-    val initClusterization = makeInitialClusterization(input, groupSize)
-    val oneMerged = onePointMerge(initClusterization)
-    val merged = merge(oneMerged)
+    if (input.size < groupSize)
+      Set.empty
+    else if (input.size == groupSize)
+      Set(input)
+    else if (groupSize == 1) input.map(Seq(_)).toSet
+    else {
+      val initClusterization = makeInitialClusterization(input, groupSize)
+      val oneMerged = onePointMerge(initClusterization)
+      val merged = merge(oneMerged)
 
-    val kDiv2 = new KMeansDiv2Clusterer(cs => cs.maxBy(_.length))
-    val divClusters = kDiv2.clusterize(merged, initClusterization.size)
+      val kDiv2 = new KMeansDiv2Clusterer(cs => cs.maxBy(_.length))
+      val divClusters = kDiv2.clusterize(merged, initClusterization.size)
 
-    val eqClusters = movePoint(divClusters.filter(_.nonEmpty).toList, groupSize).toSet
+      val eqClusters = movePoint(divClusters.filter(_.nonEmpty).toList, groupSize).toSet
 
-    val tuned = new FineTuner(groupSize).fineTuning(eqClusters)
+      val tuned = new FineTuner(groupSize).fineTuning(eqClusters)
 
-    try {
-      new FineTuner(groupSize).fineTuning2(tuned).filter(_.length == groupSize)
-    } catch {
-      case _: Throwable => tuned
+      try {
+        new FineTuner(groupSize).fineTuning2(tuned).filter(_.length == groupSize)
+      } catch {
+        case _: Throwable => tuned
+      }
     }
   }
 

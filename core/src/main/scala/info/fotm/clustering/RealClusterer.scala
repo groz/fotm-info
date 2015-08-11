@@ -12,21 +12,20 @@ object RealClusterer {
   def wrap(clusterer: Clusterer) = new RealClusterer {
 
     override def clusterize[T](input: Map[T, MathVector], groupSize: Int): Set[Seq[T]] = {
-//      println(s"Started ${clusterer.getClass}.clusterize")
+      require(groupSize > 1)
 
-      val result: Set[Seq[T]] = if (input.size < groupSize)
-        Set()
+      if (input.size < groupSize)
+        Set.empty
+      else if (input.size == groupSize)
+        Set(input.keys.toSeq)
+      else if (groupSize == 1)
+        input.keys.map(Seq(_)).toSet
       else {
         val reverseMap = input.map(_.swap)
         val clusters: Set[Cluster] = clusterer.clusterize(input.values.toSeq, groupSize)
         clusters.map(vectors => vectors.map(reverseMap))
       }
-
-//      println(s"Finished ${clusterer.getClass}.clusterize")
-
-      result
     }
-
   }
 
   lazy val identity = new RealClusterer {
@@ -37,6 +36,7 @@ object RealClusterer {
 
 trait RealClusterer {
   def clusterize[T](input: Map[T, MathVector], groupSize: Int): Set[Seq[T]]
+
   // def clusterize(input: Seq[MathVector], groupSize: Int): Seq[Int]
 }
 

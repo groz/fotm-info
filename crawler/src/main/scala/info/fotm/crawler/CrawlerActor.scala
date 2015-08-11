@@ -66,19 +66,20 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
   val updatesObserver = new UpdatesQueue[CharacterLadder](historySize)
 
   // subscribe storage to ladder updates
-  val teamsFound: ObservableReadStream[(LadderUpdate, Set[TeamUpdate])] =
+  val ladderUpdates: ObservableReadStream[LadderUpdate] =
     for {
       (prev, next) <- updatesObserver
       ladderUpdate = LadderUpdate(prev, next)
       if ladderUpdate.distance == 1
-      teams = evaluator.findTeamsInUpdate(ladderUpdate, clusterer)
-      if teams.nonEmpty
-      teamUpdates = teams.map(hydrateTeam(ladderUpdate, _))
-    } yield (ladderUpdate, teamUpdates)
+    } yield ladderUpdate
 
   val updatesSubscription =
-    for {(ladderUpdate, teamUpdates) <- teamsFound} {
-      log.debug(s"Sending ${teamUpdates.size} teams to storage...")
+    for (ladderUpdate <- ladderUpdates) {
+      val teams = evaluator.findTeamsInUpdate(ladderUpdate, clusterer)
+      val teamUpdates = teams.map(t => hydrateTeam(ladderUpdate, t))
+
+      log.debug(s"Sending ${teamUpdates.size} teams and ${ladderUpdate.charDiffs.size} chars to storage...")
+
       storage ! Storage.Updates(axis, teamUpdates.toSeq, ladderUpdate.charDiffs)
     }
 

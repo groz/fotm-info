@@ -1,15 +1,11 @@
 package info.fotm.crawler
 
 import akka.actor._
-import com.twitter.bijection.Bijection
 import dispatch.Http
-import info.fotm.aether.Storage.PersistedStorageState
-import info.fotm.aether.{AetherConfig, PersistedAxisState, Storage}
+import info.fotm.aether.{AetherConfig, Storage}
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
 import info.fotm.domain._
-import info.fotm.util.{Compression, FilePersisted}
-import play.api.libs.json.Json
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global

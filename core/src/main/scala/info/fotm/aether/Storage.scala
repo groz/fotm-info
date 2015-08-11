@@ -6,7 +6,7 @@ import com.github.nscala_time.time.Imports._
 import com.twitter.bijection.Bijection
 import info.fotm.aether.Storage.PersistedStorageState
 import info.fotm.domain._
-import info.fotm.util.{FilePersisted, Compression, NullPersisted, Persisted}
+import info.fotm.util._
 import play.api.libs.json.Json
 
 import scala.collection.breakOut
