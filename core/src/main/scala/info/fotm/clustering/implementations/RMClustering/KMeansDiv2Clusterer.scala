@@ -12,32 +12,27 @@ class KMeansDiv2Clusterer(
 
   override def clusterize(input: Cluster, groupsCount: Int): Set[Cluster] = {
     require(groupsCount >= 1)
-
     clusterizationStep(Set(input), groupsCount)
   }
 
   def clusterize(initClusters: Set[Cluster], groupsCount: Int): Set[Cluster] = {
     require(groupsCount >= 1)
-
-    if (initClusters.size >= groupsCount) initClusters
-    else clusterizationStep(initClusters, groupsCount)
+    clusterizationStep(initClusters, groupsCount)
   }
 
   /*
     Iteratively splits the "max" cluster into 2 until total number of clusters is bigger than 'count
   */
-  def clusterizationStep(clusters: Set[Cluster], maxCount: Int): Set[Cluster] = {
+  def clusterizationStep(clusters: Set[Cluster], maxCount: Int, nTries: Int = 0, nMaxTries: Int = 100): Set[Cluster] = {
     require(maxCount >= 1)
     require(clusters.nonEmpty)
 
-    if (maxCount == 1 || clusters.size >= maxCount)
+    if (maxCount == 1 || clusters.size >= maxCount || nTries > nMaxTries)
       clusters
     else {
       val maxCluster = selectMaxCluster(clusters)
       val newClusters = (clusters - maxCluster) ++ split(maxCluster)
-
-      if (newClusters.size >= maxCount) newClusters
-      else clusterizationStep(newClusters, maxCount)
+      clusterizationStep(newClusters, maxCount, nTries + 1, nMaxTries)
     }
   }
 

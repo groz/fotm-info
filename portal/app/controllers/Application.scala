@@ -41,8 +41,7 @@ class Application @Inject()(system: ActorSystem) extends Controller {
       val request = storageProxy ? Storage.QueryState(axis, interval)
 
       request.mapTo[Storage.QueryStateResponse].map { (response: Storage.QueryStateResponse) =>
-        import info.fotm.util.Compression._
-        Ok(views.html.index(s"Playing now ${response.axis}", response.axis, response.teams, response.chars))
+        Ok(views.html.index(s"Playing Now ${response.axis}", response.axis, response.teams, response.chars))
       }
     }
   }
