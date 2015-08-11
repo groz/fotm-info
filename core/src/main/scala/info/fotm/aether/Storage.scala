@@ -87,10 +87,10 @@ object PersistedAxisState {
   }
 }
 
-class Storage extends Actor {
+class Storage(persistence: Persisted[PersistedStorageState]) extends Actor {
   import Storage._
 
-  val persistence = AetherConfig.storagePersistence[PersistedStorageState]
+  def this() = this(AetherConfig.storagePersistence[PersistedStorageState](Storage.serializer))
 
   val log = Logging(context.system, this.getClass)
 
