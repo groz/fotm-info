@@ -97,8 +97,8 @@ class Storage(persistence: Persisted[PersistedStorageState]) extends Actor {
   override def receive: Receive = {
     val initState: Map[Axis, StorageAxisState] = persistence.fetch().fold {
       Axis.all.map(a => (a, StorageAxisState())).toMap
-    } { state => (
-      for ((axis, persistedState) <- state)
+    } { state =>
+      (for ((axis, persistedState) <- state)
         yield (axis, persistedState.toActiveState)
       )(breakOut)
     }
@@ -151,16 +151,26 @@ class Storage(persistence: Persisted[PersistedStorageState]) extends Actor {
 
     case QueryState(axis: Axis, interval: Interval) =>
       val currentAxis: StorageAxisState = state(axis)
-      val teamIds: Set[Team] = currentAxis.teamsSeen.from(interval.start).until(interval.end + 1.second).values.flatten.toSet
-      val teams: Seq[TeamSnapshot] = teamIds.map(currentAxis.teams).toSeq
 
-      val charIds: Set[CharacterId] = currentAxis.charsSeen.from(interval.start).until(interval.end + 1.second).values.flatten.toSet
+      val teamIds: Set[Team] =
+        currentAxis
+          .teamsSeen
+          .from(interval.start).until(interval.end + 1.second)
+          .values.flatten.toSet
+
+      val teams: Set[TeamSnapshot] = teamIds.map(currentAxis.teams).filter(_.stats.total > 1)
+
+      val charIds: Set[CharacterId] =
+        currentAxis
+          .charsSeen
+          .from(interval.start).until(interval.end + 1.second)
+          .values.flatten.toSet
 
       // filter out chars seen in teams that are sent back
-      val charsInTeams: Set[CharacterId] = teamIds.flatMap(_.members)
-      val chars: Seq[CharacterSnapshot] = (charIds diff charsInTeams).map(currentAxis.chars).toSeq
+      val charsInTeams: Set[CharacterId] = teams.flatMap(_.team.members)
+      val chars: Set[CharacterSnapshot] = (charIds diff charsInTeams).map(currentAxis.chars)
 
-      sender ! QueryStateResponse(axis, teams.sortBy(-_.rating), chars.sortBy(-_.stats.rating))
+      sender ! QueryStateResponse(axis, teams.toSeq.sortBy(- _.rating), chars.toSeq.sortBy(- _.stats.rating))
 
     case Subscribe =>
       context.become(process(state, subs + sender))

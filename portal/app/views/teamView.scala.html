@@ -1,8 +1,11 @@
 @import info.fotm.domain.TeamSnapshot
 @(teamSnapshot: TeamSnapshot)
 
-@teamSnapshot.rating
-@teamSnapshot.stats
-@for(c <- teamSnapshot.view.snapshots) {
-    @characterView(c)
+<td><img src='@routes.Assets.versioned(s"images/factions/faction_${teamSnapshot.factionId}.png")'/></td>
+<td>@teamSnapshot.rating.toInt</td>
+<td>@teamSnapshot.stats.wins</td>
+<td>-</td>
+<td>@teamSnapshot.stats.losses</td>
+@for(c <- teamSnapshot.view.sortedSnapshots) {
+    <td>@characterView(c)</td>
 }

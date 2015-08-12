@@ -33,7 +33,7 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
 
   import CrawlerActor._
 
-  val historySize = 20
+  val historySize = 15
 
   implicit val log: LoggingAdapter = Logging(context.system, this)
 

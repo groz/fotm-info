@@ -24,24 +24,28 @@ class Application @Inject()(system: ActorSystem) extends Controller {
 
   implicit val timeout: Timeout = new Timeout(Duration(30, SECONDS))
 
-  val period = 30.minutes
-
   // init proxy and subscribe to storage updates
   lazy val storage: ActorSelection = system.actorSelection(AetherConfig.storagePath)
   lazy val storageProxy = system.actorOf(Storage.props, AetherConfig.storageProxyActorName)
   storage.tell(Storage.Identify, storageProxy)
 
-  def healthCheck = Action {
-    Ok("OK")
-  }
+  def healthCheck = Action { Ok("OK") }
 
-  def index(region: String, bracket: String): Action[AnyContent] = Action.async {
+  def playingNowDefault = playingNowRegion("eu")
+
+  def playingNowRegion(region: String) = playingNow30(region, "3v3")
+
+  def playingNow30(region: String, bracket: String) = playingNow(region, bracket, 30)
+
+  def playingNow(region: String, bracket: String, nMinutes: Int): Action[AnyContent] = Action.async {
+
     Axis.parse(region, bracket).fold(Future.successful(NotFound: Result)) { axis =>
-      val interval = new Interval(DateTime.now - period, DateTime.now)
+
+      val interval = new Interval(DateTime.now - nMinutes.minutes, DateTime.now)
       val request = storageProxy ? Storage.QueryState(axis, interval)
 
       request.mapTo[Storage.QueryStateResponse].map { (response: Storage.QueryStateResponse) =>
-        Ok(views.html.index(s"Playing Now ${response.axis}", response.axis, response.teams, response.chars))
+        Ok(views.html.playingNow(response.axis, response.teams, response.chars, nMinutes))
       }
     }
   }

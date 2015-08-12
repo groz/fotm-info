@@ -2,7 +2,18 @@
 
 @(chars: Seq[CharacterSnapshot])
 
-@for(c <- chars) {
-    @characterView(c)
-    <br/>
-}
+<table class="table table-striped table-condensed">
+  <tbody>
+    @for(c <- chars) {
+      <tr>
+        <td><img src='@routes.Assets.versioned(s"images/factions/faction_${c.view.factionId}.png")'/></td>
+        <td>@c.stats.rating</td>
+        <td>@c.stats.weekly.wins</td>
+        <td>-</td>
+        <td>@c.stats.weekly.losses</td>
+        <td>@characterView(c)</td>
+      </tr>
+    }
+  </tbody>
+</table>
+
