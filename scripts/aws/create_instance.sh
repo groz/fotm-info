@@ -2,7 +2,12 @@
 
 if [ -z "$1" ]
 then
-  echo "Provide at least one argument: app name [fotm-crawler|fotm-portal]"
+  echo "Usage:
+./create_instance.sh tag [env] [instance_type]
+tag = fotm-crawler OR fotm-portal
+env = prod
+instance_type = t2.micro | t2.small | ...
+"
   exit 1
 else
   TAG_KEY=$1
@@ -15,13 +20,19 @@ else
   TAG_VALUE=$2
 fi
 
+if [ -z "$3" ]
+then
+  INSTANCE_TYPE=t2.micro
+else
+  INSTANCE_TYPE=$3
+fi
+
 # get current directory
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 AMI_ID=ami-1ecae776
 KEY_NAME=fotm-info-keypair-us
 USER_DATA_FILE=instance_setup.sh
-INSTANCE_TYPE=t2.micro
 IAM_PROFILE_NAME=FotmRole
 
 INSTANCE_ID=$(aws ec2 run-instances \
