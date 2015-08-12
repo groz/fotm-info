@@ -26,7 +26,7 @@ class Application @Inject()(system: ActorSystem) extends Controller {
 
   // init proxy and subscribe to storage updates
   lazy val storage: ActorSelection = system.actorSelection(AetherConfig.storagePath)
-  lazy val storageProxy = system.actorOf(Storage.props, AetherConfig.storageProxyActorName)
+  lazy val storageProxy = system.actorOf(Storage.readonlyProps, AetherConfig.storageProxyActorName)
   storage.tell(Storage.Identify, storageProxy)
 
   def healthCheck = Action { Ok("OK") }

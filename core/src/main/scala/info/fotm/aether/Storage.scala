@@ -14,6 +14,7 @@ import scala.collection.immutable.TreeMap
 
 object Storage {
   val props: Props = Props[Storage]
+  val readonlyProps: Props = Props(classOf[Storage], true)
 
   implicit val serializer: Bijection[PersistedStorageState, Array[Byte]] = {
     import JsonFormatters._
@@ -52,6 +53,7 @@ object Storage {
   // I'm online (again?)!
   case object Announce
 
+  lazy val fromConfig = AetherConfig.storagePersistence[PersistedStorageState](Storage.serializer)
 }
 
 case class StorageAxisState(
@@ -90,7 +92,8 @@ object PersistedAxisState {
 class Storage(persistence: Persisted[PersistedStorageState]) extends Actor {
   import Storage._
 
-  def this() = this(AetherConfig.storagePersistence[PersistedStorageState](Storage.serializer))
+  def this(proxy: Boolean) = this(if (proxy) Storage.fromConfig.readonly else Storage.fromConfig)
+  def this() = this(false)
 
   val log = Logging(context.system, this.getClass)
 
