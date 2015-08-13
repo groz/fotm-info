@@ -161,7 +161,7 @@ class Storage(persistence: Persisted[PersistedStorageState]) extends Actor {
           .from(interval.start).until(interval.end + 1.second)
           .values.flatten.toSet
 
-      val teams: Set[TeamSnapshot] = teamIds.map(currentAxis.teams).filter(_.stats.total > 1)
+      val teams: Set[TeamSnapshot] = teamIds.map(currentAxis.teams)//.filter(_.stats.total > 1)
 
       val charIds: Set[CharacterId] =
         currentAxis
