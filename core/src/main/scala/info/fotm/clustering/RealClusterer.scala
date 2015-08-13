@@ -26,6 +26,8 @@ object RealClusterer {
 
         clusters
           .filter(_.size == groupSize)  // additional protection against misbehaving clusterers
+          // remove overlapping teams (penalize multiplexer and merged algos?)
+          .filter(c => clusters.count(_.intersect(c).nonEmpty) == 1)
           .map(vectors => vectors.map(reverseMap))
       }
     }

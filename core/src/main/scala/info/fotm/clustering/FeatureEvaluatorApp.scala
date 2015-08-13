@@ -2,32 +2,21 @@ package info.fotm.clustering
 
 import info.fotm.clustering.ClusteringEvaluatorData.DataPoint
 import info.fotm.clustering.FeatureSettings._
-import info.fotm.clustering.enhancers.{Verifier, ClonedClusterer}
-import info.fotm.clustering.implementations.ClosestClusterer
+import info.fotm.clustering.enhancers.{SimpleMultiplexer, Verifier, ClonedClusterer}
+import info.fotm.clustering.implementations.{HTClusterer, ClosestClusterer}
 
 object FeatureEvaluatorApp extends App {
 
-  val settings = EvaluatorSettings(
-    matchesPerTurn = 20,
-    ladderSize = 5000,
-    teamSize = 3,
-    hopRatio = 0.05,
-    turnsPerWeek = 300)
-
+  val settings = EvaluatorSettings()
   val dataGen: ClusteringEvaluatorData = new ClusteringEvaluatorData(settings)
-  val start = settings.turnsPerWeek * 7 / 3
-  val end = start + 2 * settings.turnsPerWeek
-  val data: Stream[DataPoint] = dataGen.updatesStream().slice(start, end)
+  val data: Stream[DataPoint] = dataGen.updatesStream().slice(settings.startTurn, settings.endTurn)
 
   // uncomment following line for viewing ladder state
   //val (prevLadder, lastladder, _) = data.last
   //lastladder.rows.toList.sortBy(-_._2.stats.rating).map(_._2.stats).foreach(println)
 
   def estimate(fs: Seq[Feature[CharacterStatsUpdate]]): Double = {
-    //val clusterer = RealClusterer.wrap(new ClosestClusterer())
-    //val clusterer = RealClusterer.wrap(new HTClusterer3)
-    //val clusterer = RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2)))
-    val clusterer = new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer())) with Verifier
+    val clusterer = new HTClusterer(Some(new SimpleMultiplexer(new ClosestClusterer, 10, 2))).toReal
     val evaluator = new ClusteringEvaluator(fs.toList)
     1 - evaluator.evaluate(clusterer, data)
   }

@@ -36,10 +36,7 @@ class ClusteringEvaluator(features: List[Feature[CharacterStatsUpdate]]) extends
       val featureVectors: Seq[MathVector] = Feature.normalize(features, bucket)
       val featureMap: Map[CharacterId, MathVector] = bucket.map(_.id).zip(featureVectors)(breakOut)
       val clusters = clusterer.clusterize(featureMap, teamSize)
-      val teams = clusters.map(ps => Team(ps.toSet))
-
-      // remove overlapping teams (penalize multiplexer and merged algos?)
-      teams.filter(t => teams.count(_.members.intersect(t.members).nonEmpty) == 1)
+      clusters.map(ps => Team(ps.toSet))
     }
   }
 

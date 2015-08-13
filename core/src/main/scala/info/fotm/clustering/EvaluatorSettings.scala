@@ -1,14 +1,14 @@
 package info.fotm.clustering
 
 final case class EvaluatorSettings(
-    matchesPerTurn: Int = 30,
+    matchesPerTurn: Int = 20,
     ladderSize: Int = 5000,
     teamSize: Int = 3,
     hopRatio: Double = 0.05,
-    turnsPerWeek: Int = 500) {
+    turnsPerWeek: Int = 300) {
 
   val startTurn = turnsPerWeek * 7/3            // mid third week
-  val endTurn = startTurn + 1 * turnsPerWeek    // sim for 1 week
+  val endTurn = startTurn + 2 * turnsPerWeek    // sim for 1 week
 }
 
 case object Defaults {

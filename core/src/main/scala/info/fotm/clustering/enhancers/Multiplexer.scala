@@ -23,7 +23,7 @@ trait Multiplexer extends RealClusterer {
       def compare(t1: T, t2: T): Int = lookup(t1).compareTo(lookup(t2))
     }
 
-    val allClusters = for {
+    val allClusters: IndexedSeq[Seq[T]] = for {
       i <- 0 to multiplexTurns
       randomInput = TreeMap.empty[T, MathVector](new RandomOrder) ++ input
       cluster <- super.clusterize(randomInput, groupSize)
@@ -31,5 +31,30 @@ trait Multiplexer extends RealClusterer {
 
     val groups = allClusters.groupBy(identity)
     groups.filter(_._2.size >= multiplexThreshold).keySet // take those found at least threshold times
+  }
+}
+
+class SimpleMultiplexer(underlying: Clusterer, turns: Int, threshold: Int) extends Clusterer {
+  protected lazy val multiplexRng = new Random
+  protected lazy val multiplexTurns = turns
+  protected lazy val multiplexThreshold = threshold
+
+  override def clusterize(input: Cluster, groupSize: Int): Set[Cluster] = {
+
+    val vectors: Map[MathVector, Int] = input.zipWithIndex.toMap
+
+    val allClusters: IndexedSeq[Cluster] = for {
+      i <- 1 to multiplexTurns
+      randomInput = multiplexRng.shuffle(input)
+      cluster <- underlying.clusterize(randomInput, groupSize)
+    } yield cluster
+
+    val groups = allClusters.groupBy(_.map(vectors).sorted)
+
+    groups
+      .filter(kv => kv._2.size >= multiplexThreshold) // take those found at least threshold times
+      .map(_._2.head)
+      .filter(_.size == groupSize)
+      .toSet
   }
 }

@@ -14,34 +14,15 @@ object ClusteringEvaluatorApp extends App {
     val dataGen: ClusteringEvaluatorData = new ClusteringEvaluatorData(settings)
     val data: Stream[DataPoint] = dataGen.updatesStream().slice(settings.startTurn, settings.endTurn)
 
-    def createCMV(turns: Int, threshold: Int) = {
-      new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with Verifier {
-        override lazy val multiplexTurns = turns
-        override lazy val multiplexThreshold = threshold
-      }
-    }
-
     val clusterers: Map[String, () => RealClusterer] = Map(
       //"Random" -> RealClusterer.wrap(new RandomClusterer),
-      //      "Closest" -> (() => RealClusterer.wrap(new ClosestClusterer)),
-      //"HT3[RM]" -> (() => RealClusterer.wrap(new HTClusterer(Some(new RMClusterer)))),
-      //      "Closest x Seen" -> (() => new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with SeenEnhancer),
-      //"HT3[RM] x Seen" -> (() => new ClonedClusterer(RealClusterer.wrap(new HTClusterer3(Some(new EqClusterer2)))) with SeenEnhancer),
-      "RM" -> (() => RealClusterer.wrap(new RMClusterer)),
-      "RM x Seen" -> (() => new ClonedClusterer(RealClusterer.wrap(new RMClusterer)) with SeenEnhancer)
-//      "CxV(20, 3)" -> (() => createCMV(20, 3)),
-//      "CxSeen(20, 3)" -> (() =>
-//        new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer with SeenEnhancer {
-//          override lazy val multiplexTurns = 20
-//          override lazy val multiplexThreshold = 3
-//        }
-//        ),
-//      "C(20, 3)" -> (() =>
-//        new ClonedClusterer(RealClusterer.wrap(new ClosestClusterer)) with Multiplexer {
-//          override lazy val multiplexTurns = 20
-//          override lazy val multiplexThreshold = 3
-//        }
-//        )
+      "Closest" -> (() => new ClosestClusterer().toReal),
+      "CsM(10,3)" -> (() => new SimpleMultiplexer(new ClosestClusterer, 10, 3).toReal),
+      "CsM(20,3)" -> (() => new SimpleMultiplexer(new ClosestClusterer, 20, 3).toReal),
+      //"RM" -> (() => new RMClusterer().toReal),
+      "HT3" -> (() => new HTClusterer().toReal),
+      "HT3[RM]" -> (() => new HTClusterer(Some(new RMClusterer)).toReal),
+      "HT3[CsM(10,2)]" -> (() => new HTClusterer(Some(new SimpleMultiplexer(new ClosestClusterer, 10, 2))).toReal)
     )
 
     for ((name, clustererBuilder) <- clusterers) {

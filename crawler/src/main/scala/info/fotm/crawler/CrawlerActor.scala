@@ -7,8 +7,8 @@ import info.fotm.aether.Storage
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
 import info.fotm.clustering._
-import info.fotm.clustering.enhancers.ClonedClusterer
-import info.fotm.clustering.implementations.HTClusterer
+import info.fotm.clustering.enhancers.{SimpleMultiplexer, ClonedClusterer}
+import info.fotm.clustering.implementations.{ClosestClusterer, HTClusterer}
 import info.fotm.clustering.implementations.RMClustering.RMClusterer
 import info.fotm.domain._
 import info.fotm.util.ObservableReadStream
@@ -32,6 +32,8 @@ object CrawlerActor {
 class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor {
 
   import CrawlerActor._
+
+  val clusterer = new HTClusterer(Some(new SimpleMultiplexer(new ClosestClusterer, 10, 2))).toRealSeen
 
   val historySize = 15
 
@@ -61,7 +63,6 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
   }
 
   val evaluator = new ClusteringEvaluator(FeatureSettings.features)
-  val clusterer = new ClonedClusterer(RealClusterer.wrap(new HTClusterer(Some(new RMClusterer)))) with SeenEnhancer
 
   val updatesObserver = new UpdatesQueue[CharacterLadder](historySize)
 
