@@ -1,5 +1,9 @@
 if (window.console) {
   console.log("Welcome to fotm.info!");
+} else {
+  window.console = {
+    log: function() {}
+  };
 }
 
 // Support for span.time-container elements: https://jsfiddle.net/h36zec41/4/
