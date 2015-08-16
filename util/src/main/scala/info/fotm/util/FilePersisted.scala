@@ -4,6 +4,8 @@ import java.nio.file.{Files, Paths}
 
 import com.twitter.bijection.Bijection
 
+import scala.util.Try
+
 class FilePersisted[S](fileName: String)(implicit serializer: Bijection[S, Array[Byte]]) extends Persisted[S] {
 
   override def save(state: S): Unit = {
@@ -11,10 +13,8 @@ class FilePersisted[S](fileName: String)(implicit serializer: Bijection[S, Array
   }
 
   override def fetch(): Option[S] =
-    if (Files.exists(Paths.get(fileName))) {
+    Try {
       val bytes = Files.readAllBytes(Paths.get(fileName))
-      Some(serializer.inverse(bytes))
-    } else {
-      None
-    }
+      serializer.inverse(bytes)
+    }.toOption
 }
