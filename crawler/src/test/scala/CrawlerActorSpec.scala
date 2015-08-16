@@ -3,7 +3,7 @@ import akka.pattern.ask
 import akka.testkit.TestActorRef
 import akka.util.Timeout
 import com.github.nscala_time.time.Imports._
-import info.fotm.aether.Storage
+import info.fotm.aether.{AetherConfig, Storage}
 import info.fotm.api.models.{Leaderboard, LeaderboardRow, Threes, US}
 import info.fotm.crawler.CrawlerActor
 import info.fotm.crawler.CrawlerActor._
@@ -17,7 +17,7 @@ import scala.concurrent.duration.Duration
 import scala.util.Success
 
 class CrawlerActorSpec extends FlatSpec with Matchers {
-  implicit lazy val system = ActorSystem()
+  implicit lazy val system = ActorSystem(AetherConfig.crawlerSystemPath.name, AetherConfig.crawlerConfig)
   implicit lazy val timeout: Timeout = new Timeout(Duration(1, scala.concurrent.duration.SECONDS))
 
   def createStorageActor = TestActorRef(Props(new Storage(new MemoryPersisted[Storage.PersistedStorageState])))
@@ -57,37 +57,58 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
   val horde = 0
 
   trait CrawlerTest {
-    val hordeChars = (0 until 3).map(_ => genPlayer(1500, horde)).toList
-    val allianceChars: List[LeaderboardRow] = (0 until 3).map(_ => genPlayer(1500, alliance)).toList
-    val allChars = hordeChars ++ allianceChars
+    val horde1: List[LeaderboardRow] = (0 until 3).map(_ => genPlayer(1500, horde)).toList
+    val horde2: List[LeaderboardRow] = (0 until 3).map(_ => genPlayer(1500, horde)).toList
+    val alliance1: List[LeaderboardRow] = (0 until 3).map(_ => genPlayer(1500, alliance)).toList
+    val alliance2: List[LeaderboardRow] = (0 until 3).map(_ => genPlayer(1500, alliance)).toList
+    val allChars = horde1 ++ horde2 ++ alliance1 ++ alliance2
 
-    def isAlliance(id: CharacterId): Boolean = allianceChars.find(_.name == id.name).fold(false) { c =>
-      true
-    }
+    def isAlliance(id: CharacterId): Boolean =
+      (alliance1 ++ alliance2).find(_.name == id.name).fold(false) { c => true }
 
-    def isHorde(id: CharacterId): Boolean = hordeChars.find(_.name == id.name).fold(false) { c =>
-      true
-    }
+    def isHorde(id: CharacterId): Boolean =
+      (horde1 ++ horde2).find(_.name == id.name).fold(false) { c => true }
 
-    val startingLeaderboard = Leaderboard(allChars)
+    /*
+    Test flow taking into account SeenEnhancer
+    1. initial leaderboard
+    2. horde team 1 and alliance team 1 -> teams: 0; chars: ht1, at1
+    3. horde team 1 & 2 and alliance team 2 -> teams: ht1; chars: ht2, at1, at2
+    4. horde team 1 & 2 and alliance team 1 -> teams: ht1, ht2, at1; chars: at2
+     */
 
-    val leaderboard1 = Leaderboard(allChars.map(_.copy(rating = 1520, seasonWins = 1, weeklyWins = 1)))
+    val leaderboard1 = Leaderboard(allChars)
 
     val leaderboard2 = Leaderboard(
-      hordeChars.map(_.copy(rating = 1530, seasonWins = 2, weeklyWins = 2)) ++
-      allianceChars.map(_.copy(rating = 1520, seasonWins = 1, weeklyWins = 1))
+      horde1    .map(_.copy(rating = 1520, seasonWins = 1, weeklyWins = 1)) ++
+      alliance1 .map(_.copy(rating = 1520, seasonWins = 1, weeklyWins = 1)) ++
+      horde2 ++
+      alliance2
     )
 
-    val leaderboard3 = Leaderboard(allChars.map(_.copy(rating = 1530, seasonWins = 2, weeklyWins = 2)))
+    val leaderboard3 = Leaderboard(
+      horde1    .map(_.copy(rating = 1530, seasonWins = 2, weeklyWins = 2)) ++
+      alliance1 .map(_.copy(rating = 1520, seasonWins = 1, weeklyWins = 1)) ++
+      horde2    .map(_.copy(rating = 1520, seasonWins = 1, weeklyWins = 1)) ++
+      alliance2 .map(_.copy(rating = 1520, seasonWins = 1, weeklyWins = 1))
+    )
 
-    val fetch = createFetch(Seq(startingLeaderboard, leaderboard1, leaderboard2, leaderboard3))
+    val leaderboard4 = Leaderboard(
+      horde1    .map(_.copy(rating = 1540, seasonWins = 3, weeklyWins = 3)) ++
+      alliance1 .map(_.copy(rating = 1530, seasonWins = 2, weeklyWins = 2)) ++
+      horde2    .map(_.copy(rating = 1530, seasonWins = 2, weeklyWins = 2)) ++
+      alliance2 .map(_.copy(rating = 1520, seasonWins = 1, weeklyWins = 1))
+    )
+
+    val fetch = createFetch(Seq(leaderboard1, leaderboard2, leaderboard3, leaderboard4))
 
     val storageActor = createStorageActor
     val crawlerActor = TestActorRef(Props(classOf[CrawlerActor], storageActor, fetch, axis))
   }
 
-  "crawler" should "return no chars and no teams after initial crawl" in new CrawlerTest {
+  "crawler" should "return nothing after initial crawl" in new CrawlerTest {
     crawlerActor ! Crawl
+    Thread.sleep(100)
 
     val queryFuture = storageActor ? Storage.QueryState(axis, interval)
     val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
@@ -97,7 +118,7 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
     response.chars.size should be(0)
   }
 
-  "crawler" should "return all chars and no teams after 2 crawls" in new CrawlerTest {
+  "crawler" should "return ht1 & at1 chars and no teams after second crawls" in new CrawlerTest {
     crawlerActor ! Crawl
     Thread.sleep(100)
     crawlerActor ! Crawl
@@ -108,11 +129,12 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
 
     response.axis should be(axis)
     response.teams.size should be(0)
-    response.chars.size should be(allChars.size)
+    response.chars.map(_.id.name) should contain theSameElementsAs (horde1 ++ alliance1).map(_.name)
     response.chars.foreach(cs => cs.stats.rating should be(1520))
   }
 
-  "crawler" should "return one horde team and 3 alliance chars after 3 crawls" in new CrawlerTest {
+  //     3. horde team 1 & 2 and alliance team 2 -> teams: ht1; chars: ht2, at1, at2
+  "crawler" should "return h1 team and ht2, at1, at2 chars after third crawls" in new CrawlerTest {
     crawlerActor ! Crawl
     Thread.sleep(100)
     crawlerActor ! Crawl
@@ -125,14 +147,13 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
 
     response.axis should be(axis)
     response.teams.size should be(1)
-    response.teams.foreach(_.rating should be(1530))
     response.teams.foreach(_.team.members.size should be(3))
-    response.teams.foreach(_.team.members.forall(isHorde))
-    response.chars.size should be(3)
-    response.chars.forall(cs => isAlliance(cs.id)) should be(true)
+    response.teams.map(_.team.members.map(_.name).toSeq.sorted) should contain theSameElementsAs Seq(horde1.map(_.name).sorted)
+    response.chars.map(_.id.name) should contain theSameElementsAs (horde2 ++ alliance1 ++ alliance2).map(_.name)
   }
 
-  "crawler" should "return two teams and 0 chars after 4 crawls" in new CrawlerTest {
+  //    4. horde team 1 & 2 and alliance team 1 -> teams: ht1, ht2, at1; chars: at2
+  "crawler" should "return ht1, ht2, at1 teams and at2 chars after fourth crawls" in new CrawlerTest {
     crawlerActor ! Crawl
     Thread.sleep(100)
     crawlerActor ! Crawl
@@ -146,11 +167,10 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
     val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
 
     response.axis should be(axis)
-    response.teams.size should be(2)
-    response.teams.foreach(_.rating should be(1530))
+    response.teams.size should be(3)
     response.teams.foreach(_.team.members.size should be(3))
-    response.teams.foreach(t => t.team.members.forall(isHorde) || t.team.members.forall(isAlliance))
-    response.chars.size should be(0)
+    response.teams.map(_.team.members.map(_.name).toSeq.sorted) should contain theSameElementsAs Seq(horde1, horde2, alliance1).map(_.map(_.name).sorted)
+    response.chars.map(_.id.name) should contain theSameElementsAs alliance2.map(_.name)
   }
 
   // TODO: test recrawl
