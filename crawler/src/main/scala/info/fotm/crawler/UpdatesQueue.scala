@@ -1,7 +1,7 @@
 package info.fotm.crawler
 
 import akka.event.{LoggingAdapter, NoLogging}
-import info.fotm.util.{Inspection, ObservableStream}
+import info.fotm.util.ObservableStream
 
 import scala.collection.mutable
 
