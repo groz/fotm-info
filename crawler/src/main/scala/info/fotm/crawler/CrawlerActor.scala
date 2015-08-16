@@ -27,21 +27,12 @@ object CrawlerActor {
 
   case object CrawlTimedOut
 
-}
-
-class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor {
-
-  import CrawlerActor._
-
-  val clusterer = new HTClusterer(Some(new SimpleMultiplexer(new ClosestClusterer, 10, 2))).toRealSeen
-
-  val historySize = 15
-
-  implicit val log: LoggingAdapter = Logging(context.system, this)
-
-  val requestTimeout = 30.seconds
-
-  val api = new BattleNetAPI(axis.region, apiKey).WoW
+  def createClusterer: RealClusterer =
+    new ClonedClusterer(RealClusterer.sequence(
+      new SimpleMultiplexer(new ClosestClusterer, 20, 10).toReal,
+      new SimpleMultiplexer(new ClosestClusterer, 10, 4).toReal,
+      new SimpleMultiplexer(new ClosestClusterer, 10, 2).toReal
+    )) with SeenEnhancer
 
   implicit val lbOrdering = Ordering.fromLessThan[CharacterLadder] { (l1, l2) =>
     val ids = l1.rows.keySet.intersect(l2.rows.keySet)
@@ -53,6 +44,17 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
 
     lt
   }
+}
+
+class CrawlerActor(storage: ActorRef, fetchLeaderboard: () => Future[Leaderboard], axis: Axis) extends Actor {
+
+  import CrawlerActor._
+
+  val clusterer = createClusterer
+
+  val historySize = 15
+
+  implicit val log: LoggingAdapter = Logging(context.system, this)
 
   private def hydrateTeam(ladderUpdate: LadderUpdate, team: Team): TeamUpdate = {
     val id = team.members.head
@@ -112,7 +114,8 @@ class CrawlerActor(storage: ActorRef, apiKey: String, axis: Axis) extends Actor 
     case Crawl =>
       context.become(crawling(false))
 
-      val query = api.leaderboard(axis.bracket)
+      val query =
+        fetchLeaderboard()
         .map(LeaderboardReceived)
         .recover {
           case ex: Throwable =>

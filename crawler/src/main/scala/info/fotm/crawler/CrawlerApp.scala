@@ -25,7 +25,9 @@ object CrawlerApp extends App {
     a <- Axis.all
   } yield {
       val name = s"crawler-${a.region}-${a.bracket.slug}"
-      val props = Props(classOf[CrawlerActor], storage, apiKey, a)
+      val bnetapi = new BattleNetAPI(a.region, apiKey).WoW
+      def fetch = () => bnetapi.leaderboard(a.bracket)
+      val props = Props(classOf[CrawlerActor], storage, fetch, a)
       (name, props)
     }
 

@@ -6,3 +6,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-slf4j" % "2.4-SNAPSHOT",
   "com.typesafe.akka" %% "akka-testkit" % "2.4-SNAPSHOT" % Test
 )
+
+resolvers += "Sonatype Public" at "https://oss.sonatype.org/content/groups/public/"
+libraryDependencies += "org.scodec" %% "scodec-bits" % "1.0.9"
+
+libraryDependencies += "org.scodec" %% "scodec-core" % "1.8.1"

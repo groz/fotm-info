@@ -51,15 +51,33 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
     CharacterLadder(axis, rows)
   }
 
-  def pickGamesFromBuckets(teamsWithRatings: IndexedSeq[(Team, Double)]): Set[(Team, Team)] = {
+  def pickGamesFromBuckets(ratings: Map[Team, Double], previousGames: Set[Game]): Set[(Team, Team)] = {
 
-    val shuffled = rng.shuffle(teamsWithRatings.indices.toIndexedSeq)
-    val indices = shuffled.take(matchesPerTurn * 2).sorted
+    // replace some % of previous teams that weren't hopped
+
+    val teamsPlayedPreviously: Seq[Team] = rng.shuffle( previousGames.flatMap(game => Seq(game._1, game._2)).toSeq )
+
+    val nDropped = teamsPlayedPreviously.size / 20
+
+    val stillPlayingTeams: Seq[Team] = teamsPlayedPreviously.drop(nDropped).filter(ratings.contains)
+
+    val rest: Map[Team, Double] = ratings -- teamsPlayedPreviously
+
+    val addedTeams: IndexedSeq[(Team, Double)] =
+      rng.shuffle(rest.toIndexedSeq).take(matchesPerTurn * 2 - stillPlayingTeams.size)
+
+    val teams = (stillPlayingTeams.map(t => (t, ratings(t))) ++ addedTeams).toIndexedSeq.sortBy(_._2)
+
+    val shuffled: IndexedSeq[Int] = rng.shuffle(teams.indices.toIndexedSeq)
+
+    val indices: IndexedSeq[Int] = shuffled.take(matchesPerTurn * 2).sorted
 
     indices
       .grouped(2)
       .map { (s: Seq[Int]) =>
-        val ((team1, rating1), (team2, rating2)) = (teamsWithRatings(s.head), teamsWithRatings(s.last))
+
+        val ((team1, rating1), (team2, rating2)) = (teams(s.head), teams(s.last))
+
         if (rng.nextDouble() < winChance(rating1, rating2))
           (team1, team2)
         else
@@ -154,8 +172,9 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
                      ladderOpt: Option[CharacterLadder] = None,
                      teamsOpt: Option[IndexedSeq[Team]] = None,
                      hopTeams: IndexedSeq[Team] => IndexedSeq[Team] = hopTeamsRandomly(_, None),
-                     pickGames: IndexedSeq[(Team, Double)] => Set[Game] = pickGamesFromBuckets,
-                     i: Int = 0)
+                     pickGames: ((Map[Team, Double], Set[Game]) => Set[Game]) = pickGamesFromBuckets,
+                     i: Int = 1,
+                     previousGames: Set[Game] = Set.empty)
   : Stream[DataPoint] = {
 
     val ladderInput: CharacterLadder = ladderOpt.getOrElse(genLadder(ladderSize))
@@ -165,6 +184,7 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
       else resetWeeklyStats(ladderInput)
 
     val prevTeams: IndexedSeq[Team] = teamsOpt.getOrElse {
+      // generate initial teams
       val ids = ladder.rows.keys.toSeq
       val result = ids.grouped(teamSize).map(p => Team(p.toSet)).toIndexedSeq
       if (result.last.members.size == teamSize) result else result.init
@@ -173,17 +193,18 @@ class ClusteringEvaluatorData(settings: EvaluatorSettings = Defaults.settings(3)
     def withRating(teams: IndexedSeq[Team]): IndexedSeq[(Team, Double)] =
       teams.zip(teams.map(ladder.calcTeamRating))
 
-    def sortByRating(teams: IndexedSeq[Team]): IndexedSeq[Team] =
-      withRating(teams).sortBy(_._2).map(_._1)
+    val sortedPreviousTeams: IndexedSeq[Team] = withRating(prevTeams).sortBy(_._2).map(_._1)
 
-    val teams = hopTeams(sortByRating(prevTeams))
+    val teams: IndexedSeq[Team] = hopTeams(sortedPreviousTeams)
 
-    val matches = pickGames(withRating(teams))
+    val ratings: Map[Team, Double] = teams.zip(teams.map(ladder.calcTeamRating)).toMap
 
-    val nextLadder: CharacterLadder = matches.foldLeft(ladder) { (l, t) => play(l, t._1, t._2) }
+    val games: Set[Game] = pickGames(ratings, previousGames)
+
+    val nextLadder: CharacterLadder = games.foldLeft(ladder) { (l, t) => play(l, t._1, t._2) }
 
     print(s":$i")
-    (LadderUpdate(ladder, nextLadder), matches) #::
-      updatesStream(Some(nextLadder), Some(teams), hopTeams, pickGames, i + 1)
+    (LadderUpdate(ladder, nextLadder), games) #::
+      updatesStream(Some(nextLadder), Some(teams), hopTeams, pickGames, i + 1, games)
   }
 }

@@ -8,6 +8,22 @@ import scala.collection.breakOut
 
 object RealClusterer {
 
+  def sequence(clusterers: RealClusterer*): RealClusterer = new RealClusterer {
+
+    override def clusterize[T](input: Map[T, MathVector], groupSize: Int): Set[Seq[T]] = {
+
+      val init = (Set.empty[Seq[T]], input)
+
+      val (results, _) = clusterers.foldLeft(init) { (rs, c) =>
+        val (clusters, currentInput) = rs
+        val currentClusters = c.clusterize(currentInput, groupSize)
+        (clusters ++ currentClusters, currentInput -- currentClusters.flatten)
+      }
+
+      results
+    }
+  }
+
   // TODO: works only as long as MathVector has referential equality
   def wrap(clusterer: Clusterer) = new RealClusterer {
 

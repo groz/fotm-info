@@ -5,10 +5,10 @@ final case class EvaluatorSettings(
     ladderSize: Int = 5000,
     teamSize: Int = 3,
     hopRatio: Double = 0.05,
-    turnsPerWeek: Int = 300) {
+    turnsPerWeek: Int = 500) {
 
-  val startTurn = turnsPerWeek * 7/3            // mid third week
-  val endTurn = startTurn + 2 * turnsPerWeek    // sim for 1 week
+  val startTurn = turnsPerWeek * 10/3
+  val endTurn = startTurn + 2 * turnsPerWeek
 }
 
 case object Defaults {
