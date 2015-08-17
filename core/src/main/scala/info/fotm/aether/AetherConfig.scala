@@ -2,7 +2,7 @@ package info.fotm.aether
 
 import com.twitter.bijection.Bijection
 import com.typesafe.config.{Config, ConfigFactory}
-import info.fotm.util.{S3Persisted, FilePersisted, NullPersisted}
+import info.fotm.util._
 
 case class SystemPathConfig(name: String, host: String, port: Int) {
   def this(config: Config, name: String) = this(
@@ -34,21 +34,27 @@ object AetherConfig {
   val storagePath = crawlerSystemPath.locate(storageActorName)
   val storageProxyPath = portalSystemPath.locate(storageProxyActorName)
 
-  private val fileStorageKey = "file-storage"
-  private val s3StorageKey = "s3-storage"
+  private val s3kvStorageKey = "s3-kvstorage"
+  private val folderStorageKey = "folder-storage"
 
-  def storagePersistence[T](implicit serializer: Bijection[T, Array[Byte]]) = {
+  def storagePersistence[K, V](
+      implicit keyPathBijection: Bijection[K, String],
+      valueSerializer: Bijection[V, Array[Byte]])
+    : Persisted[Map[K, V]] = {
+
     val storageConfig = config.getConfig("storage")
 
-    val result = if (storageConfig.hasPath(fileStorageKey)) {
-      val path = storageConfig.getConfig(fileStorageKey).getString("path")
-      new FilePersisted[T](path)
-    } else if (storageConfig.hasPath(s3StorageKey)) {
-      val s3cfg = storageConfig.getConfig(s3StorageKey)
-      val bucket = s3cfg.getString("bucket")
-      val path = s3cfg.getString("path")
-      new S3Persisted[T](bucket, path)
-    } else new NullPersisted[T]
+    val result =
+      if (storageConfig.hasPath(s3kvStorageKey)) {
+        val s3cfg = storageConfig.getConfig(s3kvStorageKey)
+        val bucket = s3cfg.getString("bucket")
+        new S3KVPersisted[K, V](bucket, keyPathBijection)
+      } else if (storageConfig.hasPath(folderStorageKey)) {
+        val folderCfg = storageConfig.getConfig(folderStorageKey)
+        val folder = folderCfg.getString("folder")
+        val flatPath = keyPathBijection andThen Bijection.build[String, String](_.replace('/', '-'))(_.replace('-', '/'))
+        new FolderPersisted[K, V](folder, flatPath)
+      } else new NullPersisted[Map[K, V]]
 
     println(s">>> Using storage: $result")
     result

@@ -36,7 +36,7 @@ object CrawlerApp extends App {
       (name, props) <- actorSetups
     } yield {
       val crawler = system.actorOf(props, name)
-      system.scheduler.schedule(0.seconds, 10.seconds, crawler, CrawlerActor.Crawl)
+      system.scheduler.schedule(0.seconds, 20.seconds, crawler, CrawlerActor.Crawl)
     }
 
   val timers = spawnAll(system)

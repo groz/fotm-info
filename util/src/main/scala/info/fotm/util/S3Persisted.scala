@@ -3,7 +3,7 @@ package info.fotm.util
 import java.io.File
 
 import com.amazonaws.services.s3.AmazonS3Client
-import com.amazonaws.services.s3.model.{S3ObjectInputStream, GetObjectRequest, PutObjectRequest}
+import com.amazonaws.services.s3.model._
 import com.twitter.bijection.Bijection
 
 import scala.util.Try

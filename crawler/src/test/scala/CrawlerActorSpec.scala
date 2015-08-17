@@ -3,7 +3,7 @@ import akka.pattern.ask
 import akka.testkit.TestActorRef
 import akka.util.Timeout
 import com.github.nscala_time.time.Imports._
-import info.fotm.aether.{AetherConfig, Storage}
+import info.fotm.aether.{StorageAxisState, AetherConfig, Storage}
 import info.fotm.api.models.{Leaderboard, LeaderboardRow, Threes, US}
 import info.fotm.crawler.CrawlerActor
 import info.fotm.crawler.CrawlerActor._
@@ -20,7 +20,7 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
   implicit lazy val system = ActorSystem(AetherConfig.crawlerSystemPath.name, AetherConfig.crawlerConfig)
   implicit lazy val timeout: Timeout = new Timeout(Duration(1, scala.concurrent.duration.SECONDS))
 
-  def createStorageActor = TestActorRef(Props(new Storage(new MemoryPersisted[Storage.PersistedStorageState])))
+  def createStorageActor = TestActorRef(Props(new Storage(new MemoryPersisted[Map[Axis, StorageAxisState]])))
 
   def createFetch[A](seq: Seq[A]): (() => Future[A]) = {
     val current = seq.iterator

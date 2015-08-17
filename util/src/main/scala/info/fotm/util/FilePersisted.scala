@@ -18,3 +18,5 @@ class FilePersisted[S](fileName: String)(implicit serializer: Bijection[S, Array
       serializer.inverse(bytes)
     }.toOption
 }
+
+
