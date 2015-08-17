@@ -2,7 +2,7 @@ package info.fotm.crawler
 
 import akka.actor.{Actor, ActorRef}
 import akka.event.{Logging, LoggingAdapter, LoggingReceive}
-import akka.pattern.pipe
+import akka.pattern.{PipeToSupport, pipe}
 import info.fotm.aether.Storage
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
@@ -14,7 +14,7 @@ import info.fotm.domain._
 import info.fotm.util.ObservableReadStream
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.concurrent.duration._
 
 object CrawlerActor {
@@ -123,6 +123,6 @@ class CrawlerActor(storage: ActorRef, fetchLeaderboard: () => Future[Leaderboard
             CrawlFailed
         }
 
-      query pipeTo self
+      pipe(query) to self
   }
 }

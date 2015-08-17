@@ -18,9 +18,7 @@ import scala.util.Success
 
 class CrawlerActorSpec extends FlatSpec with Matchers {
   implicit lazy val system = ActorSystem(AetherConfig.crawlerSystemPath.name, AetherConfig.crawlerConfig)
-  implicit lazy val timeout: Timeout = new Timeout(Duration(1, scala.concurrent.duration.SECONDS))
-
-  def createStorageActor = TestActorRef(Props(new Storage(new MemoryPersisted[Map[Axis, StorageAxisState]])))
+  implicit lazy val timeout: Timeout = new Timeout(Duration(10, scala.concurrent.duration.SECONDS))
 
   def createFetch[A](seq: Seq[A]): (() => Future[A]) = {
     val current = seq.iterator
@@ -102,13 +100,15 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
 
     val fetch = createFetch(Seq(leaderboard1, leaderboard2, leaderboard3, leaderboard4))
 
-    val storageActor = createStorageActor
-    val crawlerActor = TestActorRef(Props(classOf[CrawlerActor], storageActor, fetch, axis))
+    val storageActor = TestActorRef[Storage](Props(classOf[Storage], new MemoryPersisted[Map[Axis, StorageAxisState]]))
+    val crawlerActor = TestActorRef[CrawlerActor](Props(classOf[CrawlerActor], storageActor, fetch, axis))
+
+    def sleep() = Thread.sleep(500)
   }
 
   "crawler" should "return nothing after initial crawl" in new CrawlerTest {
     crawlerActor ! Crawl
-    Thread.sleep(100)
+    sleep()
 
     val queryFuture = storageActor ? Storage.QueryState(axis, interval)
     val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
@@ -120,9 +120,9 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
 
   "crawler" should "return ht1 & at1 chars and no teams after second crawls" in new CrawlerTest {
     crawlerActor ! Crawl
-    Thread.sleep(100)
+    sleep()
     crawlerActor ! Crawl
-    Thread.sleep(100)
+    sleep()
 
     val queryFuture = storageActor ? Storage.QueryState(axis, interval)
     val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
@@ -136,11 +136,11 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
   //     3. horde team 1 & 2 and alliance team 2 -> teams: ht1; chars: ht2, at1, at2
   "crawler" should "return h1 team and ht2, at1, at2 chars after third crawls" in new CrawlerTest {
     crawlerActor ! Crawl
-    Thread.sleep(100)
+    sleep()
     crawlerActor ! Crawl
-    Thread.sleep(100)
+    sleep()
     crawlerActor ! Crawl
-    Thread.sleep(100)
+    sleep()
 
     val queryFuture = storageActor ? Storage.QueryState(axis, interval)
     val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
@@ -155,13 +155,13 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
   //    4. horde team 1 & 2 and alliance team 1 -> teams: ht1, ht2, at1; chars: at2
   "crawler" should "return ht1, ht2, at1 teams and at2 chars after fourth crawls" in new CrawlerTest {
     crawlerActor ! Crawl
-    Thread.sleep(100)
+    sleep()
     crawlerActor ! Crawl
-    Thread.sleep(100)
+    sleep()
     crawlerActor ! Crawl
-    Thread.sleep(100)
+    sleep()
     crawlerActor ! Crawl
-    Thread.sleep(100)
+    sleep()
 
     val queryFuture = storageActor ? Storage.QueryState(axis, interval)
     val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
