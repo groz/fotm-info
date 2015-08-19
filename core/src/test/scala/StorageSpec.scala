@@ -3,7 +3,7 @@ import akka.pattern.ask
 import akka.testkit.TestActorRef
 import akka.util.Timeout
 import com.github.nscala_time.time.Imports._
-import info.fotm.aether.{StorageAxisState, Storage}
+import info.fotm.aether.{Storage, StorageAxis}
 import info.fotm.clustering.ClusteringEvaluatorData
 import info.fotm.domain._
 import info.fotm.util.MemoryPersisted
@@ -29,7 +29,7 @@ class StorageSpec extends FlatSpec with Matchers {
 
   val axis = Axis.all.head
 
-  def createStorageActor = TestActorRef(Props(new Storage(new MemoryPersisted[Map[Axis, StorageAxisState]])))
+  def createStorageActor = TestActorRef(Props(new Storage(new MemoryPersisted[Map[Axis, StorageAxis]])))
 
   "Updates" should "correctly populate Storage" in {
     // 1

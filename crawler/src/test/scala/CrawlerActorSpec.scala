@@ -3,7 +3,7 @@ import akka.pattern.ask
 import akka.testkit.TestActorRef
 import akka.util.Timeout
 import com.github.nscala_time.time.Imports._
-import info.fotm.aether.{StorageAxisState, AetherConfig, Storage}
+import info.fotm.aether.{StorageAxis, AetherConfig, Storage}
 import info.fotm.api.models.{Leaderboard, LeaderboardRow, Threes, US}
 import info.fotm.crawler.CrawlerActor
 import info.fotm.crawler.CrawlerActor._
@@ -100,7 +100,7 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
 
     val fetch = createFetch(Seq(leaderboard1, leaderboard2, leaderboard3, leaderboard4))
 
-    val storageActor = TestActorRef[Storage](Props(classOf[Storage], new MemoryPersisted[Map[Axis, StorageAxisState]]))
+    val storageActor = TestActorRef[Storage](Props(classOf[Storage], new MemoryPersisted[Map[Axis, StorageAxis]]))
     val crawlerActor = TestActorRef[CrawlerActor](Props(classOf[CrawlerActor], storageActor, fetch, axis))
 
     def sleep() = Thread.sleep(500)

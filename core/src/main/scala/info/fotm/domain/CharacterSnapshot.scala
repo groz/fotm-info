@@ -34,4 +34,9 @@ final case class CharacterId(name: String, realmName: String, realmId: Int, real
 
 final case class CharacterView(specId: Int, genderId: Int, raceId: Int, factionId: Int)
 
-final case class CharacterStats(rating: Int, weekly: Stats, season: Stats)
+final case class CharacterStats(rating: Int, weekly: Stats, season: Stats) {
+  def update(diff: Int): CharacterStats =
+    CharacterStats(rating + diff,
+      if (diff > 0) weekly.win else weekly.loss,
+      if (diff > 0) season.win else season.loss)
+}

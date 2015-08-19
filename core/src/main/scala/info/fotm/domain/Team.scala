@@ -6,6 +6,13 @@ final case class TeamSnapshot /* private */ (team: Team, view: TeamView, stats: 
 }
 
 object TeamSnapshot {
+  def fromView(teamView: TeamView): TeamSnapshot = fromSnapshots(teamView.snapshots)
+
+  def fromUpdate(teamUpdate: TeamUpdate): TeamSnapshot = {
+    val initStats = if (teamUpdate.won) Stats.empty.win else Stats.empty.loss
+    fromView(teamUpdate.view).copy(stats = initStats)
+  }
+
   def fromSnapshots(snapshots: Set[CharacterSnapshot]): TeamSnapshot = {
     val team = Team(snapshots.map(_.id))
     new TeamSnapshot(team, TeamView(snapshots), Stats.empty)
@@ -20,15 +27,16 @@ object TeamSnapshot {
 final case class Team(members: Set[CharacterId])
 
 final case class TeamView(snapshots: Set[CharacterSnapshot]) {
+  lazy val teamId = Team(snapshots.map(_.id))
+
   lazy val rating = {
     val totalRating = snapshots.toList.map(_.stats.rating)
     totalRating.sum.toDouble / snapshots.size
   }
 
   lazy val sortedSnapshots: Seq[CharacterSnapshot] =
-    snapshots.toSeq.sorted(CharacterOrderingFactory.ordering)
+    snapshots.toSeq.sorted(CharacterOrderingFactory.snapshotsBySpecOrdering)
 }
-
 
 object CharacterOrderingFactory {
   val healers = Set(65, 105, 256, 257, 264, 270)
@@ -41,5 +49,12 @@ object CharacterOrderingFactory {
     cs.view.specId
   )
 
-  val ordering: Ordering[CharacterSnapshot] = Ordering.by(cmpValue)
+  def cmpBySpecId(specId: Int) = (
+    if (healers.contains(specId)) 1 else 0,
+    if (melee.contains(specId)) 0 else 1,
+    specId
+  )
+
+  val snapshotsBySpecOrdering: Ordering[CharacterSnapshot] = Ordering.by(cmpValue)
+  def specIdOrdering[T](getSpecId: T => Int): Ordering[T] = Ordering.by(t => cmpBySpecId(getSpecId(t)))
 }
