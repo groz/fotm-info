@@ -1,0 +1,26 @@
+@import info.fotm.domain.Axis
+@(currentAxis: Axis, minutes: Int)
+
+<div class="row">
+
+  <ul class="nav nav-pills">
+  @for(bracket <- Axis.allBrackets) {
+    <li class='@{ if(bracket == currentAxis.bracket) "active" else "" }'>
+      <a href='@routes.Application.leaderboards(currentAxis.region.slug, bracket.slug, minutes)'>
+        @bracket.slug
+      </a>
+    </li>
+  }
+  </ul>
+
+  <ul class="nav nav-pills">
+    @for((intervalName, durationInMinutes) <- Map("Now" -> 30, "Day" -> 1440, "Week" -> 10080)) {
+      <li class='@{ if(durationInMinutes == minutes) "active" else "" }'>
+        <a href='@routes.Application.leaderboards(currentAxis.region.slug, currentAxis.bracket.slug, durationInMinutes)'>
+          @intervalName
+        </a>
+      </li>
+    }
+  </ul>
+
+</div>

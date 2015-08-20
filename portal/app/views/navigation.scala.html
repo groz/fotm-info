@@ -1,0 +1,23 @@
+@import info.fotm.domain.Axis
+
+@(currentAxis: Axis, minutes: Int)
+
+<nav class="navbar navbar-default">
+  <ul class="nav navbar-nav">
+    <li>
+      <a href="/">FotM</a>
+    </li>
+    @for(region <- Axis.allRegions) {
+
+      <li class='@{
+        if(region == currentAxis.region) "active" else ""
+      }'>
+
+        <a href='@routes.Application.leaderboards(region.slug, currentAxis.bracket.slug, minutes)'>
+          @region.slug.toUpperCase
+        </a>
+
+      </li>
+    }
+    </ul>
+</nav>

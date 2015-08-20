@@ -1,0 +1,11 @@
+@import info.fotm.aether.FotmSetup
+
+@(setup: FotmSetup)
+
+<td>@{f"${100 * setup.ratio}%1.1f"}%</td>
+
+@for(specId <- setup.orderedSpecIds) {
+    <td>
+      <img src='@routes.Assets.versioned(s"images/specs/spec_$specId.png")'/>
+    </td>
+}

@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream
 
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.{GetObjectRequest, ObjectListing, ObjectMetadata, S3ObjectInputStream}
+import com.amazonaws.util.IOUtils
 import com.twitter.bijection.Bijection
 
 import scala.collection.JavaConverters._
@@ -37,7 +38,7 @@ class S3KVPersisted[K, V](bucket: String, keyPathBijection: Bijection[K, String]
         val request = new GetObjectRequest(bucket, s3key)
         val s3object = s3client.getObject(request)
         val objectData: S3ObjectInputStream = s3object.getObjectContent
-        val bytes = scala.io.Source.fromInputStream(objectData).mkString.getBytes
+        val bytes = IOUtils.toByteArray(objectData)
         objectData.close()
         val k = keyPathBijection.inverse(s3key)
         val v = valueSerializer.inverse(bytes)

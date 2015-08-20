@@ -110,8 +110,8 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
     crawlerActor ! Crawl
     sleep()
 
-    val queryFuture = storageActor ? Storage.QueryState(axis, interval)
-    val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
+    val queryFuture = storageActor ? Storage.QueryPlayingNow(axis, interval)
+    val Success(response: Storage.QueryPlayingNowResponse) = queryFuture.value.get
 
     response.axis should be(axis)
     response.teams.size should be(0)
@@ -124,8 +124,8 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
     crawlerActor ! Crawl
     sleep()
 
-    val queryFuture = storageActor ? Storage.QueryState(axis, interval)
-    val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
+    val queryFuture = storageActor ? Storage.QueryPlayingNow(axis, interval)
+    val Success(response: Storage.QueryPlayingNowResponse) = queryFuture.value.get
 
     response.axis should be(axis)
     response.teams.size should be(0)
@@ -142,8 +142,8 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
     crawlerActor ! Crawl
     sleep()
 
-    val queryFuture = storageActor ? Storage.QueryState(axis, interval)
-    val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
+    val queryFuture = storageActor ? Storage.QueryPlayingNow(axis, interval)
+    val Success(response: Storage.QueryPlayingNowResponse) = queryFuture.value.get
 
     response.axis should be(axis)
     response.teams.size should be(1)
@@ -163,8 +163,8 @@ class CrawlerActorSpec extends FlatSpec with Matchers {
     crawlerActor ! Crawl
     sleep()
 
-    val queryFuture = storageActor ? Storage.QueryState(axis, interval)
-    val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
+    val queryFuture = storageActor ? Storage.QueryPlayingNow(axis, interval)
+    val Success(response: Storage.QueryPlayingNowResponse) = queryFuture.value.get
 
     response.axis should be(axis)
     response.teams.size should be(3)

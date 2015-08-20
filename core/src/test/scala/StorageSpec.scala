@@ -39,8 +39,8 @@ class StorageSpec extends FlatSpec with Matchers {
 
     val now = DateTime.now
 
-    val queryFuture = storageActorRef ? Storage.QueryState(axis, new Interval(now - 1.month, now))
-    val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
+    val queryFuture = storageActorRef ? Storage.QueryPlayingNow(axis, new Interval(now - 1.month, now))
+    val Success(response: Storage.QueryPlayingNowResponse) = queryFuture.value.get
 
     response.axis should be(axis)
     response.teams should contain theSameElementsAs Seq(currentTeam)
@@ -55,8 +55,8 @@ class StorageSpec extends FlatSpec with Matchers {
 
     storageActorRef ! Storage.Updates(axis, teamUpdates, charUpdates)
 
-    val queryFuture = storageActorRef ? Storage.QueryState(axis, new Interval(now - 1.month, now - 1.second))
-    val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
+    val queryFuture = storageActorRef ? Storage.QueryPlayingNow(axis, new Interval(now - 1.month, now - 1.second))
+    val Success(response: Storage.QueryPlayingNowResponse) = queryFuture.value.get
 
     response.axis should be(axis)
     response.chars.size should be(0)
@@ -72,8 +72,8 @@ class StorageSpec extends FlatSpec with Matchers {
 
     val now = DateTime.now
 
-    val queryFuture = storageActorRef ? Storage.QueryState(axis, new Interval(now - 1.month, now))
-    val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
+    val queryFuture = storageActorRef ? Storage.QueryPlayingNow(axis, new Interval(now - 1.month, now))
+    val Success(response: Storage.QueryPlayingNowResponse) = queryFuture.value.get
 
     response.axis should be(axis)
     response.teams should contain theSameElementsAs Seq(nextTeam)
@@ -86,8 +86,8 @@ class StorageSpec extends FlatSpec with Matchers {
 
     val now = DateTime.now
 
-    val queryFuture = storageActorRef ? Storage.QueryState(axis, new Interval(now - 1.month, now))
-    val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
+    val queryFuture = storageActorRef ? Storage.QueryPlayingNow(axis, new Interval(now - 1.month, now))
+    val Success(response: Storage.QueryPlayingNowResponse) = queryFuture.value.get
 
     response.axis should be(axis)
     response.chars.size should be(0)
@@ -104,8 +104,8 @@ class StorageSpec extends FlatSpec with Matchers {
     val now = DateTime.now
 
     // query proxy
-    val queryFuture = storageProxyActorRef ? Storage.QueryState(axis, new Interval(now - 1.month, now))
-    val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
+    val queryFuture = storageProxyActorRef ? Storage.QueryPlayingNow(axis, new Interval(now - 1.month, now))
+    val Success(response: Storage.QueryPlayingNowResponse) = queryFuture.value.get
 
     response.axis should be(axis)
     response.teams should contain theSameElementsAs Seq(currentTeam)
@@ -122,8 +122,8 @@ class StorageSpec extends FlatSpec with Matchers {
     val now = DateTime.now
 
     // query proxy
-    val queryFuture = storageProxyActorRef ? Storage.QueryState(axis, new Interval(now - 1.month, now))
-    val Success(response: Storage.QueryStateResponse) = queryFuture.value.get
+    val queryFuture = storageProxyActorRef ? Storage.QueryPlayingNow(axis, new Interval(now - 1.month, now))
+    val Success(response: Storage.QueryPlayingNowResponse) = queryFuture.value.get
 
     response.axis should be(axis)
     response.teams should contain theSameElementsAs Seq(currentTeam)

@@ -56,5 +56,6 @@ object CharacterOrderingFactory {
   )
 
   val snapshotsBySpecOrdering: Ordering[CharacterSnapshot] = Ordering.by(cmpValue)
+
   def specIdOrdering[T](getSpecId: T => Int): Ordering[T] = Ordering.by(t => cmpBySpecId(getSpecId(t)))
 }

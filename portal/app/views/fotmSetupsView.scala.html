@@ -1,12 +1,12 @@
-@import info.fotm.domain.TeamSnapshot
+@import info.fotm.aether.FotmSetup
 
-@(teams: Seq[TeamSnapshot])
+@(setups: Seq[FotmSetup])
 
 <table class="table table-striped table-condensed table-hover">
   <tbody>
-    @for(snapshot <- teams) {
+    @for(setup <- setups) {
       <tr>
-        @teamView(snapshot)
+      @setupView(setup)
       </tr>
     }
   </tbody>

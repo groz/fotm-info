@@ -4,6 +4,7 @@ import com.github.nscala_time.time.Imports
 import info.fotm.domain._
 import com.github.nscala_time.time.Imports._
 
+import scala.collection.immutable
 import scala.collection.immutable.TreeMap
 
 /*
@@ -74,6 +75,42 @@ final case class StorageAxis(
     StorageAxis(nextTeamHistories, nextCharHistories, nextTeamsSeen, nextCharsSeen)
   }
 
+  def all(interval: Interval, cutoff: Int = 0): (Seq[FotmSetup], Seq[TeamSnapshot], Seq[CharacterSnapshot]) = {
+
+    val allTeams = inInterval(teamsSeen, interval).flatten.toSet
+
+    val aboveCutoff =
+      for {
+        team <- allTeams
+        teamHistory = teamHistories(team)
+        if teamHistory.size > cutoff
+      } yield teamHistory
+
+    val allSnapshots = aboveCutoff.flatMap(_.values)
+
+    // setups
+    val setupPop: Map[Seq[Int], Int] =
+      allSnapshots
+        .groupBy(_.view.sortedSnapshots.map(_.view.specId))
+        .mapValues(_.size)
+
+    val total = setupPop.values.sum.toDouble
+
+    val setups = for ((setup, size) <- setupPop) yield FotmSetup(setup, size / total)
+
+    val allChars: Map[CharacterId, CharacterSnapshot] =
+      chars(interval).map(c => (c.id, c))(scala.collection.breakOut)
+
+    // teams
+    val lastSnapshots = aboveCutoff.map(_.values.last).toSeq
+
+    // filter out chars seen in teams that are sent back
+    val charsInTeams = lastSnapshots.flatMap(_.team.members)
+    val charsNotInTeams = (allChars -- charsInTeams).values.toSeq.sortBy(- _.stats.rating)
+
+    (setups.toSeq.sortBy(- _.ratio), lastSnapshots.toSeq.sortBy(- _.rating), charsNotInTeams)
+  }
+
   // a
   def teams(interval: Interval): Set[TeamSnapshot] =
     inInterval(teamsSeen, interval)
@@ -82,10 +119,11 @@ final case class StorageAxis(
       .toSet
 
   // b
-  def setups(interval: Interval): Seq[FotmSetup] = {
+  def setups(interval: Interval, cutoff: Int = 0): Seq[FotmSetup] = {
     val teamIds: Set[Team] = inInterval(teamsSeen, interval).flatten.toSet
-    val snapshots: Set[TeamSnapshot] = teamIds.flatMap(id => teamHistories(id).values)
-    val setupPop: Map[Set[Int], Int] = snapshots.groupBy(_.view.snapshots.map(_.view.specId)).mapValues(_.size)
+    val snapshots: Set[TeamSnapshot] =
+      teamIds.filter(teamHistories(_).size > cutoff).flatMap(teamHistories(_).values)
+    val setupPop: Map[Seq[Int], Int] = snapshots.groupBy(_.view.sortedSnapshots.map(_.view.specId)).mapValues(_.size)
     val total = setupPop.values.sum.toDouble
 
     val result = for ((setup, size) <- setupPop) yield FotmSetup(setup, size / total)

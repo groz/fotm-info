@@ -113,7 +113,7 @@ class StorageAxisSpec extends FlatSpec with Matchers {
   }
 
   "setups" should "return 1.0 ratio for default setup" in new StorageAxisTest {
-    val expected = Set( FotmSetup(Set(1, 1), 1.0) )
+    val expected = Set( FotmSetup(Seq(1, 1), 1.0) )
     val actual: Seq[FotmSetup] = storageAxis2.setups(queryIntervalBoth)
     actual.toSet should be(expected)
   }

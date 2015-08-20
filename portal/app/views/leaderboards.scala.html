@@ -1,0 +1,30 @@
+@import info.fotm.aether.FotmSetup
+@import info.fotm.domain.{Axis, TeamSnapshot, CharacterSnapshot}
+
+@(axis: Axis, fotmSetups: Seq[FotmSetup], teams: Seq[TeamSnapshot], chars: Seq[CharacterSnapshot], minutes: Int)
+
+@main("FotM - leaderboards") {
+
+  @navigation(axis, minutes)
+
+  <div class="container body-content">
+    @brackets(axis, minutes)
+
+    <div class="row">
+      <div class="col-lg-9 col-md-8 col-sm-7 col-xs-12">
+      @teamLadderView(teams)
+      </div>
+
+      <div class="col-lg-3 col-md-4 col-sm-5 col-xs-12">
+      @fotmSetupsView(fotmSetups)
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-6 col-md-7 col-sm-8 col-xs-9">
+      @charsView(chars)
+      </div>
+    </div>
+
+  </div>
+}

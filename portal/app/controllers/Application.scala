@@ -31,21 +31,17 @@ class Application @Inject()(system: ActorSystem) extends Controller {
 
   def healthCheck = Action { Ok("OK") }
 
-  def playingNowDefault = playingNowRegion("eu")
+  def default = leaderboards("eu", "3v3", 30)
 
-  def playingNowRegion(region: String) = playingNow30(region, "3v3")
-
-  def playingNow30(region: String, bracket: String) = playingNow(region, bracket, 30)
-
-  def playingNow(region: String, bracket: String, nMinutes: Int): Action[AnyContent] = Action.async {
+  def leaderboards(region: String, bracket: String, nMinutes: Int) = Action.async {
 
     Axis.parse(region, bracket).fold(Future.successful(NotFound: Result)) { axis =>
 
       val interval = new Interval(DateTime.now - nMinutes.minutes, DateTime.now)
-      val request = storageProxy ? Storage.QueryState(axis, interval)
+      val request = storageProxy ? Storage.QueryAll(axis, interval)
 
-      request.mapTo[Storage.QueryStateResponse].map { (response: Storage.QueryStateResponse) =>
-        Ok(views.html.playingNow(response.axis, response.teams, response.chars, nMinutes))
+      request.mapTo[Storage.QueryAllResponse].map { response =>
+        Ok(views.html.leaderboards(response.axis, response.setups, response.teams, response.chars, nMinutes))
       }
     }
   }

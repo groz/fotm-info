@@ -10,7 +10,9 @@ import scodec.Codec
 import scodec.bits.BitVector
 import scodec.codecs.implicits._
 
-final case class FotmSetup(specIds: Set[Int], ratio: Double)
+final case class FotmSetup(specIds: Seq[Int], ratio: Double) {
+  lazy val orderedSpecIds = specIds.sorted( CharacterOrderingFactory.specIdOrdering[Int](identity) )
+}
 
 object Storage {
   val props: Props = Props[Storage]
@@ -24,12 +26,15 @@ object Storage {
     override val toString = s"Updates($axis, teams: ${teamUpdates.size}, chars: ${charUpdates.size})"
   }
 
+  final case class QueryAll(axis: Axis, interval: Interval)
+  final case class QueryAllResponse(axis: Axis, setups: Seq[FotmSetup], teams: Seq[TeamSnapshot], chars: Seq[CharacterSnapshot])
+
   final case class QueryFotm(axis: Axis, interval: Interval)
   final case class QueryFotmResponse(axis: Axis, setups: Seq[FotmSetup])
 
   // output
-  final case class QueryState(axis: Axis, interval: Interval)
-  final case class QueryStateResponse(axis: Axis, teams: Seq[TeamSnapshot], chars: Seq[CharacterSnapshot])
+  final case class QueryPlayingNow(axis: Axis, interval: Interval)
+  final case class QueryPlayingNowResponse(axis: Axis, teams: Seq[TeamSnapshot], chars: Seq[CharacterSnapshot])
 
   // reactive, subscribes/unsubscribes sender to updates
   case object Subscribe
@@ -93,7 +98,13 @@ class Storage(persistence: Persisted[Map[Axis, StorageAxis]]) extends Actor {
       for (sub <- subs)
         sub ! msg
 
-    case QueryState(axis: Axis, unadjustedInterval: Interval) =>
+    case QueryAll(axis: Axis, unadjustedInterval: Interval) =>
+      val interval = new Interval(unadjustedInterval.start, unadjustedInterval.end + 100.millis)
+      val storageAxis = state(axis)
+      val (setups, teams, chars) = storageAxis.all(interval, cutoff = 1)
+      sender ! QueryAllResponse(axis, setups, teams, chars)
+
+    case QueryPlayingNow(axis: Axis, unadjustedInterval: Interval) =>
       val interval = new Interval(unadjustedInterval.start, unadjustedInterval.end + 100.millis)
       val storageAxis = state(axis)
       val teams: Set[TeamSnapshot] = storageAxis.teams(interval)
@@ -104,10 +115,12 @@ class Storage(persistence: Persisted[Map[Axis, StorageAxis]]) extends Actor {
       val charsInTeams: Set[CharacterId] = teams.flatMap(_.team.members)
       val charsNotInTeams = (chars -- charsInTeams).values.toSeq
 
-      sender ! QueryStateResponse(axis, teams.toSeq.sortBy(-_.rating), charsNotInTeams.toSeq.sortBy(-_.stats.rating))
+      sender ! QueryPlayingNowResponse(axis, teams.toSeq.sortBy(-_.rating), charsNotInTeams.toSeq.sortBy(-_.stats.rating))
 
     case QueryFotm(axis: Axis, interval: Interval) =>
-      ???
+      val storageAxis = state(axis)
+      val setups: Seq[FotmSetup] = storageAxis.setups(interval, cutoff = 2).sortBy(- _.ratio)
+      sender ! QueryFotmResponse(axis, setups)
 
     case Subscribe =>
       context.become(process(state, subs + sender))

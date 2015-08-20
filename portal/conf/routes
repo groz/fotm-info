@@ -9,7 +9,5 @@ GET        /healthcheck                      controllers.Application.healthCheck
 GET        /assets/*file                     controllers.Assets.versioned(path="/public", file: Asset)
 
 # Home page
-GET        /                                 controllers.Application.playingNowDefault
-GET        /:region                          controllers.Application.playingNowRegion(region: String)
-GET        /:region/:bracket                 controllers.Application.playingNow30(region: String, bracket: String)
-GET        /:region/:bracket/:minutes        controllers.Application.playingNow(region: String, bracket: String, minutes: Int)
+GET        /                                 controllers.Application.default
+GET        /:region/:bracket                 controllers.Application.leaderboards(region: String, bracket: String, minutes: Int ?= 30)
