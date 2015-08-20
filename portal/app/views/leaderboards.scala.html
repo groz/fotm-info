@@ -1,7 +1,8 @@
 @import info.fotm.aether.FotmSetup
 @import info.fotm.domain.{Axis, TeamSnapshot, CharacterSnapshot}
 
-@(axis: Axis, fotmSetups: Seq[FotmSetup], teams: Seq[TeamSnapshot], chars: Seq[CharacterSnapshot], minutes: Int)
+@(axis: Axis, fotmSetups: Seq[FotmSetup], teams: Seq[TeamSnapshot], chars: Seq[CharacterSnapshot], minutes: Int, perpage: Int, page: Int, total: Int)
+@import scala.collection; val nTotalPages=(total+perpage)/perpage
 
 @main("FotM - leaderboards") {
 
@@ -20,11 +21,38 @@
       </div>
     </div>
 
-    <div class="row">
-      <div class="col-lg-6 col-md-7 col-sm-8 col-xs-9">
-      @charsView(chars)
+    <nav>
+      <ul class="pagination">
+        <li class='@{if (page == 1) "disabled" else ""}'>
+          <a aria-label="Previous"
+            href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page - 1)'>
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        @for(pageNumber <- 1 to nTotalPages) {
+          <li class='@{if (pageNumber == page) "active" else ""}'>
+            <a href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, pageNumber)'>
+            @pageNumber
+            </a>
+          </li>
+        }
+        <li class='@{if (page == nTotalPages) "disabled" else ""}'>
+          <a aria-label="Next"
+          href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page + 1)'>
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+
+    @if(minutes <= 30) {
+      <div class="row">
+        <div class="col-lg-6 col-md-7 col-sm-8 col-xs-9">
+        @charsView(chars)
+        </div>
       </div>
-    </div>
+    }
 
   </div>
 }

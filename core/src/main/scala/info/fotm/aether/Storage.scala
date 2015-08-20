@@ -101,7 +101,7 @@ class Storage(persistence: Persisted[Map[Axis, StorageAxis]]) extends Actor {
     case QueryAll(axis: Axis, unadjustedInterval: Interval) =>
       val interval = new Interval(unadjustedInterval.start, unadjustedInterval.end + 100.millis)
       val storageAxis = state(axis)
-      val (setups, teams, chars) = storageAxis.all(interval, cutoff = 1)
+      val (setups, teams, chars) = storageAxis.all(interval, cutoff = 2)
       sender ! QueryAllResponse(axis, setups, teams, chars)
 
     case QueryPlayingNow(axis: Axis, unadjustedInterval: Interval) =>

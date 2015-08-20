@@ -3,11 +3,11 @@
 # ~~~~
 
 # Health check
-GET        /healthcheck                      controllers.Application.healthCheck
+GET        /healthcheck             controllers.Application.healthCheck
 
 # Map static resources from the /public folder to the /assets URL path
-GET        /assets/*file                     controllers.Assets.versioned(path="/public", file: Asset)
+GET        /assets/*file            controllers.Assets.versioned(path="/public", file: Asset)
 
 # Home page
-GET        /                                 controllers.Application.default
-GET        /:region/:bracket                 controllers.Application.leaderboards(region: String, bracket: String, minutes: Int ?= 30)
+GET        /                        controllers.Application.default
+GET        /:region/:bracket        controllers.Application.leaderboards(region: String, bracket: String, minutes: Int ?= 30, perpage: Int ?= 20, page: Int ?= 1)
