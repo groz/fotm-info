@@ -26,3 +26,17 @@
   background-color: inherit;
 }
 
+.hover-container {
+  position: relative;
+}
+
+.hover-content {
+  position: absolute;
+  bottom: -10px;
+  right: 10px;
+  display: none;
+}
+
+.hover-container:hover .hover-content {
+  display: block;
+}
