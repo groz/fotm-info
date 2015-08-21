@@ -1,11 +1,13 @@
-@(title: String)(content: Html)
+@import info.fotm.domain.Axis
+@(title: String, axis: Axis, minutes: Int)(content: Html)
 
 <!DOCTYPE html>
 
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     @socialMetas("Team PvP ladder for World of Warcraft",
       """
         | Flavor of the month PvP ladder for World of Warcraft.
@@ -21,7 +23,7 @@
     <link rel="stylesheet" href='@routes.Assets.versioned("stylesheets/slate_bootstrap.min.css")'>
 
     <!-- My css -->
-    <link rel="stylesheet" media="screen" href='@routes.Assets.versioned("stylesheets/main.css")'>
+    <link rel="stylesheet" href='@routes.Assets.versioned("stylesheets/main.css")'>
 
     <!-- Google analytics -->
     <script>
@@ -35,7 +37,12 @@
     </script>
   </head>
   <body>
-    @content
+    @navigation(axis, minutes)
+
+    <div class="container body-content">
+      @navigationXS(axis, minutes)
+      @content
+    </div>
 
     @socialInit()
   </body>

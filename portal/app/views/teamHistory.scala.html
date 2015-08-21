@@ -4,11 +4,8 @@
 
 @(axis: Axis, team: Team, history: TreeMap[DateTime, TeamSnapshot])
 
-@main("FotM - team history") {
+@main("FotM - team history", axis, 1440) {
 
-  @navigation(axis, 1440)
-
-  <div class="container body-content">
     <div class="row">
         <!-- Top banner -->
       <ins class="adsbygoogle"
@@ -38,8 +35,6 @@
       </div>
 
     </div>
-
-  </div>
 
   @timeUpdate()
 }

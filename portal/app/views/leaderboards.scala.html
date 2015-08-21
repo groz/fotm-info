@@ -3,12 +3,7 @@
 
 @(axis: Axis, fotmSetups: Seq[FotmSetup], teams: Seq[TeamSnapshot], chars: Seq[CharacterSnapshot], minutes: Int, perpage: Int, page: Int, totalPages: Int)
 
-@main("FotM - leaderboards") {
-
-  @navigation(axis, minutes)
-
-  <div class="container body-content">
-
+@main("FotM - leaderboards", axis, minutes) {
     <div>
       <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
           <!-- Top banner -->
@@ -29,6 +24,51 @@
 
       <div class="col-lg-6 col-md-7 col-sm-8 col-xs-12">
       @teamLadderView(axis, teams)
+
+        @if(totalPages > 1) {
+          <nav class="hidden-xs">
+            <ul class="pagination">
+              <li class='@(if(page == 1) "disabled" else "")'>
+                <a aria-label="Previous"
+                href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page - 1)'>
+                  <span aria-hidden="true">&laquo;</span>
+                </a>
+              </li>
+              @for(pageNumber <- 1 to totalPages) {
+                <li class='@(if(pageNumber == page) "active" else "")'>
+                  <a href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, pageNumber)'>
+                  @pageNumber
+                  </a>
+                </li>
+              }
+              <li class='@(if(page == totalPages) "disabled" else "")'>
+                <a aria-label="Next"
+                href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page + 1)'>
+                  <span aria-hidden="true">&raquo;</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+
+          <nav class="visible-xs">
+            <ul class="pager">
+
+              <li class='previous btn-lg @(if(page == 1) "disabled" else "")'>
+                <a aria-label="Previous"
+                href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page - 1)'>
+                  <span aria-hidden="true">&laquo;</span>
+                </a>
+              </li>
+
+              <li class='next btn-lg @(if(page == totalPages) "disabled" else "")'>
+                <a aria-label="Next"
+                href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page + 1)'>
+                  <span aria-hidden="true">&raquo;</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        }
       </div>
 
       <div class="col-lg-5 col-md-5 col-sm-8 col-xs-12">
@@ -38,32 +78,6 @@
     </div>
 
 
-    @if(totalPages > 1) {
-      <nav>
-        <ul class="pagination">
-          <li class='@(if(page == 1) "disabled" else "")'>
-            <a aria-label="Previous"
-            href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page - 1)'>
-              <span aria-hidden="true">&laquo;</span>
-            </a>
-          </li>
-          @for(pageNumber <- 1 to totalPages) {
-            <li class='@(if(pageNumber == page) "active" else "")'>
-              <a href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, pageNumber)'>
-              @pageNumber
-              </a>
-            </li>
-          }
-          <li class='@(if(page == totalPages) "disabled" else "")'>
-            <a aria-label="Next"
-            href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page + 1)'>
-              <span aria-hidden="true">&raquo;</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
-    }
-
     @if(minutes <= 30) {
       <div class="row">
         <div class="col-lg-6 col-md-7 col-sm-8 col-xs-9">
@@ -71,6 +85,4 @@
         </div>
       </div>
     }
-
-  </div>
 }

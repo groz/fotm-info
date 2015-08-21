@@ -5,11 +5,7 @@
 
 @(axis: Axis, charId: CharacterId, lastSnapshot: Option[CharacterSnapshot], history: TreeMap[DateTime, TeamSnapshot])
 
-@main("FotM - char history") {
-
-  @navigation(axis, 1440)
-
-  <div class="container body-content">
+@main("FotM - char history", axis, 1440) {
 
     <div class="row">
         <!-- Top banner -->
@@ -53,8 +49,6 @@
         </script>
       </div>
     </div>
-
-  </div>
 
   @timeUpdate()
 }

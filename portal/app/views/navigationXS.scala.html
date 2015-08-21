@@ -2,17 +2,17 @@
 
 @(currentAxis: Axis, minutes: Int)
 
-<nav class="navbar navbar-default hidden-xs">
-  <ul class="nav navbar-nav">
-    <li>
-      <a href="/">FotM</a>
-    </li>
-    @for(region <- Axis.allRegions) {
+<div class="row visible-xs">
+  <div>
+  <ul class="nav nav-pills">
+    @for(region <- Axis.allRegions){
       <li class='@(if(region == currentAxis.region) "active" else "")'>
         <a href='@routes.Application.leaderboards(region.slug, currentAxis.bracket.slug, minutes)'>
-          @region.slug.toUpperCase
+        @region.slug.toUpperCase
         </a>
       </li>
     }
-    </ul>
-</nav>
+  </ul>
+  </div>
+</div>
+
