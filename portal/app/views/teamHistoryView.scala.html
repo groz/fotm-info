@@ -6,10 +6,12 @@
 
 <table class="table table-striped table-condensed table-hover">
   <tbody>
-    @for((time, snapshot) <- teams) {
+    @for((time, snapshot) <- teams.toSeq.reverse) {
       <tr>
         @teamView(axis, snapshot)
-        <td class="centered">@time</td>
+        <td class="vcentered">
+          <span class="time-container" data-timestamp="@time.getMillis()"></span>
+        </td>
       </tr>
     }
   </tbody>

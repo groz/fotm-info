@@ -12,6 +12,10 @@
   text-align: center!important;
 }
 
+.vcentered {
+  vertical-align: middle!important;
+}
+
 .nolink {
   text-decoration: none!important;
   color: inherit;

@@ -12,17 +12,17 @@ $(function() {
 
   var updateTime = function() {
     timeContainers.each(function() {
-      var el = $(this);
-      var timestamp = el.attr('data-timestamp');
+      var $el = $(this);
+      var timestamp = $el.attr('data-timestamp');
       var timeagoString = moment(parseInt(timestamp)).fromNow();
-      el.text(timeagoString);
+      $el.text(timeagoString);
     });
   };
 
   if (timeContainers.length > 0) {
     console.log("Starting timer updater...");
     updateTime();
-    setInterval(updateTime, 30 /* seconds */ * 1000);
+    setInterval(updateTime, 60 /* seconds */ * 1000);
   } else {
     console.log("No time tags found.");
   }
