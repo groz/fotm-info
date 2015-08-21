@@ -17,6 +17,8 @@
   color: inherit;
 }
 
-.borderless td, .borderless th {
+.borderless tbody tr td, .borderless tbody tr th, .borderless thead tr th, table {
   border: none;
+  background-color: inherit;
 }
+
