@@ -6,6 +6,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
+    @socialMetas("Team PvP ladder for World of Warcraft",
+      """
+        | Flavor of the month PvP ladder for World of Warcraft.
+        | Features most popular setups, players and game history.
+      """.stripMargin,
+      s"http://fotm.info${routes.Assets.versioned("images/preview2.png")}"
+    )
 
     <title>@title</title>
     <link rel="shortcut icon" type="image/png" href='@routes.Assets.versioned("images/favicon.png")'>
@@ -29,5 +36,7 @@
   </head>
   <body>
     @content
+
+    @socialInit()
   </body>
 </html>
