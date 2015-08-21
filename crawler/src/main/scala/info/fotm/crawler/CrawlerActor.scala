@@ -9,7 +9,6 @@ import info.fotm.api.models._
 import info.fotm.clustering._
 import info.fotm.clustering.enhancers.{SimpleMultiplexer, ClonedClusterer}
 import info.fotm.clustering.implementations.{ClosestClusterer, HTClusterer}
-import info.fotm.clustering.implementations.RMClustering.RMClusterer
 import info.fotm.domain._
 import info.fotm.util.ObservableReadStream
 

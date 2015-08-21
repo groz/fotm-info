@@ -3,7 +3,6 @@ package info.fotm.clustering
 import info.fotm.clustering.ClusteringEvaluatorData.DataPoint
 import info.fotm.clustering.FeatureSettings.features
 import info.fotm.clustering.enhancers._
-import info.fotm.clustering.implementations.RMClustering.RMClusterer
 import info.fotm.clustering.implementations._
 
 object ClusteringEvaluatorApp extends App {
