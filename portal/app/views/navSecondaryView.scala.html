@@ -1,0 +1,7 @@
+@import info.fotm.domain.Axis
+@(axis: Axis, minutes: Int)
+
+<div class="row">
+  @navBracketsView(axis, minutes)
+  @navIntervalsView(axis, minutes)
+</div>

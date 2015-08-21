@@ -1,11 +1,26 @@
-@import info.fotm.domain.TeamSnapshot
-@(teamSnapshot: TeamSnapshot)
+@import info.fotm.domain.{Axis, TeamSnapshot}
+@import info.fotm.aether.Storage
+@(axis: Axis, teamSnapshot: TeamSnapshot)
 
-<td><img src='@routes.Assets.versioned(s"images/factions/faction_${teamSnapshot.factionId}.png")'/></td>
-<td>@teamSnapshot.rating.toInt</td>
-<td>@teamSnapshot.stats.wins</td>
-<td>-</td>
-<td>@teamSnapshot.stats.losses</td>
+<td class="centered">
+  <img src='@routes.Assets.versioned(s"images/factions/faction_${teamSnapshot.factionId}.png")'/>
+</td>
+<td class="centered">
+  <a href='@routes.Application.teamHistory(axis.region.slug, axis.bracket.slug, Storage.teamIdBijection(teamSnapshot.team))'>
+  @teamSnapshot.rating.toInt
+  </a>
+</td>
+
+<td class="teamstats centered">
+  <a href='@routes.Application.teamHistory(axis.region.slug, axis.bracket.slug, Storage.teamIdBijection(teamSnapshot.team))'>
+    @teamSnapshot.stats.wins - @teamSnapshot.stats.losses
+  </a>
+</td>
+
+<td>
 @for(c <- teamSnapshot.view.sortedSnapshots) {
-    <td>@characterView(c)</td>
+  <div>
+  @characterView(axis, c)
+  </div>
 }
+</td>

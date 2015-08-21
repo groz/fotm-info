@@ -1,0 +1,35 @@
+@import info.fotm.domain.{Axis, TeamSnapshot, CharacterId, CharacterSnapshot}
+@import info.fotm.aether.Storage
+@import com.github.nscala_time.time.Imports._
+@import scala.collection.immutable.TreeMap
+
+@(axis: Axis, charId: CharacterId, lastSnapshot: Option[CharacterSnapshot], history: TreeMap[DateTime, TeamSnapshot])
+
+@main("FotM - char history") {
+
+  @navigation(axis, 1440)
+
+  <div class="container body-content">
+    <div class="row">
+      <div class="col-lg-3 col-md-4 col-sm-5">
+        <ul class="nav nav-pills">
+        @for(bracket <- Axis.allBrackets) {
+          <li class='@{ if(bracket == axis.bracket) "active" else "" }'>
+            <a href='@routes.Application.charHistory(axis.region.slug, bracket.slug, Storage.charIdBijection(charId))'>
+            @bracket.slug
+            </a>
+          </li>
+        }
+        </ul>
+      </div>
+    </div>
+
+    <label>History for @characterIdView(axis, charId)</label>
+    <div class="row">
+      <div class="col-lg-8 col-md-9 col-sm-10 col-xs-12">
+        @teamHistoryView(axis, history)
+      </div>
+    </div>
+
+  </div>
+}

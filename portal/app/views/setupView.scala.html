@@ -9,3 +9,6 @@
       <img src='@routes.Assets.versioned(s"images/specs/spec_$specId.png")'/>
     </td>
 }
+@for(_ <- setup.orderedSpecIds.size until 10) {
+  <td>&nbsp</td>
+}

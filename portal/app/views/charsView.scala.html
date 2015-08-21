@@ -1,7 +1,8 @@
-@import info.fotm.domain.CharacterSnapshot
+@import info.fotm.domain.{Axis, CharacterSnapshot}
 
-@(chars: Seq[CharacterSnapshot])
+@(axis: Axis, chars: Seq[CharacterSnapshot])
 
+<label>Unsorted chars</label>
 <table class="table table-striped table-condensed table-responsive">
   <tbody>
     @for(c <- chars) {
@@ -11,7 +12,7 @@
         <td>@c.stats.weekly.wins</td>
         <td>-</td>
         <td>@c.stats.weekly.losses</td>
-        <td>@characterView(c)</td>
+        <td>@characterView(axis, c)</td>
       </tr>
     }
   </tbody>

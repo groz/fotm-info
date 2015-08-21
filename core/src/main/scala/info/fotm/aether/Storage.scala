@@ -2,13 +2,16 @@ package info.fotm.aether
 
 import akka.actor.{Actor, ActorIdentity, ActorRef, Props}
 import akka.event.{Logging, LoggingReceive}
+import com.github.nscala_time.time.Imports
 import com.github.nscala_time.time.Imports._
-import com.twitter.bijection.{Bijection, GZippedBytes}
+import com.twitter.bijection.{Base64String, Bijection, GZippedBytes}
 import info.fotm.domain._
 import info.fotm.util._
 import scodec.Codec
 import scodec.bits.BitVector
 import scodec.codecs.implicits._
+
+import scala.collection.immutable.TreeMap
 
 final case class FotmSetup(specIds: Seq[Int], ratio: Double) {
   lazy val orderedSpecIds = specIds.sorted( CharacterOrderingFactory.specIdOrdering[Int](identity) )
@@ -28,6 +31,12 @@ object Storage {
 
   final case class QueryAll(axis: Axis, interval: Interval)
   final case class QueryAllResponse(axis: Axis, setups: Seq[FotmSetup], teams: Seq[TeamSnapshot], chars: Seq[CharacterSnapshot])
+
+  final case class QueryTeamHistory(axis: Axis, team: Team)
+  final case class QueryTeamHistoryResponse(axis: Axis, team: Team, history: TreeMap[DateTime, TeamSnapshot])
+
+  final case class QueryCharHistory(axis: Axis, id: CharacterId)
+  final case class QueryCharHistoryResponse(axis: Axis, charId: CharacterId, lastSnapshot: Option[CharacterSnapshot], history: TreeMap[DateTime, TeamSnapshot])
 
   final case class QueryFotm(axis: Axis, interval: Interval)
   final case class QueryFotmResponse(axis: Axis, setups: Seq[FotmSetup])
@@ -54,6 +63,14 @@ object Storage {
 
   import info.fotm.MyCodecImplicits._
 
+  def scodecBase64Bijection[T](implicit codec: Codec[T]): Bijection[T, String] = Bijection.build[T, String] { t =>
+    val bytes = Codec.encode(t).require.toByteArray
+    Bijection.bytes2Base64(bytes).str
+  } { base64 =>
+    val bytes = Bijection.bytes2Base64.inverse(Base64String(base64))
+    Codec.decode[T](BitVector(bytes)).require.value
+  }
+
   def scodecGzipBijection[T](implicit codec: Codec[T]): Bijection[T, Array[Byte]] = Bijection.build[T, Array[Byte]] { t =>
     val bytes = Codec.encode(t).require.toByteArray
     Bijection.bytes2GzippedBytes(bytes).bytes
@@ -61,6 +78,9 @@ object Storage {
     val bytes = Bijection.bytes2GzippedBytes.inverse(GZippedBytes(gzippedBytes))
     Codec.decode[T](BitVector(bytes)).require.value
   }
+
+  lazy val teamIdBijection: Bijection[Team, String] = scodecBase64Bijection[Team]
+  lazy val charIdBijection: Bijection[CharacterId, String] = scodecBase64Bijection[CharacterId]
 
   lazy val fromConfig =
     AetherConfig.storagePersistence[Axis, StorageAxis](keyPathBijection, scodecGzipBijection[StorageAxis])
@@ -97,6 +117,23 @@ class Storage(persistence: Persisted[Map[Axis, StorageAxis]]) extends Actor {
 
       for (sub <- subs)
         sub ! msg
+
+    case QueryTeamHistory(axis: Axis, team: Team) =>
+      val storageAxis = state(axis)
+      sender ! QueryTeamHistoryResponse(axis, team, storageAxis.teamHistories(team))
+
+    case QueryCharHistory(axis: Axis, charId: CharacterId) =>
+      val storageAxis = state(axis)
+
+      val histories: TreeMap[DateTime, TeamSnapshot] =
+        storageAxis
+          .teamHistories.filterKeys(_.members.contains(charId)).values
+          .filter(_.size >= 2)
+          .foldLeft(TreeMap.empty[DateTime, TeamSnapshot]) { _ ++ _ }
+
+      val lastSnapshot = storageAxis.charHistories.get(charId).flatMap(_.lastOption.map(_._2))
+
+      sender ! QueryCharHistoryResponse(axis, charId, lastSnapshot, histories)
 
     case QueryAll(axis: Axis, unadjustedInterval: Interval) =>
       val interval = new Interval(unadjustedInterval.start, unadjustedInterval.end + 100.millis)

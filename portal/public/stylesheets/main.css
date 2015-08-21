@@ -1,0 +1,18 @@
+.teamstats {
+  white-space: nowrap;
+  text-align: center;
+}
+
+.charcell {
+  white-space: nowrap;
+}
+
+.centered {
+  vertical-align: middle!important;
+  text-align: center!important;
+}
+
+.nolink {
+  text-decoration: none!important;
+  color: inherit;
+}

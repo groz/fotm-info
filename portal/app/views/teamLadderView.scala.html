@@ -1,12 +1,13 @@
-@import info.fotm.domain.TeamSnapshot
+@import info.fotm.domain.{Axis, TeamSnapshot}
 
-@(teams: Seq[TeamSnapshot])
+@(axis: Axis, teams: Seq[TeamSnapshot])
 
+<label>Teams</label>
 <table class="table table-striped table-condensed table-hover">
   <tbody>
     @for(snapshot <- teams) {
       <tr>
-        @teamView(snapshot)
+        @teamView(axis, snapshot)
       </tr>
     }
   </tbody>

@@ -1,0 +1,20 @@
+@import info.fotm.domain.{Axis, TeamSnapshot, Team}
+@import com.github.nscala_time.time.Imports._
+@import scala.collection.immutable.TreeMap
+
+@(axis: Axis, team: Team, history: TreeMap[DateTime, TeamSnapshot])
+
+@main("FotM - team history") {
+
+  @navigation(axis, 1440)
+
+  <div class="container body-content">
+
+    <div class="row">
+      <div class="col-lg-9 col-md-8 col-sm-7 col-xs-12">
+      @teamHistoryView(axis, history)
+      </div>
+    </div>
+
+  </div>
+}

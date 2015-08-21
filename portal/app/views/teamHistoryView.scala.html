@@ -1,0 +1,16 @@
+@import scala.collection.immutable.TreeMap
+@import info.fotm.domain.{Axis, TeamSnapshot}
+@import com.github.nscala_time.time.Imports._
+
+@(axis: Axis, teams: TreeMap[DateTime, TeamSnapshot])
+
+<table class="table table-striped table-condensed table-hover">
+  <tbody>
+    @for((time, snapshot) <- teams) {
+      <tr>
+        @teamView(axis, snapshot)
+        <td class="centered">@time</td>
+      </tr>
+    }
+  </tbody>
+</table>

@@ -1,0 +1,9 @@
+@import info.fotm.domain.{Axis, CharacterId}
+
+@(axis: Axis, c: CharacterId)
+
+<img src='@routes.Assets.versioned(s"images/classes/class_${c.classId}.png")'/>
+<a href='@(s"http://${axis.region.root.replace("api.", "")}/wow/character/${c.realmSlug}/${c.name}/simple")'>
+  @c.name - @c.realmName
+</a>
+
