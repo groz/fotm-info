@@ -13,5 +13,5 @@ fi
 echo "starting crawler"
 if [ "$DEPLOYMENT_GROUP_NAME" == "fotm-crawler" ]
 then
-  JAVA_OPTS="-Xmx2g" /fotm-app/crawler-1.0-SNAPSHOT/bin/crawler > /dev/null 2> /dev/null < /dev/null &
+  JAVA_OPTS="-Xmx4g" /fotm-app/crawler-1.0-SNAPSHOT/bin/crawler > /dev/null 2> /dev/null < /dev/null &
 fi
