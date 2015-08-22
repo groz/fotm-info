@@ -6,6 +6,6 @@ class NullPersistedSpec extends FlatSpec with Matchers {
   "fetch" should "always return None" in {
 
     val f = new NullPersisted()
-    f.fetch() should be(None)
+    f.fetch().toOption should be(None)
   }
 }

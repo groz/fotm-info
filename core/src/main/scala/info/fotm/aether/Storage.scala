@@ -99,7 +99,11 @@ class Storage(persistence: Persisted[Map[Axis, StorageAxis]]) extends Actor {
   override def receive: Receive = {
     val init = Axis.all.map { (_, StorageAxis()) }.toMap
 
-    val state = init ++ persistence.fetch().fold(Map.empty[Axis, StorageAxis])(identity)
+    val state = init ++ persistence.fetch().recover {
+      case ex =>
+        log.debug(s"Initial load from storage failed with $ex")
+        Map.empty[Axis, StorageAxis]
+    }.get
 
     process(state, Set.empty)
   }
@@ -111,7 +115,10 @@ class Storage(persistence: Persisted[Map[Axis, StorageAxis]]) extends Actor {
       val storageAxis = state(axis)
 
       val updatedState = storageAxis.update(teamUpdates, charUpdates.map(_.current))
-      persistence.save(Map(axis -> updatedState)) // save only changed axis
+      // save only changed axis
+      persistence.save(Map(axis -> updatedState)).recover {
+        case ex => log.debug(s"Saving to storage failed with $ex")
+      }
 
       context.become(process(state.updated(axis, updatedState), subs))
 

@@ -17,7 +17,7 @@ class S3KVPersisted[K, V](bucket: String, keyPathBijection: Bijection[K, String]
 
   val s3client = new AmazonS3Client()
 
-  override def save(state: Map[K, V]): Unit = {
+  override def save(state: Map[K, V]): Try[Unit] = Try {
     for ((k, v) <- state) {
       val path: String = keyPathBijection(k)
       val bytes = valueSerializer(v)
@@ -28,7 +28,7 @@ class S3KVPersisted[K, V](bucket: String, keyPathBijection: Bijection[K, String]
     }
   }
 
-  override def fetch(): Option[Map[K, V]] = Try {
+  override def fetch(): Try[Map[K, V]] = Try {
     val listing: ObjectListing = s3client.listObjects(bucket)
     val bucketEntries = listing.getObjectSummaries.asScala.toList
     val s3keys = bucketEntries.map(_.getKey)
@@ -46,5 +46,5 @@ class S3KVPersisted[K, V](bucket: String, keyPathBijection: Bijection[K, String]
       })(breakOut)
 
     result
-  }.toOption
+  }
 }

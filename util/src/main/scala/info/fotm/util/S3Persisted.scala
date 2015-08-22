@@ -12,7 +12,7 @@ class S3Persisted[T](bucket: String, path: String)(implicit serializer: Bijectio
 
   val s3client = new AmazonS3Client()
 
-  override def save(state: T): Unit = {
+  override def save(state: T): Try[Unit] = Try {
     val fileName = "tmpstorage.txt"
     val fileIO = new FilePersisted[T](fileName)(serializer)
     fileIO.save(state)
@@ -22,9 +22,9 @@ class S3Persisted[T](bucket: String, path: String)(implicit serializer: Bijectio
     tmpFile.delete()
   }
 
-  override def fetch(): Option[T] = {
+  override def fetch(): Try[T] = {
     val request = new GetObjectRequest(bucket, path)
-    Try(s3client.getObject(request)).toOption.map { s3object =>
+    Try(s3client.getObject(request)).map { s3object =>
       val objectData: S3ObjectInputStream = s3object.getObjectContent
       val bytes = scala.io.Source.fromInputStream(objectData).mkString.getBytes
       objectData.close()

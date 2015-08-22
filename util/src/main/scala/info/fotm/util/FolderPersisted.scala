@@ -12,7 +12,7 @@ class FolderPersisted[K, V](folder: String, keyPathBijection: Bijection[K, Strin
                            (implicit valueSerializer: Bijection[V, Array[Byte]])
   extends Persisted[Map[K, V]] {
 
-  override def save(state: Map[K, V]): Unit = {
+  override def save(state: Map[K, V]): Try[Unit] = Try {
     val rootPath = Paths.get(folder)
 
     if (!Files.exists(rootPath)) {
@@ -27,7 +27,7 @@ class FolderPersisted[K, V](folder: String, keyPathBijection: Bijection[K, Strin
     }
   }
 
-  override def fetch(): Option[Map[K, V]] = Try {
+  override def fetch(): Try[Map[K, V]] = Try {
     val rootPath = Paths.get(folder)
     val files: List[Path] = Files.newDirectoryStream(rootPath).asScala.toList
     (for (filePath <- files) yield {
@@ -36,5 +36,5 @@ class FolderPersisted[K, V](folder: String, keyPathBijection: Bijection[K, Strin
       val k = keyPathBijection.inverse(filePath.getFileName.toString)
       (k, v)
     }).toMap
-  }.toOption
+  }
 }
