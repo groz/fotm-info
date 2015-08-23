@@ -2,8 +2,7 @@
 
 @(currentAxis: Axis, minutes: Int)
 
-<div class="row visible-xs">
-  <div>
+<div class="row visible-xs col-xs-12">
   <ul class="nav nav-pills">
     @for(region <- Axis.allRegions){
       <li class='@(if(region == currentAxis.region) "active" else "")'>
@@ -13,6 +12,5 @@
       </li>
     }
   </ul>
-  </div>
 </div>
 

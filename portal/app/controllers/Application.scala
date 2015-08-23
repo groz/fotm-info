@@ -65,7 +65,7 @@ class Application @Inject()(system: ActorSystem) extends Controller {
       val nSetups = 20
 
       request.mapTo[Storage.QueryAllResponse].map { response =>
-        val totalPages = response.teams.size / perpage + 1
+        val totalPages = sca
         val teams = response.teams.slice(perpage * (page - 1), perpage * page) // 1-based indexing
         Ok(views.html.leaderboards(response.axis, response.setups.take(nSetups), teams, response.chars, minutes, perpage, page, totalPages))
       }

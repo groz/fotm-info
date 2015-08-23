@@ -9,9 +9,7 @@
       <tr>
         <td><img src='@routes.Assets.versioned(s"images/factions/faction_${c.view.factionId}.png")'/></td>
         <td>@c.stats.rating</td>
-        <td>@c.stats.weekly.wins</td>
-        <td>-</td>
-        <td>@c.stats.weekly.losses</td>
+        <td>@c.stats.weekly.wins - @c.stats.weekly.losses</td>
         <td>@characterView(axis, c)</td>
       </tr>
     }
