@@ -3,7 +3,7 @@
 @(axis: Axis, teamSnapshot: TeamSnapshot)
 
 <td class="centered">
-  <img src='@routes.Assets.versioned(s"images/factions/faction_${teamSnapshot.factionId}.png")'/>
+  @images.factionImage(teamSnapshot.factionId)
 </td>
 <td class="centered">
   <a href='@routes.Application.teamHistory(axis.region.slug, axis.bracket.slug, Storage.teamIdBijection(teamSnapshot.team))'>

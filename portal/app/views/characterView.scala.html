@@ -4,8 +4,8 @@
 @(axis: Axis, c: CharacterSnapshot)
 
 <a class="nolink" href='@routes.Application.charHistory(axis.region.slug, axis.bracket.slug, Storage.charIdBijection(c.id))'>
-<img src='@routes.Assets.versioned(s"images/races/race_${c.view.raceId}_${c.view.genderId}.png")'/>
-<img src='@routes.Assets.versioned(s"images/classes/class_${c.id.classId}.png")'/>
-<img src='@routes.Assets.versioned(s"images/specs/spec_${c.view.specId}.png")'/>
-<span>@c.id.name</span><span class="hidden-xs"> - </span><span class="hidden-xs">@c.id.realmName</span>
+@images.raceImage(c.view.raceId, c.view.genderId)
+@images.classImage(c.id.classId)
+@images.specImage(c.view.specId)
+<span>@c.id.name</span><span class="hidden-xs"> - @c.id.realmName</span>
 </a>
