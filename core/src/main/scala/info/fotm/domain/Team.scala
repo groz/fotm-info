@@ -22,6 +22,40 @@ object TeamSnapshot {
     val snapshots = team.members.map(t => characterLadder.rows(t))
     TeamSnapshot.fromSnapshots(snapshots)
   }
+
+  type CharFilter = (Int, Option[Int])
+  type SetupFilter = Seq[CharFilter]
+
+  def matchesFilter(teamSnapshot: TeamSnapshot, setupFilter: SetupFilter): Boolean =
+    matchesFilter(teamSnapshot.view.snapshots, setupFilter)
+
+  def matchesFilter(setup: Set[CharacterSnapshot], filters: SetupFilter): Boolean = {
+    val setupClasses = setup.groupBy(_.id.classId).mapValues(_.size)
+    val setupSpecs =
+      setup.groupBy(cs => (cs.id.classId, Some(cs.view.specId): Option[Int])).mapValues(_.size)
+
+    val filterClasses = filters.groupBy(_._1).mapValues(_.size)
+    val filterSpecs = filters.filter(_._2.isDefined).groupBy(identity).mapValues(_.size)
+
+    val allClasses = (setupClasses ++ filterClasses).toSet
+    val allSpecs = (setupSpecs ++ filterSpecs).toSet
+
+    def getCount[A](id: A, classes: Map[A, Int]): Int =
+      classes.find(pair => pair._1 == id).map(_._2).getOrElse(0)
+
+    def ok[A](all: Set[(A, Int)], setup: Map[A, Int], filter: Map[A, Int]): Boolean =
+      all.forall { kv =>
+        val (id, count) = kv
+        val setupCount = getCount(id, setup)
+        val filterCount = getCount(id, filter)
+        setupCount >= filterCount
+      }
+
+    val classesOk = ok(allClasses, setupClasses, filterClasses)
+    val specsOk = ok(allSpecs, setupSpecs, filterSpecs)
+
+    classesOk && specsOk
+  }
 }
 
 final case class Team(members: Set[CharacterId])
