@@ -1,5 +1,6 @@
 package models
 
+import info.fotm.aether.FotmSetup
 import info.fotm.domain.CharacterSnapshot
 import info.fotm.domain.TeamSnapshot.SetupFilter
 
@@ -91,8 +92,11 @@ object DomainModels {
     specId <- classInfo.specs
   } yield (specId, classId)
 
-  def filterToString(setupFilter: SetupFilter) =
+  def filterToString(setupFilter: SetupFilter): String =
     setupFilter.map(kv => s"${kv._1}-${kv._2.getOrElse(0)}").mkString(",")
+
+  def setupToFilterString(setup: FotmSetup): String =
+    filterToString( setup.specIds.map{ specId => (specsToClass(specId), Some(specId)) } )
 
   def raceGender(char: CharacterSnapshot) = {
   }

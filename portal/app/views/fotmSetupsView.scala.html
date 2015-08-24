@@ -38,7 +38,20 @@
   <tbody>
     @for(setup <- setups) {
       <tr>
-      @setupView(setup)
+
+        <td>
+          <a class="nolink" href="@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, filters=DomainModels.setupToFilterString(setup))">
+            @{f"${100 * setup.ratio}%1.1f"}%
+          </a>
+        </td>
+
+        @for(specId <- setup.orderedSpecIds) {
+          <td>@images.specImage(specId)</td>
+        }
+        @for(_ <- setup.orderedSpecIds.size until 10) {
+          <td>&nbsp</td>
+        }
+
       </tr>
     }
   </tbody>
