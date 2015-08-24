@@ -1,0 +1,16 @@
+@()
+
+<script>
+var DomainModels = {
+  classes: {
+  }
+};
+
+@for((i, info) <- DomainModels.classes) {
+  DomainModels.classes[@i] = {
+    name: '@info.name',
+    specs:[@info.specs.mkString(",")]
+  };
+}
+
+</script>

@@ -1,0 +1,13 @@
+@import info.fotm.domain.TeamSnapshot.SetupFilter
+
+@(setupFilter: SetupFilter)
+
+<script>
+$(function(){
+
+  @for((filter, idx) <- setupFilter.zipWithIndex) {
+    fotm.setFilter(@idx, @{filter._1}, @{filter._2.getOrElse(-1)});
+  }
+
+});
+</script>

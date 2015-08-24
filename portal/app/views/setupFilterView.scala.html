@@ -1,0 +1,47 @@
+@(pos: Int)
+
+<div class="setupFilter btn-group" data-filterindex="@pos">
+
+  <div class="dropdown classFilter">
+
+    <button
+      class="btn btn-default dropdown-toggle"
+      type="button"
+      id="classDropdown@pos"
+      data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+
+      <span class="caret"></span>
+    </button>
+
+    <ul class="dropdown-menu" aria-labelledby="classDropdown@pos">
+      <li class="dropdown-item" data-value="0"><a href="#">&nbsp;</a></li>
+      @for((id, classModel) <- DomainModels.classes) {
+        <li class="dropdown-item" data-value="@id">
+          <a href="#">@images.classImage(id) @classModel.name</a>
+        </li>
+      }
+    </ul>
+  </div>
+
+  <div class="dropdown specFilter">
+    <button
+      class="btn btn-default dropdown-toggle"
+      type="button"
+      id="specDropdown@pos"
+      data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+
+      <span class="caret"></span>
+    </button>
+
+    <ul class="dropdown-menu" aria-labelledby="specDropdown@pos">
+      <li class="dropdown-item" data-value="0"><a href="#">&nbsp;</a></li>
+      @for((specId, name) <- DomainModels.specs) {
+        <li class="dropdown-item" data-value="@specId">
+          <a href="#">@images.specImage(specId) @name</a>
+        </li>
+      }
+    </ul>
+
+  </div>
+
+</div>

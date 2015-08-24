@@ -1,11 +1,12 @@
 @import info.fotm.domain.Axis
-@(currentAxis: Axis, minutes: Int)
+@import info.fotm.domain.TeamSnapshot.SetupFilter
+@(currentAxis: Axis, minutes: Int, setupFilter: SetupFilter)
 
 <div class="col-lg-4 col-md-5 col-sm-6">
   <ul class="nav nav-pills">
     @for((intervalName, durationInMinutes) <- Map("Now" -> 30, "Day" -> 1440, "Week" -> 10080, "Month" -> 302400)) {
       <li class='@{ if(durationInMinutes == minutes) "active" else "" }'>
-        <a href='@routes.Application.leaderboards(currentAxis.region.slug, currentAxis.bracket.slug, durationInMinutes)'>
+        <a href='@routes.Application.leaderboards(currentAxis.region.slug, currentAxis.bracket.slug, durationInMinutes, filters = DomainModels.filterToString(setupFilter))'>
           @intervalName
         </a>
       </li>

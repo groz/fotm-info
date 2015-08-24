@@ -1,16 +1,37 @@
 @import info.fotm.aether.FotmSetup
+@import info.fotm.domain.Axis
 
-@(setups: Seq[FotmSetup], setupSize: Int)
+@(axis: Axis, minutes: Int, setups: Seq[FotmSetup], setupSize: Int)
 
 <label>Setups</label>
 
 <div>
-  @for(i <- 0 until setupSize) {
-    <select>
-      <option>Death Knight</option>
-      <option>Warrior</option>
-    </select>
-  }
+  <div class="btn-group btn-group-justified" role="group">
+
+    <div class="btn-group">
+
+      <div>
+      <a id="filterBtn" class="btn btn-default">
+        <span class="visible-lg">Filter</span>
+        <span class="hidden-lg">F</span>
+      </a>
+      </div>
+
+      <div>
+      <a id="clearFilterBtn" class="btn btn-default"
+         href="@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes)">
+        <span class="visible-lg">Clear</span>
+        <span class="hidden-lg">C</span>
+      </a>
+      </div>
+
+    </div>
+
+    @for(i <- 0 until setupSize) {
+      @setupFilterView(i)
+    }
+  </div>
+
 </div>
 
 <table class="table table-striped table-condensed">

@@ -1,7 +1,8 @@
 @import info.fotm.domain.Axis
-@(axis: Axis, minutes: Int)
+@import info.fotm.domain.TeamSnapshot.SetupFilter
+@(axis: Axis, minutes: Int, setupFilter: SetupFilter)
 
 <div class="row">
-  @navBracketsView(axis, minutes)
-  @navIntervalsView(axis, minutes)
+  @navBracketsView(axis, minutes, setupFilter)
+  @navIntervalsView(axis, minutes, setupFilter)
 </div>

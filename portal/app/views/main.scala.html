@@ -1,5 +1,7 @@
 @import info.fotm.domain.Axis
-@(title: String, axis: Axis, minutes: Int)(content: Html)
+@import info.fotm.domain.TeamSnapshot.SetupFilter
+
+@(title: String, axis: Axis, minutes: Int, setupFilter: SetupFilter)(content: Html)
 
 <!DOCTYPE html>
 
@@ -37,12 +39,20 @@
     </script>
   </head>
   <body>
-    @navigation(axis, minutes)
+    @navigation(axis, minutes, setupFilter)
 
     <div class="container body-content">
-      @navigationXS(axis, minutes)
+      @navigationXS(axis, minutes, setupFilter)
       @content
     </div>
+
+
+    @initDomain()
+    <script src='@routes.Assets.versioned("javascripts/jquery-1.11.3.min.js")'></script>
+    <script src='@routes.Assets.versioned("javascripts/bootstrap.min.js")'></script>
+    <script src='@routes.Assets.versioned("javascripts/moment.min.js")'></script>
+    <script src='@routes.Assets.versioned("javascripts/fotm-core.js")'></script>
+    @postInitDomain(setupFilter)
 
     @socialInit()
   </body>

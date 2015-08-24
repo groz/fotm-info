@@ -1,12 +1,13 @@
 @import info.fotm.aether.FotmSetup
 @import info.fotm.domain.{Axis, TeamSnapshot, CharacterSnapshot}
+@import info.fotm.domain.TeamSnapshot.SetupFilter
 
-@(axis: Axis, fotmSetups: Seq[FotmSetup], teams: Seq[TeamSnapshot], chars: Seq[CharacterSnapshot], minutes: Int, perpage: Int, page: Int, totalPages: Int)
+@(axis: Axis, fotmSetups: Seq[FotmSetup], teams: Seq[TeamSnapshot], chars: Seq[CharacterSnapshot], minutes: Int, perpage: Int, page: Int, totalPages: Int, setupFilter: SetupFilter)
 
-@main("FotM - leaderboards", axis, minutes) {
+@main("FotM - leaderboards", axis, minutes, setupFilter) {
     @socialButtons()
 
-    @navSecondaryView(axis, minutes)
+    @navSecondaryView(axis, minutes, setupFilter)
 
     <div class="row">
 
@@ -18,20 +19,20 @@
             <ul class="pagination">
               <li class='@(if(page == 1) "disabled" else "")'>
                 <a aria-label="Previous"
-                href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page - 1)'>
+                href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page - 1, filters = DomainModels.filterToString(setupFilter))'>
                   <span aria-hidden="true">&laquo;</span>
                 </a>
               </li>
               @for(pageNumber <- 1 to totalPages) {
                 <li class='@(if(pageNumber == page) "active" else "")'>
-                  <a href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, pageNumber)'>
+                  <a href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, pageNumber, filters = DomainModels.filterToString(setupFilter))'>
                   @pageNumber
                   </a>
                 </li>
               }
               <li class='@(if(page == totalPages) "disabled" else "")'>
                 <a aria-label="Next"
-                href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page + 1)'>
+                href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page + 1, filters = DomainModels.filterToString(setupFilter))'>
                   <span aria-hidden="true">&raquo;</span>
                 </a>
               </li>
@@ -43,14 +44,14 @@
 
               <li class='previous btn-lg @(if(page == 1) "disabled" else "")'>
                 <a aria-label="Previous"
-                href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page - 1)'>
+                href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page - 1, filters = DomainModels.filterToString(setupFilter))'>
                   <span aria-hidden="true">&laquo;</span>
                 </a>
               </li>
 
               <li class='next btn-lg @(if(page == totalPages) "disabled" else "")'>
                 <a aria-label="Next"
-                href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page + 1)'>
+                href='@routes.Application.leaderboards(axis.region.slug, axis.bracket.slug, minutes, perpage, page + 1, filters = DomainModels.filterToString(setupFilter))'>
                   <span aria-hidden="true">&raquo;</span>
                 </a>
               </li>
@@ -60,7 +61,7 @@
       </div>
 
       <div class="col-lg-5 col-md-5 col-sm-8 col-xs-12">
-      @fotmSetupsView(fotmSetups, axis.bracket.size)
+      @fotmSetupsView(axis, minutes, fotmSetups, axis.bracket.size)
       </div>
 
     </div>

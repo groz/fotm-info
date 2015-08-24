@@ -3,6 +3,9 @@ package info.fotm.domain
 final case class TeamSnapshot /* private */ (team: Team, view: TeamView, stats: Stats) {
   lazy val rating = view.rating
   lazy val factionId = view.snapshots.head.view.factionId
+
+  def matchesFilter(setupFilter: TeamSnapshot.SetupFilter): Boolean =
+    TeamSnapshot.matchesFilter(view.snapshots, setupFilter)
 }
 
 object TeamSnapshot {
@@ -25,9 +28,6 @@ object TeamSnapshot {
 
   type CharFilter = (Int, Option[Int])
   type SetupFilter = Seq[CharFilter]
-
-  def matchesFilter(teamSnapshot: TeamSnapshot, setupFilter: SetupFilter): Boolean =
-    matchesFilter(teamSnapshot.view.snapshots, setupFilter)
 
   def matchesFilter(setup: Set[CharacterSnapshot], filters: SetupFilter): Boolean = {
     val setupClasses = setup.groupBy(_.id.classId).mapValues(_.size)

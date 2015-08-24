@@ -1,12 +1,13 @@
 @import info.fotm.domain.Axis
+@import info.fotm.domain.TeamSnapshot.SetupFilter
 
-@(currentAxis: Axis, minutes: Int)
+@(currentAxis: Axis, minutes: Int, setupFilter: SetupFilter)
 
 <div class="row visible-xs col-xs-12">
   <ul class="nav nav-pills">
     @for(region <- Axis.allRegions){
       <li class='@(if(region == currentAxis.region) "active" else "")'>
-        <a href='@routes.Application.leaderboards(region.slug, currentAxis.bracket.slug, minutes)'>
+        <a href='@routes.Application.leaderboards(region.slug, currentAxis.bracket.slug, minutes, filters = DomainModels.filterToString(setupFilter) )'>
         @region.slug.toUpperCase
         </a>
       </li>

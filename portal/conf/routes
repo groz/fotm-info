@@ -10,6 +10,6 @@ GET        /assets/*file                        controllers.Assets.versioned(pat
 
 # Home page
 GET        /                                    controllers.Application.default
-GET        /:region/:bracket                    controllers.Application.leaderboards(region: String, bracket: String, minutes: Int ?= 1440, perpage: Int ?= 20, page: Int ?= 1)
+GET        /:region/:bracket                    controllers.Application.leaderboards(region: String, bracket: String, minutes: Int ?= 1440, perpage: Int ?= 20, page: Int ?= 1, filters: String ?= "")
 GET        /teamHistory/:region/:bracket        controllers.Application.teamHistory(region: String, bracket: String, teamId: String)
 GET        /charHistory/:region/:bracket        controllers.Application.charHistory(region: String, bracket: String, charId: String)

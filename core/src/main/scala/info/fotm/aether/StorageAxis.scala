@@ -1,6 +1,7 @@
 package info.fotm.aether
 
 import com.github.nscala_time.time.Imports
+import info.fotm.domain.TeamSnapshot.SetupFilter
 import info.fotm.domain._
 import com.github.nscala_time.time.Imports._
 
@@ -75,7 +76,7 @@ final case class StorageAxis(
     StorageAxis(nextTeamHistories, nextCharHistories, nextTeamsSeen, nextCharsSeen)
   }
 
-  def all(interval: Interval, cutoff: Int = 0): (Seq[FotmSetup], Seq[TeamSnapshot], Seq[CharacterSnapshot]) = {
+  def all(interval: Interval, cutoff: Int = 0, filter: SetupFilter = Seq.empty): (Seq[FotmSetup], Seq[TeamSnapshot], Seq[CharacterSnapshot]) = {
 
     val allTeams = inInterval(teamsSeen, interval).flatten.toSet
 
@@ -86,23 +87,24 @@ final case class StorageAxis(
         if teamHistory.size > cutoff
       } yield teamHistory
 
-    val allSnapshots = aboveCutoff.flatMap(_.values)
+    val allSnapshots: Set[TeamSnapshot] = aboveCutoff.flatMap(_.values)
+
+    val total: Int = allSnapshots.size
 
     // setups
-    val setupPop: Map[Seq[Int], Int] =
+    val setupsPopularity: Map[Seq[Int], Int] =
       allSnapshots
-        .groupBy(_.view.sortedSnapshots.map(_.view.specId))
-        .mapValues(_.size)
+      .groupBy(_.view.sortedSnapshots.map(_.view.specId))
+      .mapValues(_.count(_.matchesFilter(filter)))
+      .filter(_._2 != 0)
 
-    val total = setupPop.values.sum.toDouble
-
-    val setups = for ((setup, size) <- setupPop) yield FotmSetup(setup, size / total)
+    val setups = for ((setup, size) <- setupsPopularity) yield FotmSetup(setup, size / total.toDouble)
 
     val allChars: Map[CharacterId, CharacterSnapshot] =
       chars(interval).map(c => (c.id, c))(scala.collection.breakOut)
 
     // teams
-    val lastSnapshots = aboveCutoff.map(_.values.last).toSeq
+    val lastSnapshots: Seq[TeamSnapshot] = aboveCutoff.map(_.values.last).filter(_.matchesFilter(filter)).toSeq
 
     // filter out chars seen in teams that are sent back
     val charsInTeams = lastSnapshots.flatMap(_.team.members)

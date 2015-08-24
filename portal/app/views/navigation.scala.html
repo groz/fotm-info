@@ -1,6 +1,7 @@
 @import info.fotm.domain.Axis
+@import info.fotm.domain.TeamSnapshot.SetupFilter
 
-@(currentAxis: Axis, minutes: Int)
+@(currentAxis: Axis, minutes: Int, setupFilter: SetupFilter)
 
 <nav class="navbar navbar-default hidden-xs">
   <ul class="nav navbar-nav">
@@ -9,7 +10,7 @@
     </li>
     @for(region <- Axis.allRegions) {
       <li class='@(if(region == currentAxis.region) "active" else "")'>
-        <a href='@routes.Application.leaderboards(region.slug, currentAxis.bracket.slug, minutes)'>
+        <a href='@routes.Application.leaderboards(region.slug, currentAxis.bracket.slug, minutes, filters = DomainModels.filterToString(setupFilter) )'>
           @region.slug.toUpperCase
         </a>
       </li>

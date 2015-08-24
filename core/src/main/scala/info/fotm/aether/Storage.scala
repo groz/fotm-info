@@ -5,6 +5,7 @@ import akka.event.{Logging, LoggingReceive}
 import com.github.nscala_time.time.Imports
 import com.github.nscala_time.time.Imports._
 import com.twitter.bijection.{Base64String, Bijection, GZippedBytes}
+import info.fotm.domain.TeamSnapshot.SetupFilter
 import info.fotm.domain._
 import info.fotm.util._
 import scodec.Codec
@@ -29,7 +30,7 @@ object Storage {
     override val toString = s"Updates($axis, teams: ${teamUpdates.size}, chars: ${charUpdates.size})"
   }
 
-  final case class QueryAll(axis: Axis, interval: Interval)
+  final case class QueryAll(axis: Axis, interval: Interval, filter: SetupFilter)
   final case class QueryAllResponse(axis: Axis, setups: Seq[FotmSetup], teams: Seq[TeamSnapshot], chars: Seq[CharacterSnapshot])
 
   final case class QueryTeamHistory(axis: Axis, team: Team)
@@ -142,10 +143,10 @@ class Storage(persistence: Persisted[Map[Axis, StorageAxis]]) extends Actor {
 
       sender ! QueryCharHistoryResponse(axis, charId, lastSnapshot, histories)
 
-    case QueryAll(axis: Axis, unadjustedInterval: Interval) =>
+    case QueryAll(axis: Axis, unadjustedInterval: Interval, setupFilter) =>
       val interval = new Interval(unadjustedInterval.start, unadjustedInterval.end + 100.millis)
       val storageAxis = state(axis)
-      val (setups, teams, chars) = storageAxis.all(interval, cutoff = 2)
+      val (setups, teams, chars) = storageAxis.all(interval, cutoff = 2, setupFilter)
       sender ! QueryAllResponse(axis, setups, teams, chars)
 
     case QueryPlayingNow(axis: Axis, unadjustedInterval: Interval) =>
