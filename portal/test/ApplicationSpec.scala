@@ -25,9 +25,8 @@ class ApplicationSpec extends Specification {
     "render the index page" in new WithApplicationLoader(new CustomApplicationLoader) {
       val home = route(FakeRequest(GET, "/")).get
 
-      status(home) must equalTo(OK)
-      contentType(home) must beSome.which(_ == "text/html")
-      //contentAsString(home) must contain ("Playing Now")
+      status(home) must equalTo(SEE_OTHER)
+      contentType(home) must beNone
     }
   }
 }
