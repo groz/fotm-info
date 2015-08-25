@@ -35,13 +35,16 @@ class S3KVPersisted[K, V](bucket: String, keyPathBijection: Bijection[K, String]
 
     val result: Map[K, V] = (
       for (s3key <- s3keys) yield {
+        println(s"Loading $s3key...")
         val request = new GetObjectRequest(bucket, s3key)
         val s3object = s3client.getObject(request)
         val objectData: S3ObjectInputStream = s3object.getObjectContent
         val bytes = IOUtils.toByteArray(objectData)
         objectData.close()
+        println(s"Loaded $s3key! Deserializing...")
         val k = keyPathBijection.inverse(s3key)
         val v = valueSerializer.inverse(bytes)
+        println(s"Done with $s3key.")
         (k, v)
       })(breakOut)
 
