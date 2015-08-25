@@ -33,7 +33,9 @@ class Application @Inject()(system: ActorSystem) extends Controller {
 
   def healthCheck = Action { Ok("OK") }
 
-  def default = leaderboards("eu", "3v3")
+  def default = Action {
+    Redirect(routes.Application.leaderboards("eu", "3v3"))
+  }
 
   def teamHistory(region: String, bracket: String, teamId: String) = Action.async {
 
