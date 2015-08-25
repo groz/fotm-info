@@ -70,6 +70,8 @@ final case class TeamView(snapshots: Set[CharacterSnapshot]) {
 
   lazy val sortedSnapshots: Seq[CharacterSnapshot] =
     snapshots.toSeq.sorted(CharacterOrderingFactory.snapshotsBySpecOrdering)
+
+  lazy val specIds: Seq[Int] = sortedSnapshots.map(_.view.specId)
 }
 
 object CharacterOrderingFactory {

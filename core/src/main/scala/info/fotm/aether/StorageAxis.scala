@@ -108,9 +108,9 @@ final case class StorageAxis(
 
     // filter out chars seen in teams that are sent back
     val charsInTeams = lastSnapshots.flatMap(_.team.members)
-    val charsNotInTeams = (allChars -- charsInTeams).values.toSeq.sortBy(- _.stats.rating)
+    val charsNotInTeams = (allChars -- charsInTeams).values
 
-    (setups.toSeq.sortBy(- _.ratio), lastSnapshots.toSeq.sortBy(- _.rating), charsNotInTeams)
+    (setups.toSeq.sortBy(- _.ratio), lastSnapshots.toSeq.sortBy(- _.rating), charsNotInTeams.toSeq.sortBy(- _.stats.rating))
   }
 
   // a
