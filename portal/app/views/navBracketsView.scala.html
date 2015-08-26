@@ -3,7 +3,7 @@
 
 @(currentAxis: Axis, minutes: Int, setupFilter: SetupFilter)
 
-<div class="col-lg-3 col-md-4 col-sm-5">
+<div class="col-lg-3 col-md-4 col-sm-5 col-xs-12">
   <ul class="nav nav-pills">
   @for(bracket <- Axis.allBrackets) {
     <li class='@{ if(bracket == currentAxis.bracket) "active" else "" }'>

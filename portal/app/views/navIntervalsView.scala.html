@@ -2,7 +2,7 @@
 @import info.fotm.domain.TeamSnapshot.SetupFilter
 @(currentAxis: Axis, minutes: Int, setupFilter: SetupFilter)
 
-<div class="col-lg-4 col-md-5 col-sm-6">
+<div class="col-lg-4 col-md-5 col-sm-6 col-xs-12">
   <ul class="nav nav-pills">
     @for((intervalName, durationInMinutes) <- Map("Now" -> 30, "Day" -> 1440, "Week" -> 10080, "Month" -> 302400)) {
       <li class='@{ if(durationInMinutes == minutes) "active" else "" }'>
