@@ -32,9 +32,17 @@
 
 .hover-content {
   position: absolute;
-  bottom: -10px;
+  bottom: 0;
   right: 10px;
   display: none;
+}
+
+.bottom-right-content {
+  position: absolute;
+  bottom: 0;
+  right: 10px;
+  font-size: 10px;
+  color: lightgray;
 }
 
 .hover-container:hover .hover-content {

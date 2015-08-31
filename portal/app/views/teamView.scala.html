@@ -17,8 +17,11 @@
   </a>
 </td>
 
-<td>
-@for(c <- teamSnapshot.view.sortedSnapshots) {
+<td class="hover-container">
+  <div class="bottom-right-content">
+  </div>
+
+  @for(c <- teamSnapshot.view.sortedSnapshots) {
   <div>
   @characterView(axis, c)
   </div>

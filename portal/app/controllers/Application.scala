@@ -23,6 +23,7 @@ class Application @Inject()(system: ActorSystem) extends Controller {
 
   Logger.info(">>> Storage path: " + AetherConfig.storagePath)
   Logger.info(">>> Proxy path: " + AetherConfig.storageProxyPath)
+  Logger.info(AetherConfig.config.getValue("akka.remote.netty.tcp.maximum-frame-size").toString)
 
   implicit val timeout: Timeout = new Timeout(Duration(30, SECONDS))
 
@@ -30,6 +31,8 @@ class Application @Inject()(system: ActorSystem) extends Controller {
   lazy val storage: ActorSelection = system.actorSelection(AetherConfig.storagePath)
   lazy val storageProxy = system.actorOf(Storage.readonlyProps, AetherConfig.storageProxyActorName)
   storage.tell(Storage.Identify, storageProxy)
+
+  Logger.info(s">>> Local storageProxy path ${storageProxy.path}")
 
   def healthCheck = Action { Ok("OK") }
 
