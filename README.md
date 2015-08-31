@@ -1,6 +1,6 @@
 # Dev
  
-[![Build Status](https://travis-ci.org/Groz/fotm-info.svg)](https://travis-ci.org/Groz/fotm-info)
+[![Build Status](https://travis-ci.org/groz/fotm-info.svg)](https://travis-ci.org/groz/fotm-info)
 [![codecov.io](http://codecov.io/github/Groz/fotm-info/coverage.svg?branch=master)](http://codecov.io/github/Groz/fotm-info?branch=master)
 
 Project uses git submodules. Full checkout command:
