@@ -3,7 +3,7 @@ package info.fotm.domain
 import info.fotm.api.models._
 
 case object Axis {
-  val allRegions = List(US, Europe, China, Korea, Taiwan)
+  val allRegions = List(US, Europe, Korea) // China, Taiwan out of the loop to save resources
   val allBrackets = List(Twos, Threes, Fives, Rbg)
 
   val regionMap: Map[String, Region] = allRegions.map(r => (r.slug, r)).toMap

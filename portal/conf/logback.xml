@@ -10,7 +10,7 @@
 
   <appender name="FILE" class="ch.qos.logback.core.FileAppender">
     <file>logs/portal.log</file>
-    <append>true</append>
+    <append>false</append>
     <!-- encoders are assigned the type
          ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
     <encoder>
@@ -28,7 +28,7 @@
   <!-- Set logging for all Akka library classes-->
   <logger name="akka" level="DEBUG" />
 
-  <root level="DEBUG">
+  <root level="INFO">
     <appender-ref ref="STDOUT" />
     <appender-ref ref="FILE" />
   </root>

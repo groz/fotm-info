@@ -23,7 +23,7 @@ class Application @Inject()(system: ActorSystem) extends Controller {
 
   Logger.info(">>> Storage path: " + AetherConfig.storagePath)
   Logger.info(">>> Proxy path: " + AetherConfig.storageProxyPath)
-  Logger.info(AetherConfig.config.getValue("akka.remote.netty.tcp.maximum-frame-size").toString)
+  Logger.info(">>> Akka max message size: " + AetherConfig.config.getValue("akka.remote.netty.tcp.maximum-frame-size"))
 
   implicit val timeout: Timeout = new Timeout(Duration(30, SECONDS))
 
