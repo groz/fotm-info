@@ -6,6 +6,32 @@ if (window.console) {
   };
 }
 
+var fotm = {
+  // url param manipulation
+  // http://stackoverflow.com/a/6021027/283975
+  updateQueryString: function (uri, key, value) {
+    var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
+    var separator = uri.indexOf('?') !== -1 ? "&" : "?";
+    if (uri.match(re)) {
+      if (value) {
+        return uri.replace(re, '$1' + key + "=" + value + '$2');
+      } else {
+        if (uri.indexOf('&') !== -1) { // there are still other params
+          return uri.replace(re, '$1');
+        } else { // no other params, return empty
+          return uri.replace(re, "");
+        }
+      }
+    } else {
+      if (value) {
+        return uri + separator + key + "=" + value;
+      } else {
+        return uri;
+      }
+    }
+  }
+};
+
 // Support for span.time-container elements: https://jsfiddle.net/h36zec41/4/
 $(function() {
   var fotm = (window.fotm = window.fotm || {});
@@ -28,30 +54,6 @@ $(function() {
   } else {
     console.log("No time tags found.");
   }
-
-  // url param manipulation
-  // http://stackoverflow.com/a/6021027/283975
-  fotm.updateQueryString = function(uri, key, value) {
-    var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
-    var separator = uri.indexOf('?') !== -1 ? "&" : "?";
-    if (uri.match(re)) {
-      if (value) {
-        return uri.replace(re, '$1' + key + "=" + value + '$2');
-      } else {
-        if (uri.indexOf('&') !== -1) { // there are still other params
-          return uri.replace(re, '$1');
-        } else { // no other params, return empty
-          return uri.replace(re, "");
-        }
-      }
-    } else {
-      if (value) {
-        return uri + separator + key + "=" + value;
-      } else {
-        return uri;
-      }
-    }
-  };
 
   fotm.getFilter = function() {
     var result = [];

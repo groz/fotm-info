@@ -43,9 +43,12 @@
 
     <div class="container body-content">
       @navigationXS(axis, minutes, setupFilter)
+      <div class="alert alert-success" role="alert">
+        <strong>New!</strong> There's now comments section for every bracket, setup, team or player at the bottom of the page.
+      </div>
       @content
+      <div id="disqus_thread"></div>
     </div>
-
 
     @initDomain()
     <script src='@routes.Assets.versioned("javascripts/jquery-1.11.3.min.js")'></script>
@@ -53,6 +56,20 @@
     <script src='@routes.Assets.versioned("javascripts/moment.min.js")'></script>
     <script src='@routes.Assets.versioned("javascripts/fotm-core.js")'></script>
     @postInitDomain(setupFilter)
+
+    <script type="text/javascript">
+      /* * * CONFIGURATION VARIABLES * * */
+      var disqus_shortname = 'fotminfo';
+      var disqus_url = fotm.updateQueryString(location.href, "minutes", "");
+
+      /* * * DON'T EDIT BELOW THIS LINE * * */
+      (function() {
+          var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+          dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+          (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+      })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
 
     @socialInit()
   </body>
