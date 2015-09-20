@@ -10,3 +10,7 @@ libraryDependencies ++= Seq(
   "org.scodec" %% "scodec-bits" % "1.0.9",
   "org.scodec" %% "scodec-core" % "1.8.1"
 )
+
+libraryDependencies ++= Seq(
+  "org.reactivemongo" %% "play2-reactivemongo" % "0.11.7.play24"
+)

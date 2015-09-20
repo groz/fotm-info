@@ -1,5 +1,4 @@
-@import info.fotm.aether.FotmSetup
-@import info.fotm.domain.{Axis, TeamSnapshot, CharacterSnapshot}
+@import info.fotm.domain.{FotmSetup, Axis, TeamSnapshot, CharacterSnapshot}
 @import info.fotm.domain.TeamSnapshot.SetupFilter
 
 @(axis: Axis, fotmSetups: Seq[FotmSetup], teams: Seq[TeamSnapshot], chars: Seq[CharacterSnapshot], minutes: Int, perpage: Int, page: Int, totalPages: Int, setupFilter: SetupFilter)

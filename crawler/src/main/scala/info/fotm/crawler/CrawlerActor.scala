@@ -3,7 +3,7 @@ package info.fotm.crawler
 import akka.actor.{Actor, ActorRef}
 import akka.event.{Logging, LoggingAdapter, LoggingReceive}
 import akka.pattern.{PipeToSupport, pipe}
-import info.fotm.aether.Storage
+import info.fotm.aether.{AetherConfig, MongoFotmStorage, Storage}
 import info.fotm.api.BattleNetAPI
 import info.fotm.api.models._
 import info.fotm.clustering._
@@ -75,6 +75,8 @@ class CrawlerActor(storage: ActorRef, fetchLeaderboard: () => Future[Leaderboard
       if ladderUpdate.distance == 1
     } yield ladderUpdate
 
+  val mongoStorage = new MongoFotmStorage(AetherConfig.dbPath)
+
   val updatesSubscription =
     for (ladderUpdate <- ladderUpdates) {
       val teams = evaluator.findTeamsInUpdate(ladderUpdate, clusterer)
@@ -82,7 +84,9 @@ class CrawlerActor(storage: ActorRef, fetchLeaderboard: () => Future[Leaderboard
 
       log.debug(s"Sending ${teamUpdates.size} teams and ${ladderUpdate.charDiffs.size} chars to storage...")
 
-      storage ! Storage.Updates(axis, teamUpdates.toSeq, ladderUpdate.charDiffs)
+      val updates = Storage.Updates(axis, teamUpdates.toSeq, ladderUpdate.charDiffs)
+      mongoStorage.update(updates)
+      storage ! updates
     }
 
   def continue(recrawlRequested: Boolean, message: String = "") = {

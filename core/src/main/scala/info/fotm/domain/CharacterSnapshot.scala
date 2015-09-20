@@ -1,6 +1,7 @@
 package info.fotm.domain
 
 import info.fotm.api.models.LeaderboardRow
+import info.fotm.domain.TeamSnapshot.SetupFilter
 
 final case class CharacterSnapshot(id: CharacterId, view: CharacterView, stats: CharacterStats) {
   def this(raw: LeaderboardRow) = this(
@@ -23,6 +24,15 @@ final case class CharacterSnapshot(id: CharacterId, view: CharacterView, stats: 
       season = Stats(raw.seasonWins, raw.seasonLosses)
     )
   )
+
+  def matchesFilter(filter: SetupFilter) =
+    if (filter.isEmpty)
+      true
+    else
+      filter.exists{ f =>
+        val (classId: Int, specId: Option[Int]) = f
+        id.classId == classId && specId.map(_ == view.specId).getOrElse(true)
+      }
 }
 
 object CharacterSnapshot {

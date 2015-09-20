@@ -1,4 +1,4 @@
-import info.fotm.aether.{FotmSetup, StorageAxis}
+import info.fotm.aether.StorageAxis
 import com.github.nscala_time.time.Imports._
 import info.fotm.clustering.ClusteringEvaluatorData
 import info.fotm.domain._

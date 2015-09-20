@@ -1,7 +1,6 @@
 package models
 
-import info.fotm.aether.FotmSetup
-import info.fotm.domain.CharacterSnapshot
+import info.fotm.domain.{FotmSetup, CharacterSnapshot}
 import info.fotm.domain.TeamSnapshot.SetupFilter
 
 final case class ClassModel(id: Int, name: String, specs: Int*)

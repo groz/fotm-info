@@ -41,7 +41,7 @@ object TeamSnapshot {
     val allSpecs = (setupSpecs ++ filterSpecs).toSet
 
     def getCount[A](id: A, classes: Map[A, Int]): Int =
-      classes.find(pair => pair._1 == id).map(_._2).getOrElse(0)
+      classes.find(_._1 == id).map(_._2).getOrElse(0)
 
     def ok[A](all: Set[(A, Int)], setup: Map[A, Int], filter: Map[A, Int]): Boolean =
       all.forall { kv =>

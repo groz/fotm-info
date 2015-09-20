@@ -20,7 +20,7 @@ object AetherConfig {
 
   println(s">>> Using config override: $configOverrideName")
 
-  val config = baseConfig.getConfig(configOverrideName).withFallback(baseConfig)
+  val config: Config = baseConfig.getConfig(configOverrideName).withFallback(baseConfig)
 
   val crawlerConfig = config.getConfig("crawler-system").withFallback(config)
   val portalConfig = config.getConfig("portal-system").withFallback(config)
@@ -33,6 +33,8 @@ object AetherConfig {
 
   val storagePath = crawlerSystemPath.locate(storageActorName)
   val storageProxyPath = portalSystemPath.locate(storageProxyActorName)
+
+  val dbPath = config.getString("mongodb.uri")
 
   private val s3kvStorageKey = "s3-kvstorage"
   private val folderStorageKey = "folder-storage"

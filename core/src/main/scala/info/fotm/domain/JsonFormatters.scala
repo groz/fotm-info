@@ -1,7 +1,7 @@
 package info.fotm.domain
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Format, Json}
+import play.api.libs.json._
 
 object JsonFormatters {
   lazy implicit val statsFmt = Json.format[Stats]
@@ -9,9 +9,16 @@ object JsonFormatters {
   lazy implicit val charStatsFmt = Json.format[CharacterStats]
   lazy implicit val charViewFmt = Json.format[CharacterView]
   lazy implicit val charSsFmt = Json.format[CharacterSnapshot]
+
+  lazy implicit val teamFmt: Format[Team] =
+    (__ \ "members").format[Seq[CharacterId]].inmap(
+      chars => Team(chars.toSet),
+      team => team.members.toSeq.sortBy(id => (id.name, id.realmSlug))
+    )
+
   lazy implicit val teamViewFmt = Json.format[TeamView]
-  lazy implicit val teamFmt = Json.format[Team]
   lazy implicit val teamSsFmt = Json.format[TeamSnapshot]
+
   lazy implicit val axisFmt: Format[Axis] = (
     (JsPath \ "region").format[String] and
     (JsPath \ "bracket").format[String]
@@ -28,4 +35,7 @@ object JsonFormatters {
   )(Tuple2.apply[A, B], unlift(Tuple2.unapply))
 
   lazy implicit val axisStateFmt = Json.format[AxisState]
+
+  def oformat[A](implicit fmt: Format[A]): OFormat[A] =
+    OFormat(fmt, OWrites[A](a => fmt.writes(a).asInstanceOf[JsObject]))
 }

@@ -14,10 +14,6 @@ import scodec.codecs.implicits._
 
 import scala.collection.immutable.TreeMap
 
-final case class FotmSetup(specIds: Seq[Int], ratio: Double) {
-  lazy val orderedSpecIds = specIds.sorted( CharacterOrderingFactory.specIdOrdering[Int](identity) )
-}
-
 object Storage {
   val props: Props = Props[Storage]
   val readonlyProps: Props = Props(classOf[Storage], true)

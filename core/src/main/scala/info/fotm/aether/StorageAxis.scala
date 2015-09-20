@@ -78,7 +78,7 @@ final case class StorageAxis(
 
   def all(interval: Interval, cutoff: Int = 0, filter: SetupFilter = Seq.empty): (Seq[FotmSetup], Seq[TeamSnapshot], Seq[CharacterSnapshot]) = {
 
-    val allTeams = inInterval(teamsSeen, interval).flatten.toSet
+    val allTeams: Set[Team] = inInterval(teamsSeen, interval).flatten.toSet
 
     val aboveCutoff =
       for {

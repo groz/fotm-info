@@ -23,3 +23,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-remote" % "2.4-SNAPSHOT",
   "net.sourceforge.htmlunit" % "htmlunit" % "2.15" % "test"
 )
+
+libraryDependencies ++= Seq(
+  "org.reactivemongo" %% "play2-reactivemongo" % "0.11.7.play24"
+)
