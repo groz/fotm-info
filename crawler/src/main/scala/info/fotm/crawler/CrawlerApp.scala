@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 
 object CrawlerApp extends App {
   val apiKey = "vntnwpsguf4pqak7e8y7tgn35795fqfj"
-  val system = ActorSystem(AetherConfig.crawlerSystemPath.name, AetherConfig.crawlerConfig)
+  val system = ActorSystem()
 
   val crawlInterval = 20.seconds
 

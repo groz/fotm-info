@@ -16,9 +16,9 @@ import scala.concurrent.Future
 /*
 Requires following indices created:
 
-db.teams.createIndex( { axis: 1, time: -1 } )
-db.chars.createIndex( { axis: 1, time: -1 } )
-db.teams_latest.createIndex( { axis: 1, time: -1 } )
+db.v4_teams.createIndex( { axis: 1, time: -1 } )
+db.v4_chars.createIndex( { axis: 1, time: -1 } )
+db.v4_teams_latest.createIndex( { axis: 1, time: -1 } )
 
 TODO:
   additional optimizations can be made if we separate queries
