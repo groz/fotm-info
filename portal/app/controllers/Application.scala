@@ -21,7 +21,6 @@ import scala.concurrent.duration.{Duration, SECONDS}
 class Application @Inject()(system: ActorSystem) extends Controller {
   val fotmStorage = new MongoFotmStorage
 
-  Logger.info(">>> Storage path: " + AetherConfig.dbPath)
   Logger.info(">>> Akka max message size: " + AetherConfig.config.getValue("akka.remote.netty.tcp.maximum-frame-size"))
 
   implicit val timeout: Timeout = new Timeout(Duration(30, SECONDS))
