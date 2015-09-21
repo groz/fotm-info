@@ -1,20 +1,18 @@
 package info.fotm.crawler
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.Actor
 import akka.event.{Logging, LoggingAdapter, LoggingReceive}
-import akka.pattern.{PipeToSupport, pipe}
-import info.fotm.aether.{AetherConfig, MongoFotmStorage, Storage}
-import info.fotm.api.BattleNetAPI
+import akka.pattern.pipe
+import info.fotm.aether.{AetherConfig, FotmStorage, MongoFotmStorage}
 import info.fotm.api.models._
 import info.fotm.clustering._
-import info.fotm.clustering.enhancers.{SimpleMultiplexer, ClonedClusterer}
-import info.fotm.clustering.implementations.{ClosestClusterer, HTClusterer}
+import info.fotm.clustering.enhancers.{ClonedClusterer, SimpleMultiplexer}
+import info.fotm.clustering.implementations.ClosestClusterer
 import info.fotm.domain._
 import info.fotm.util.ObservableReadStream
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
-import scala.concurrent.duration._
+import scala.concurrent.Future
 
 object CrawlerActor {
 
@@ -45,13 +43,13 @@ object CrawlerActor {
   }
 }
 
-class CrawlerActor(storage: ActorRef, fetchLeaderboard: () => Future[Leaderboard], axis: Axis) extends Actor {
+class CrawlerActor(fetchLeaderboard: () => Future[Leaderboard], axis: Axis) extends Actor {
 
   import CrawlerActor._
 
   val clusterer = createClusterer
 
-  val historySize = 15
+  val historySize = 12
 
   implicit val log: LoggingAdapter = Logging(context.system, this)
 
@@ -75,7 +73,7 @@ class CrawlerActor(storage: ActorRef, fetchLeaderboard: () => Future[Leaderboard
       if ladderUpdate.distance == 1
     } yield ladderUpdate
 
-  val mongoStorage = new MongoFotmStorage(AetherConfig.dbPath)
+  val fotmStorage = new MongoFotmStorage
 
   val updatesSubscription =
     for (ladderUpdate <- ladderUpdates) {
@@ -84,9 +82,8 @@ class CrawlerActor(storage: ActorRef, fetchLeaderboard: () => Future[Leaderboard
 
       log.debug(s"Sending ${teamUpdates.size} teams and ${ladderUpdate.charDiffs.size} chars to storage...")
 
-      val updates = Storage.Updates(axis, teamUpdates.toSeq, ladderUpdate.charDiffs)
-      mongoStorage.update(updates)
-      storage ! updates
+      val updates = FotmStorage.Updates(axis, teamUpdates.toSeq, ladderUpdate.charDiffs)
+      fotmStorage.update(updates)
     }
 
   def continue(recrawlRequested: Boolean, message: String = "") = {

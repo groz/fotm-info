@@ -1,5 +1,5 @@
 @import info.fotm.domain.{Axis, TeamSnapshot, CharacterId, CharacterSnapshot}
-@import info.fotm.aether.Storage
+@import models.MyBijections._
 @import com.github.nscala_time.time.Imports._
 @import scala.collection.immutable.TreeMap
 
@@ -12,7 +12,7 @@
         <ul class="nav nav-pills">
         @for(bracket <- Axis.allBrackets) {
           <li class='@{ if(bracket == axis.bracket) "active" else "" }'>
-            <a href='@routes.Application.charHistory(axis.region.slug, bracket.slug, Storage.charIdBijection(charId))'>
+            <a href='@routes.Application.charHistory(axis.region.slug, bracket.slug, charIdBijection(charId))'>
             @bracket.slug
             </a>
           </li>

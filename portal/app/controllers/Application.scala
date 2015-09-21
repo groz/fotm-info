@@ -3,49 +3,28 @@ package controllers
 import javax.inject._
 
 import akka.actor._
-import akka.pattern.ask
 import akka.util.Timeout
-import com.github.nscala_time.time.Imports
-import info.fotm.aether.Storage.{Updates, QueryTeamHistoryResponse, QueryCharHistoryResponse, QueryAllResponse}
-import info.fotm.aether.{FotmStorage, MongoFotmStorage, AetherConfig, Storage}
-import info.fotm.api.models.{US, Europe}
+import com.github.nscala_time.time.Imports._
+import info.fotm.aether.FotmStorage._
+import info.fotm.aether.{AetherConfig, MongoFotmStorage}
 import info.fotm.domain.TeamSnapshot.SetupFilter
 import info.fotm.domain._
-import com.github.nscala_time.time.Imports._
-import models.DomainModels
+import models.{DomainModels, MyBijections}
 import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.libs.json._
 import play.api.mvc._
-import play.modules.reactivemongo._
-import play.modules.reactivemongo.json._
-import play.modules.reactivemongo.json.collection._
-import play.modules.reactivemongo.json.collection.JSONCollection
-import reactivemongo.api.{MongoDriver, ReadPreference, Cursor}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, SECONDS}
 
 @Singleton
-class Application @Inject()(system: ActorSystem)
-  extends Controller { //with MongoController with ReactiveMongoComponents {
+class Application @Inject()(system: ActorSystem) extends Controller {
+  val fotmStorage = new MongoFotmStorage
 
-  //val fotmStorage = new MongoFotmStorage(reactiveMongoApi.driver, reactiveMongoApi.db)
-  val mongoDriver = new MongoDriver(Some(AetherConfig.config))
-  val fotmStorage = new MongoFotmStorage(mongoDriver, AetherConfig.dbPath)
-
-  Logger.info(">>> Storage path: " + AetherConfig.storagePath)
-  Logger.info(">>> Proxy path: " + AetherConfig.storageProxyPath)
+  Logger.info(">>> Storage path: " + AetherConfig.dbPath)
   Logger.info(">>> Akka max message size: " + AetherConfig.config.getValue("akka.remote.netty.tcp.maximum-frame-size"))
 
   implicit val timeout: Timeout = new Timeout(Duration(30, SECONDS))
-
-  // init proxy and subscribe to storage updates
-  lazy val storage: ActorSelection = system.actorSelection(AetherConfig.storagePath)
-  lazy val storageProxy = system.actorOf(Storage.readonlyProps, AetherConfig.storageProxyActorName)
-  storage.tell(Storage.Identify, storageProxy)
-
-  Logger.info(s">>> Local storageProxy path ${storageProxy.path}")
 
   def healthCheck = Action {
     Ok("OK")
@@ -58,7 +37,7 @@ class Application @Inject()(system: ActorSystem)
   def teamHistory(region: String, bracket: String, teamId: String) = Action.async {
 
     Axis.parse(region, bracket).fold(Future.successful(NotFound: Result)) { axis =>
-      val team: Team = Storage.teamIdBijection.inverse(teamId)
+      val team: Team = MyBijections.teamIdBijection.inverse(teamId)
 
       fotmStorage.queryTeamHistory(axis, team).map { response =>
         Ok(views.html.teamHistory(response.axis, response.team, response.history))
@@ -69,7 +48,7 @@ class Application @Inject()(system: ActorSystem)
   def charHistory(region: String, bracket: String, charId: String) = Action.async {
 
     Axis.parse(region, bracket).fold(Future.successful(NotFound: Result)) { axis =>
-      val id: CharacterId = Storage.charIdBijection.inverse(charId)
+      val id: CharacterId = MyBijections.charIdBijection.inverse(charId)
       fotmStorage.queryCharHistory(axis, id).map { response =>
         Ok(views.html.charHistory(response.axis, response.charId, response.lastSnapshot, response.history))
       }

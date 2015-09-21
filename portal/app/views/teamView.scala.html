@@ -1,18 +1,18 @@
 @import info.fotm.domain.{Axis, TeamSnapshot}
-@import info.fotm.aether.Storage
+@import models.MyBijections._
 @(axis: Axis, teamSnapshot: TeamSnapshot)
 
 <td class="centered">
   @images.factionImage(teamSnapshot.factionId)
 </td>
 <td class="centered">
-  <a href='@routes.Application.teamHistory(axis.region.slug, axis.bracket.slug, Storage.teamIdBijection(teamSnapshot.team))'>
+  <a href='@routes.Application.teamHistory(axis.region.slug, axis.bracket.slug, teamIdBijection(teamSnapshot.team))'>
   @teamSnapshot.rating.toInt
   </a>
 </td>
 
 <td class="teamstats centered">
-  <a href='@routes.Application.teamHistory(axis.region.slug, axis.bracket.slug, Storage.teamIdBijection(teamSnapshot.team))'>
+  <a href='@routes.Application.teamHistory(axis.region.slug, axis.bracket.slug, teamIdBijection(teamSnapshot.team))'>
     @teamSnapshot.stats.wins - @teamSnapshot.stats.losses
   </a>
 </td>

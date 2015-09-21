@@ -1,7 +1,7 @@
 package info.fotm.aether
 
 import com.github.nscala_time.time.Imports._
-import info.fotm.aether.Storage._
+import info.fotm.aether.FotmStorage._
 import info.fotm.domain.TeamSnapshot.SetupFilter
 import info.fotm.domain._
 import play.api.libs.json.{OFormat, Json}
@@ -13,28 +13,36 @@ import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+/*
+Requires following indices created:
+
+db.teams.createIndex( { axis: 1, time: -1 } )
+db.chars.createIndex( { axis: 1, time: -1 } )
+db.teams_latest.createIndex( { axis: 1, time: -1 } )
+
+TODO:
+  additional optimizations can be made if we separate queries
+  with setupFilter and without.
+  that will allow to add pagination to db requests because we
+  will know how many entries we need
+ */
+
 final case class TeamSnapshotDocument(axis: Axis, time: DateTime, value: TeamSnapshot)
 
 final case class CharSnapshotDocument(axis: Axis, time: DateTime, value: CharacterSnapshot)
 
 object MongoFotmStorage {
-  lazy val driver = new MongoDriver
-  val dbName = "fotmdb"
+  lazy val driver = new MongoDriver(Some(AetherConfig.config))
+
+  lazy val connection = MongoConnection.parseURI(AetherConfig.dbPath).map(MongoFotmStorage.driver.connection).get
+
+  lazy val db = connection("fotmdb")
 }
 
-class MongoFotmStorage(driver: MongoDriver, db: DefaultDB) extends FotmStorage {
+class MongoFotmStorage extends FotmStorage {
 
   import JsonFormatters._
-
-  def this(connectionUri: String) = this(MongoFotmStorage.driver, {
-    val connection = MongoConnection.parseURI(connectionUri).map(MongoFotmStorage.driver.connection).get
-    connection(MongoFotmStorage.dbName)
-  })
-
-  def this(driver: MongoDriver, connectionUri: String) = this(driver, {
-    val connection = MongoConnection.parseURI(connectionUri).map(driver.connection).get
-    connection(MongoFotmStorage.dbName)
-  })
+  import MongoFotmStorage._
 
   val teamsCollection = db.collection[JSONCollection]("v4_teams")
   val charsCollection = db.collection[JSONCollection]("v4_chars")
@@ -96,7 +104,7 @@ class MongoFotmStorage(driver: MongoDriver, db: DefaultDB) extends FotmStorage {
           latestTeamsCollection.insert(teamSnapshotDocument)
         } { snapshot =>
           latestTeamsCollection.update(
-            Json.obj("value.team" -> teamOFmt.writes(team)),
+            Json.obj("axis" -> axis, "value.team" -> teamOFmt.writes(team)),
             Json.obj("$set" ->
               Json.obj("time" -> Json.toJson(time), "value" -> teamSsFmt.writes(teamSnapshotDocument.value))
             )
@@ -115,7 +123,10 @@ class MongoFotmStorage(driver: MongoDriver, db: DefaultDB) extends FotmStorage {
   override def queryTeamHistory(axis: Axis, team: Team): Future[QueryTeamHistoryResponse] = {
     val teamDocsFuture: Future[List[TeamSnapshotDocument]] =
       teamsCollection
-        .find(Json.obj("value.team" -> teamOFmt.writes(team)))
+        .find(Json.obj(
+          "axis" -> axis,
+          "value.team" -> teamOFmt.writes(team))
+        )
         .cursor[TeamSnapshotDocument]()
         .collect[List]()
 
@@ -130,13 +141,19 @@ class MongoFotmStorage(driver: MongoDriver, db: DefaultDB) extends FotmStorage {
 
     val lastSnapshotOptionFuture: Future[Option[CharSnapshotDocument]] =
       charsCollection
-        .find(Json.obj("value.id" -> charOFmt.writes(charId)))
+        .find(Json.obj(
+          "axis" -> Json.toJson(axis),
+          "value.id" -> charOFmt.writes(charId))
+        )
         .cursor[CharSnapshotDocument]()
         .headOption
 
     val teamDocsFuture: Future[List[TeamSnapshotDocument]] =
       teamsCollection
-        .find(Json.obj("value.team.members" -> charOFmt.writes(charId)))
+        .find(Json.obj(
+          "axis" -> Json.toJson(axis),
+          "value.team.members" -> charOFmt.writes(charId))
+        )
         .cursor[TeamSnapshotDocument]()
         .collect[List]()
 

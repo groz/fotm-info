@@ -6,7 +6,7 @@ case object Axis {
   val parsedRegions = List(US, Europe, China, Korea, Taiwan)
   val parsedBrackets = List(Twos, Threes, Fives, Rbg)
 
-  val allRegions = List(US, Europe, Korea) // China, Taiwan out of the loop to save resources
+  val allRegions = List(US, Europe, Korea, China, Taiwan)
   val allBrackets = List(Twos, Threes, Fives, Rbg)
 
   val regionMap: Map[String, Region] = parsedRegions.map(r => (r.slug, r)).toMap
