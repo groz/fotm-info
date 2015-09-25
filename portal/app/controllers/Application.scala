@@ -11,6 +11,7 @@ import info.fotm.domain.TeamSnapshot.SetupFilter
 import info.fotm.domain._
 import models.{DomainModels, MyBijections}
 import play.api.Logger
+import play.api.cache._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
 
@@ -18,7 +19,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, SECONDS}
 
 @Singleton
-class Application @Inject()(system: ActorSystem) extends Controller {
+class Application @Inject()(system: ActorSystem, cached: Cached) extends Controller {
   val fotmStorage = new MongoFotmStorage
 
   Logger.info(">>> Akka max message size: " + AetherConfig.config.getValue("akka.remote.netty.tcp.maximum-frame-size"))
@@ -65,28 +66,33 @@ class Application @Inject()(system: ActorSystem) extends Controller {
         if classId != 0
       } yield (classId, specId)
 
+  // month: 0.5 days, week: ~3 hours, day: 24 minutes, now: 0.5 minutes
+  def cacheDurationInSeconds(minutes: Int) = minutes/60
+
   def leaderboards(region: String, bracket: String, minutes: Int = 1440, perpage: Int = 20, page: Int = 1, filters: String = "") =
-    Action.async {
+    cached((rh: RequestHeader) => s"$region/$bracket/$minutes/$perpage/$page/$filters", cacheDurationInSeconds(minutes)) {
+      Action.async {
 
-      Logger.debug(s"Filters string: $filters")
+        Logger.debug(s"Filters string: $filters")
 
-      Axis.parse(region, bracket).fold(Future.successful(NotFound: Result)) { axis =>
+        Axis.parse(region, bracket).fold(Future.successful(NotFound: Result)) { axis =>
 
-        // filters format: "classId-specId"
-        val setupFilter: SetupFilter = parseFilter(filters)
+          // filters format: "classId-specId"
+          val setupFilter: SetupFilter = parseFilter(filters)
 
-        Logger.debug(s"Setup filter: $setupFilter")
+          Logger.debug(s"Setup filter: $setupFilter")
 
-        val interval = new Interval(DateTime.now - minutes.minutes, DateTime.now)
+          val interval = new Interval(DateTime.now - minutes.minutes, DateTime.now)
 
-        val nSetups = 20
+          val nSetups = 20
 
-        fotmStorage.queryAll(axis, interval, setupFilter, minutes <= 30).map { (response: QueryAllResponse) =>
-          val totalPages = Math.ceil(response.teams.size / perpage.toDouble).toInt
-          val teams = response.teams.slice(perpage * (page - 1), perpage * page) // 1-based indexing
-          Ok(views.html.leaderboards(response.axis, response.setups.take(nSetups), teams, response.chars, minutes, perpage, page, totalPages, setupFilter))
+          fotmStorage.queryAll(axis, interval, setupFilter, minutes <= 30).map { (response: QueryAllResponse) =>
+            val totalPages = Math.ceil(response.teams.size / perpage.toDouble).toInt
+            val teams = response.teams.slice(perpage * (page - 1), perpage * page) // 1-based indexing
+            Ok(views.html.leaderboards(response.axis, response.setups.take(nSetups), teams, response.chars, minutes, perpage, page, totalPages, setupFilter))
+          }
         }
       }
-    }
+  }
 
 }
