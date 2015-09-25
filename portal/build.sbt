@@ -28,4 +28,4 @@ libraryDependencies ++= Seq(
   "org.reactivemongo" %% "play2-reactivemongo" % "0.11.7.play24"
 )
 
-pipelineStages := Seq(rjs, digest)
+pipelineStages := Seq(digest)
