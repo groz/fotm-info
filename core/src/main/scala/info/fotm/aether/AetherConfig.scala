@@ -1,8 +1,6 @@
 package info.fotm.aether
 
-import com.twitter.bijection.Bijection
 import com.typesafe.config.{Config, ConfigFactory}
-import info.fotm.util._
 
 object AetherConfig {
   val baseConfig: Config = ConfigFactory.load()
@@ -16,4 +14,5 @@ object AetherConfig {
   val portalConfig = config.getConfig("portal-system").withFallback(config)
 
   val dbPath = config.getString("mongodb.uri")
+  val bnetapikey = config.getString("bnet-api-key")
 }

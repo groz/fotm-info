@@ -31,7 +31,7 @@ fi
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 AMI_ID=ami-1ecae776
-KEY_NAME=fotm-info-keypair-us
+KEY_NAME=fotm-info-keypair
 USER_DATA_FILE=instance_setup.sh
 IAM_PROFILE_NAME=FotmRole
 

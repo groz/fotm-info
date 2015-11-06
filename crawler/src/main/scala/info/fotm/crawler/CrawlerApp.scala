@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 object CrawlerApp extends App {
-  val apiKey = "vntnwpsguf4pqak7e8y7tgn35795fqfj"
+  val apiKey = AetherConfig.bnetapikey
   val system = ActorSystem()
 
   val crawlInterval = 20.seconds

@@ -56,7 +56,9 @@ class Application @Inject()(system: ActorSystem, cached: Cached) extends Control
   }
 
   def parseFilter(filters: String): SetupFilter =
-    if (filters.isEmpty) Seq.empty
+    if (filters.isEmpty) {
+      Seq.empty
+    }
     else
       for {
         filterString <- filters.split(',')
@@ -66,33 +68,45 @@ class Application @Inject()(system: ActorSystem, cached: Cached) extends Control
         if classId != 0
       } yield (classId, specId)
 
-  // month: 0.5 days, week: ~3 hours, day: 24 minutes, now: 0.5 minutes
-  def cacheDurationInSeconds(minutes: Int) = minutes/60
+  def cacheDurationInSeconds(minutes: Int) = {
+    val seconds = minutes * 60
+    val cacheDuration = seconds / 30
+    Math.max(cacheDuration, 1)
+  }
 
   def leaderboards(region: String, bracket: String, minutes: Int = 1440, perpage: Int = 20, page: Int = 1, filters: String = "") =
-    cached((rh: RequestHeader) => s"$region/$bracket/$minutes/$perpage/$page/$filters", cacheDurationInSeconds(minutes)) {
-      Action.async {
+    if (filters.isEmpty && page == 1 && perpage == 20) {
+      Logger.debug("Cached call")
+      cached((rh: RequestHeader) => s"$region/$bracket/$minutes", cacheDurationInSeconds(minutes)) {
+        getleaderboards(region, bracket, minutes, perpage, page, filters)
+      }
+    } else {
+      Logger.debug("Non-cached call")
+      getleaderboards(region, bracket, minutes, perpage, page, filters)
+    }
 
-        Logger.debug(s"Filters string: $filters")
+  def getleaderboards(region: String, bracket: String, minutes: Int, perpage: Int, page: Int, filters: String) =
+    Action.async {
 
-        Axis.parse(region, bracket).fold(Future.successful(NotFound: Result)) { axis =>
+      Logger.debug(s"Filters string: $filters")
 
-          // filters format: "classId-specId"
-          val setupFilter: SetupFilter = parseFilter(filters)
+      Axis.parse(region, bracket).fold(Future.successful(NotFound: Result)) { axis =>
 
-          Logger.debug(s"Setup filter: $setupFilter")
+        // filters format: "classId-specId"
+        val setupFilter: SetupFilter = parseFilter(filters)
 
-          val interval = new Interval(DateTime.now - minutes.minutes, DateTime.now)
+        Logger.debug(s"Setup filter: $setupFilter")
 
-          val nSetups = 20
+        val interval = new Interval(DateTime.now - minutes.minutes, DateTime.now)
 
-          fotmStorage.queryAll(axis, interval, setupFilter, minutes <= 30).map { (response: QueryAllResponse) =>
-            val totalPages = Math.ceil(response.teams.size / perpage.toDouble).toInt
-            val teams = response.teams.slice(perpage * (page - 1), perpage * page) // 1-based indexing
-            Ok(views.html.leaderboards(response.axis, response.setups.take(nSetups), teams, response.chars, minutes, perpage, page, totalPages, setupFilter))
-          }
+        val nSetups = 20
+
+        fotmStorage.queryAll(axis, interval, setupFilter, minutes <= 30).map { (response: QueryAllResponse) =>
+          val totalPages = Math.ceil(response.teams.size / perpage.toDouble).toInt
+          val teams = response.teams.slice(perpage * (page - 1), perpage * page) // 1-based indexing
+          Ok(views.html.leaderboards(response.axis, response.setups.take(nSetups), teams, response.chars, minutes, perpage, page, totalPages, setupFilter))
         }
       }
-  }
+    }
 
 }

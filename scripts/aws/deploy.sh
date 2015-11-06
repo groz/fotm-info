@@ -9,6 +9,9 @@ sbt clean test &&
 sbt crawler/dist portal/dist &&
 $DIR/bundle.sh &&
 aws s3 cp revision/artifact/revision.zip s3://fotm-info-staging-bucket/latest/revision.zip &&
-aws deploy create-deployment --application-name fotm-info --deployment-group-name fotm-portal  --s3-location bucket=fotm-info-staging-bucket,bundleType=zip,key=latest/revision.zip --ignore-application-stop-failures &&
-aws deploy create-deployment --application-name fotm-info --deployment-group-name fotm-crawler --s3-location bucket=fotm-info-staging-bucket,bundleType=zip,key=latest/revision.zip --ignore-application-stop-failures &&
+aws deploy create-deployment --application-name fotm-info --deployment-group-name fotm-portal  --s3-location bucket=fotm-info-staging-bucket,bundleType=zip,key=latest/revision.zip &&
+aws deploy create-deployment --application-name fotm-info --deployment-group-name fotm-crawler --s3-location bucket=fotm-info-staging-bucket,bundleType=zip,key=latest/revision.zip &&
 open https://us-east-1.console.aws.amazon.com/codedeploy/home?region=us-east-1#/deployments/
+
+# Fast portal-only deployment oneliner
+# aws deploy create-deployment --application-name fotm-info --deployment-group-name fotm-portal  --s3-location bucket=fotm-info-staging-bucket,bundleType=zip,key=latest/revision.zip --ignore-application-stop-failures
